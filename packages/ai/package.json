@@ -1,0 +1,27 @@
+{
+  "name": "@corvus/ai",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Single shared AI layer (lanes + router + cost meter + builder prompt) imported by gateway and web. One lane definition — never duplicated per app.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "format": "prettier --check --ignore-unknown .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,3 +1,4 @@
+// Moved from apps/web/lib/ai/ai.test.ts with the router/cost/lanes modules.
 // Stub-fetch tests for the provider-agnostic model router: lane order,
 // fallback on 5xx/429/network, 4xx visibility with a single extra attempt,
 // missing-key and incompatible skips, empty-text failover, secret-free
@@ -7,10 +8,10 @@
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { extractCost, recordSpend, SpendError, toCredits } from './cost';
-import { ANTHROPIC_BASE_URL, DEEPSEEK_BASE_URL, LANES, OPENROUTER_BASE_URL } from './lanes';
-import { chat, RouterError } from './router';
-import type { AttemptRecord, FetchFn } from './router';
+import { extractCost, recordSpend, SpendError, toCredits } from './cost.js';
+import { ANTHROPIC_BASE_URL, DEEPSEEK_BASE_URL, LANES, OPENROUTER_BASE_URL } from './lanes.js';
+import { chat, RouterError } from './router.js';
+import type { AttemptRecord, FetchFn } from './router.js';
 
 const ROUTER_ENV_KEYS = [
   'WIRO_API_KEY',
@@ -172,8 +173,11 @@ describe('chat routing', () => {
       model: 'glm/5-2',
       temperature: 0,
       max_tokens: 6000,
-      reasoning_effort: 'low',
     });
+    /* Probed live 2026-09-15: wiro glm/5-2 returns HTTP 400
+       unsupported_capability for reasoning_effort:'low', and HTTP 200 without
+       it, so the builder glm route must NOT send the flag. */
+    expect(body.reasoning_effort).toBeUndefined();
     expect(body.messages).toEqual([{ role: 'user', content: 'hi' }]);
   });
 

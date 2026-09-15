@@ -28,6 +28,7 @@ import {
 
 const BOT = '11111111-2222-4333-8444-555555555555';
 const FOREIGN_BOT = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+const BRIEF = 'a welcome bot with two behaviors';
 
 const SIGNED_IN: SessionReader = {
   getSession: async () => ({ accountId: 'acct-1', discordId: 'disc-1' }),
@@ -155,7 +156,7 @@ describe('POST /api/builder/start', () => {
     __setBossFactory(boss.factory);
     setStartReader(SIGNED_OUT);
 
-    const res = await POST(postStart({ botId: BOT }));
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
 
     expect(res.status).toBe(401);
     expect(await readBody(res)).toEqual({ error: 'unauthorized' });
@@ -179,6 +180,28 @@ describe('POST /api/builder/start', () => {
     expect(boss.record.startCalls).toBe(0);
   });
 
+  it('returns 422 for a missing, empty, or oversized brief, without touching pool or boss', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    for (const body of [
+      { botId: BOT },
+      { botId: BOT, brief: '' },
+      { botId: BOT, brief: '   ' },
+      { botId: BOT, brief: 42 },
+      { botId: BOT, brief: 'x'.repeat(2001) },
+    ]) {
+      const res = await POST(postStart(body));
+      expect(res.status).toBe(422);
+      expect(await readBody(res)).toEqual({ error: 'invalid brief' });
+    }
+    expect(db.calls).toHaveLength(0);
+    expect(boss.record.startCalls).toBe(0);
+  });
+
   it('returns 404 - never 403 - for a bot owned by someone else', async () => {
     const db = fakeDb({ owned: false });
     __setPool(db.pool);
@@ -186,7 +209,7 @@ describe('POST /api/builder/start', () => {
     __setBossFactory(boss.factory);
     setStartReader(SIGNED_IN);
 
-    const res = await POST(postStart({ botId: FOREIGN_BOT }));
+    const res = await POST(postStart({ botId: FOREIGN_BOT, brief: BRIEF }));
 
     expect(res.status).toBe(404);
     expect(res.status).not.toBe(403);
@@ -202,7 +225,7 @@ describe('POST /api/builder/start', () => {
     __setBossFactory(boss.factory);
     setStartReader(SIGNED_IN);
 
-    const res = await POST(postStart({ botId: BOT }));
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
 
     expect(res.status).toBe(200);
     const body = await readBody(res);
@@ -217,7 +240,7 @@ describe('POST /api/builder/start', () => {
     expect(boss.record.sent).toHaveLength(1);
     const sent = boss.record.sent[0];
     expect(sent.name).toBe(BUILDER_QUEUE);
-    expect(sent.data).toEqual({ runId, botId: BOT });
+    expect(sent.data).toEqual({ runId, botId: BOT, brief: BRIEF });
     expect(sent.options).toEqual({
       singletonKey: runId,
       retryLimit: 3,
@@ -234,7 +257,7 @@ describe('POST /api/builder/start', () => {
     setStartReader(SIGNED_IN);
     setGetReader(SIGNED_IN);
 
-    const started = await POST(postStart({ botId: BOT }));
+    const started = await POST(postStart({ botId: BOT, brief: BRIEF }));
     const runId = String((await readBody(started)).runId);
 
     const queued = await GET(getRun(runId));
@@ -261,7 +284,7 @@ describe('POST /api/builder/start', () => {
     __setBossFactory(boss.factory);
     setStartReader(SIGNED_IN);
 
-    const res = await POST(postStart({ botId: BOT }));
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
 
     expect(res.status).toBe(500);
     expect(await readBody(res)).toEqual({ error: 'could not start build' });
@@ -275,7 +298,7 @@ describe('POST /api/builder/start', () => {
     __setBossFactory(boss.factory);
     setStartReader(SIGNED_IN);
 
-    const res = await POST(postStart({ botId: BOT }));
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
 
     expect(res.status).toBe(500);
     expect(await readBody(res)).toEqual({ error: 'could not start build' });
@@ -292,7 +315,7 @@ describe('POST /api/builder/start', () => {
     __setBossFactory(boss.factory);
     setStartReader(SIGNED_IN);
 
-    const res = await POST(postStart({ botId: BOT }));
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
 
     expect(res.status).toBe(500);
     expect(await readBody(res)).toEqual({ error: 'could not start build' });
@@ -331,7 +354,7 @@ describe('live PG path (loud skip when unreachable)', () => {
       __setPool(live);
       setStartReader(liveIdentity);
       __resetBossFactory();
-      const res = await POST(postStart({ botId: randomUUID() }));
+      const res = await POST(postStart({ botId: randomUUID(), brief: BRIEF }));
       expect(res.status).toBe(404);
       expect(await readBody(res)).toEqual({ error: 'bot not found' });
     } finally {

@@ -24,6 +24,8 @@
     "format": "prettier --check --ignore-unknown ."
   },
   "dependencies": {
+    "@corvus/ai": "^0.1.0",
+    "@corvus/spec": "^0.1.0",
     "discord.js": "^14.27.0",
     "drizzle-orm": "^0.44.0",
     "pg": "^8.13.0",

@@ -1,3 +1,4 @@
+// Moved from apps/web/lib/ai/builder-prompt.test.ts with the builder prompt.
 // Tests for the builder system prompt + the parseSpec drift net (T-validate).
 //
 // The drift net below imports parseSpec from @corvus/spec and pins it
@@ -9,7 +10,7 @@
 // If either side changes shape, this test names both files.
 import { describe, expect, it } from 'vitest';
 import { parseSpec } from '@corvus/spec';
-import { buildBuilderPrompt, BUILDER_CALL_PARAMS } from './builder-prompt';
+import { buildBuilderPrompt, BUILDER_CALL_PARAMS } from './builder-prompt.js';
 
 describe('buildBuilderPrompt one-liners', () => {
   it('states the withResponse shape (resource.message, never bare message)', () => {
@@ -34,6 +35,13 @@ describe('buildBuilderPrompt one-liners', () => {
     const prompt = buildBuilderPrompt();
     expect(prompt).toContain('guild');
     expect(prompt).toContain('global');
+  });
+
+  it('directs the model to emit one fenced json spec block', () => {
+    const prompt = buildBuilderPrompt();
+    expect(prompt).toContain('```json');
+    expect(prompt).toContain('"behaviors"');
+    expect(prompt).toContain('no prose outside the fence');
   });
 
   it('returns a single non-empty string', () => {

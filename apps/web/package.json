@@ -19,6 +19,7 @@
     "singleQuote": true
   },
   "dependencies": {
+    "@corvus/ai": "^0.1.0",
     "@corvus/spec": "^0.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "clsx": "^2.1.1",

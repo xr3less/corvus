@@ -2625,3 +2625,20 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: 1 build + 1 review, $0. Risk: no live-Discord relogin proven yet (fakes only — needs fleet token + deploy, founder-gated); relogin on a quarantined bot is untested-by-design (supervisor never calls it there).
 
 **Superseded by:** none
+
+### D-128 — Builder calls the real model: @corvus/ai shared lanes, metered brief-to-draft
+
+- **Date:** 2026-09-15
+- **Decided by:** orchestrator (two-way engineering; founder ordered the real call, the method is technical)
+- **Door type:** two-way (reversible — additive package + worker logic, shims keep every consumer path stable)
+- **Type:** engineering
+
+**Context.** D-126 left the builder worker advancing phases with an explicit stub. Wiring the model raised the load-bearing question first: the lane table lived in the web app, and a second copy in the gateway would rot within weeks (the exact two-definitions drift L-005 exists to prevent). Reading the consumers settled the shape: only four lane files plus their tests, all portable (fetch-only, env keys read at call time).
+
+**Decision.** New @corvus/ai workspace (lanes/router/cost/builder-prompt moved verbatim + .js-suffix port, index re-export; web keeps one-line shims, zero consumer diffs; gateway + web depend on it; root ci builds it after spec). Worker generate: brief → builder lane (GLM 5-2 with grok fallback) → fenced JSON extract → parseSpec → artifact; sync: bots lookup + version INSERT + draft pointer + ai_spend INSERT in one transaction (rollback on any failure). Spend bills every provider response including parse failures (the money moved); RouterError bills nothing. Missing bot writes nothing. Two live findings closed in-wave: the prompt asked for "patch only" while the worker parses fenced spec (prompt fixed, one-liners intact, live loop PASS with a valid 2-behavior spec at $0.0035), and wiro glm/5-2 400s on reasoning_effort (probed: unsupported_capability → flag dropped on the builder glm route only, persona/grok untouched per D-114). Independent reviewer PASS; merged ai 34 + gateway 162 + web 451 green.
+
+**Why.** One lane definition means the next price/model change edits one table, not two. The probe-first fixes (prompt shape, 400 cause) cost $0.004 instead of a blind rewrite round.
+
+**Cost & risk.** Cost: 1 build + 1 fix + 1 micro-fix + 1 review, ~$0.004 live spend. Risk: sync write path proven on fake pool only (no PG here — CI service proves it live); concurrent runs race on MAX(version)+1 (loser fails sync_failed, no partial write); draft pointer is last-writer-wins (single-owner V1, noted).
+
+**Superseded by:** none

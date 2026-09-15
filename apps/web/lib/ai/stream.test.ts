@@ -158,8 +158,11 @@ describe('chatStream', () => {
       stream: true,
       temperature: 0,
       max_tokens: 6000,
-      reasoning_effort: 'low',
     });
+    /* Probed live 2026-09-15: wiro glm/5-2 returns HTTP 400
+       unsupported_capability for reasoning_effort:'low', and HTTP 200 without
+       it, so the builder glm route must NOT send the flag. */
+    expect(body.reasoning_effort).toBeUndefined();
     expect(body.messages).toEqual(messages);
   });
 

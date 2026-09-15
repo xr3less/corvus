@@ -3,8 +3,11 @@
 // Flow: session first (401), then body shape (422), then bot ownership (404,
 // never 403, so a foreign bot is indistinguishable from a missing one). The
 // route creates the `builder_runs` row (phase queued) and enqueues one pg-boss
-// job on the `builder` queue; the gateway's builder worker owns phase
-// advancement and persists it back to the same row.
+// job on the `builder` queue carrying the job brief; the gateway's builder
+// worker owns phase advancement and persists it back to the same row.
+//
+// Job contract v2: { runId, botId, brief }. `brief` is required (1..2000 chars)
+// and is what the builder lane drafts the spec from.
 //
 // pg-boss client policy matches the preflight relay: one client per request,
 // started and stopped in a finally — no shared boss, no leaked pools.
@@ -67,6 +70,7 @@ export function __resetBossFactory(): void {
 
 interface StartInput {
   botId?: unknown;
+  brief?: unknown;
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -90,6 +94,11 @@ export async function POST(req: Request): Promise<NextResponse> {
   const botId = typeof raw.botId === 'string' ? raw.botId : '';
   if (!UUID_RE.test(botId)) {
     return NextResponse.json({ error: 'invalid bot id' }, { status: 422 });
+  }
+
+  const brief = typeof raw.brief === 'string' ? raw.brief : '';
+  if (brief.trim().length === 0 || brief.length > 2000) {
+    return NextResponse.json({ error: 'invalid brief' }, { status: 422 });
   }
 
   let owned = false;
@@ -127,7 +136,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     await boss.createQueue(BUILDER_QUEUE);
     const jobId = await boss.send(
       BUILDER_QUEUE,
-      { runId, botId },
+      { runId, botId, brief },
       {
         singletonKey: runId,
         retryLimit: 3,

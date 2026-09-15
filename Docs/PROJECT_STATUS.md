@@ -37,6 +37,7 @@ New-bot creation is now a ChatGPT-style chat (D-107): the circled "Your draft" c
 
 - 2026-09-15 — Debt wave DONE (D-126): KI-006 (/privacy + /terms, footer-linked) + KI-010 (dashboard live-bound, GET /api/bots) + KI-011 (/pryzm self-contained, clone-pryzm 69 files deleted) closed; V1-7 progress backend + V1-9 supervisor built; deploy pipeline ready (Dockerfiles built + run-proven). Merged typecheck clean, gateway 143 + web 483 green, 0 failed.
 - 2026-09-15 — Supervisor on duty (D-127): Gateway.relogin + start.ts wiring (audit/restart-via-vault), preservation test mutation-proven, reviewer PASS; gateway 151 + web 483 green.
+- 2026-09-15 — Builder calls the real model (D-128): @corvus/ai shared lanes, worker brief-to-draft with ai_spend metering, fenced-JSON contract live-proven ($0.0035/2-behavior spec), reviewer PASS; ai 34 + gateway 162 + web 451 green.
 - 2026-09-14 — Landing port DONE (D-120, KI-008 closed): `Antigravity/index.html` → production `/` (stack-pure, copy 1:1, CTAs wired, reviewer PASS, live 200; pryzm-winner retired to out-of-repo backup).
 - 2026-09-14 — Hero canvas fix (L-018): `loseContext` in cleanup killed the context on StrictMode remount → line removed, gates green. Needs a FULL page reload (F5) in open tabs — hot-reload alone cannot revive the dead context.
 - 2026-09-14 — Bots list split (D-121): `/dashboard/bots` is its own page (moved verbatim), home keeps overview only, `?view=bots` redirects, 402 tests green, all routes live 200.
