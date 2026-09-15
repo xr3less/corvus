@@ -76,6 +76,14 @@ ai_spend:  (V1-2, D-032 - live-cost meter; credit_ledger arrives with billing)
   ref_id          uuid      nullable
   created_at      timestamptz
 
+builder_runs:  (V1-7, D-126/D-128 - async builder progress; no FK by design)
+  id              uuid      primary key
+  bot_id          uuid      not null, no FK (row keyed by own id; never couples to bot lifecycle)
+  phase           text      queued|generating|syncing|live|failed (default queued)
+  detail          jsonb     per-phase facts ({version, model} on live; {error, step} classes only on failed)
+  created_at      timestamptz
+  updated_at      timestamptz
+
 guild_installs:  (V1-4, D-039)
   id              uuid      primary key
   bot_id          uuid      -> bots.id
@@ -163,10 +171,12 @@ audit_events:
 ```
 accounts 1—N bots 1—N spec_versions (prod + draft pointers back to spec_versions)
 bots 1—N guild_installs; bots 1—N user_records (per guild+member)
-accounts 1—N credit_ledger (append-only); accounts 1—1 subscriptions; accounts 1—N sessions; accounts 1-N ai_spend (append-only live-cost meter)
+accounts 1—1 subscriptions; accounts 1—N sessions; accounts 1-N ai_spend (append-only live-cost meter)
+(credit_ledger does NOT exist yet — allowance enforcement arrives with billing, Phase 4)
 templates 1—N template_reviews; bots N—1 templates (forked_from, nullable)
 audit_events N—1 accounts/bots (nullable for system)
 oauth_states + interview_progress: flow-scoped rows (login grant / interview answers); progress keyed by interview, not account, by design
+builder_runs: flow-scoped rows (one per builder run, keyed by run id, no FK — same convention)
 ```
 
 One account's tokens are decryptable only in the gateway shard owning that account's bots (row-level scoping in app code, not just SQL).

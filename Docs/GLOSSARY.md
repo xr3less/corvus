@@ -8,24 +8,24 @@
 
 ## Core terms (carry over to every project)
 
-| Term | Plain meaning |
-|---|---|
-| Database | The warehouse where all the project's information is stored. |
-| API | The waiter: it takes a request from one part of the system and brings back the answer from another. |
-| Server | The building everything runs in — always on, so users can reach the product. |
-| Frontend | What the user sees and clicks — the visible part. |
-| Backend | The engine room behind the scenes the user never sees. |
-| Queue | The ticket line: jobs wait their turn to be processed. |
-| Deployment | Putting a new version of the product live for real users. |
-| Repository (repo) | The single folder holding all the project's code and history. |
-| Bug | A defect — the product doing something it shouldn't. |
-| Validation | Proving real people actually want the product before building all of it. |
-| Orchestrator | The lead AI that plans and supervises; talks to the founder; writes no code itself. |
-| Sub-agent | A focused AI worker that does one task and reports back. |
-| Reviewer gate | The quality check every piece of work passes before it counts as done. |
-| One-way door | A decision that's hard or costly to undo — always needs founder approval first. |
-| Two-way door | A decision that's easy to undo — the AI can make it and just report. |
-| Surface | A user-visible screen/page/flow/control — the unit of `07`'s surface map (e.g. "kayıt ol butonu"). |
+| Term              | Plain meaning                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------------- |
+| Database          | The warehouse where all the project's information is stored.                                        |
+| API               | The waiter: it takes a request from one part of the system and brings back the answer from another. |
+| Server            | The building everything runs in — always on, so users can reach the product.                        |
+| Frontend          | What the user sees and clicks — the visible part.                                                   |
+| Backend           | The engine room behind the scenes the user never sees.                                              |
+| Queue             | The ticket line: jobs wait their turn to be processed.                                              |
+| Deployment        | Putting a new version of the product live for real users.                                           |
+| Repository (repo) | The single folder holding all the project's code and history.                                       |
+| Bug               | A defect — the product doing something it shouldn't.                                                |
+| Validation        | Proving real people actually want the product before building all of it.                            |
+| Orchestrator      | The lead AI that plans and supervises; talks to the founder; writes no code itself.                 |
+| Sub-agent         | A focused AI worker that does one task and reports back.                                            |
+| Reviewer gate     | The quality check every piece of work passes before it counts as done.                              |
+| One-way door      | A decision that's hard or costly to undo — always needs founder approval first.                     |
+| Two-way door      | A decision that's easy to undo — the AI can make it and just report.                                |
+| Surface           | A user-visible screen/page/flow/control — the unit of `07`'s surface map (e.g. "kayıt ol butonu").  |
 
 ---
 
@@ -33,30 +33,32 @@
 
 Standing rule: add a row each time a new technical or domain term appears. Never let a term go undefined.
 
-| Term | Plain meaning |
-|---|---|
-| Platform prompt | Corvus's own hidden instructions (builder, code generator) — members never see these. |
-| Persona prompt | A server owner's bot personality text — belongs to that bot only, never shared. |
-| Prompt leak | A chatbot revealing its hidden instructions — treated as a security bug here. |
-| Credit | $0.005 of AI at list prices; burns only on builder runs, AI chat replies, image gen. |
-| Behavior spec | The versioned recipe file describing one bot; AI and editor both write drafts of it. |
-| Pre-flight | Automated check (roles, permissions, intents) that blocks publishing on Red. |
-| Simulator | Fake Discord events run against a draft — predicts prod without going live. |
-| Sleep | Trial/past-due bot state: offline, data kept 12 months, wakes on upgrade — never deleted. |
-| Soft-cap | AI pauses when allowance ends while the bot stays online — no surprise bills. |
-| OAuth state | The one-time random code that proves a Discord login return belongs to the login attempt that started it — prevents login forgery, single-use, 10-minute life. |
-| Least-privilege invite | The bot install link carrying only the permissions the bot needs (each with a why-line) — never the Administrator master key. |
-| Draft spec | An unpublished version-1 recipe for a bot, minted by the interview; Publish points the live bot at it, Rollback points back. |
-| Session | The server-side login row behind the `corvus_session` cookie — the cookie is just the ticket number, the row is the truth. |
-| Staging | Test-guild trial of a draft; prod untouched until Publish. |
-| Shadow | Trial mode where the model drafts but a human approves before anything goes live — every draft and its cost are recorded. |
-| Demo window | The public scripted-preview chat on our site (rate-limited, honest-labeled) — strangers touch a replying bot without signup. |
-| Fork | Copying a template into a new draft bot (spec v1 + install URL in one call). |
-| Template | A curated starting-point bot (spec + permissions + server-pack note) in the gallery. |
-| Lane | One named model route (builder or persona) with its provider fallback chain. |
-| Thinking | The live indicator in the AI chat, shown only while the model is genuinely working (until the first streamed token) — driven by the API, never a timer. Renders as an expandable trace (ThinkingTrace): shimmer header with measured elapsed seconds while open, parked "Thought · took Ns" after done, showing only reasoning the provider actually sent. |
-| Auto (composer) | The chat box has no model or effort picker — every send goes to the product-default lane with fixed settings. What you type is what is sent. |
-| Thread | One chat conversation on screen: user bubbles plus the assistant's trace/answer/cost rows, newest at the bottom. |
-| Creation view | The fullscreen New-bot overlay: brief composer + honest steps; mock until the builder is wired. |
-| Spend row | One ai_spend ledger line per AI call (model, cost, credits, reason); NULL cost means the provider reported none — never zero. |
-| Red-block | Publish is refused when the latest pre-flight scan has a Red row; rollback is never blocked. |
+| Term                   | Plain meaning                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Platform prompt        | Corvus's own hidden instructions (builder, code generator) — members never see these.                                                                                                                                                                                                                                                                      |
+| Persona prompt         | A server owner's bot personality text — belongs to that bot only, never shared.                                                                                                                                                                                                                                                                            |
+| Prompt leak            | A chatbot revealing its hidden instructions — treated as a security bug here.                                                                                                                                                                                                                                                                              |
+| Credit                 | $0.005 of AI at list prices; burns only on builder runs, AI chat replies, image gen.                                                                                                                                                                                                                                                                       |
+| Behavior spec          | The versioned recipe file describing one bot; AI and editor both write drafts of it.                                                                                                                                                                                                                                                                       |
+| Pre-flight             | Automated check (roles, permissions, intents) that blocks publishing on Red.                                                                                                                                                                                                                                                                               |
+| Simulator              | Fake Discord events run against a draft — predicts prod without going live.                                                                                                                                                                                                                                                                                |
+| Sleep                  | Trial/past-due bot state: offline, data kept 12 months, wakes on upgrade — never deleted.                                                                                                                                                                                                                                                                  |
+| Soft-cap               | AI pauses when allowance ends while the bot stays online — no surprise bills.                                                                                                                                                                                                                                                                              |
+| OAuth state            | The one-time random code that proves a Discord login return belongs to the login attempt that started it — prevents login forgery, single-use, 10-minute life.                                                                                                                                                                                             |
+| Least-privilege invite | The bot install link carrying only the permissions the bot needs (each with a why-line) — never the Administrator master key.                                                                                                                                                                                                                              |
+| Draft spec             | An unpublished version-1 recipe for a bot, minted by the interview; Publish points the live bot at it, Rollback points back.                                                                                                                                                                                                                               |
+| Session                | The server-side login row behind the `corvus_session` cookie — the cookie is just the ticket number, the row is the truth.                                                                                                                                                                                                                                 |
+| Staging                | Test-guild trial of a draft; prod untouched until Publish.                                                                                                                                                                                                                                                                                                 |
+| Shadow                 | Trial mode where the model drafts but a human approves before anything goes live — every draft and its cost are recorded.                                                                                                                                                                                                                                  |
+| Demo window            | The public scripted-preview chat on our site (rate-limited, honest-labeled) — strangers touch a replying bot without signup.                                                                                                                                                                                                                               |
+| Fork                   | Copying a template into a new draft bot (spec v1 + install URL in one call).                                                                                                                                                                                                                                                                               |
+| Template               | A curated starting-point bot (spec + permissions + server-pack note) in the gallery.                                                                                                                                                                                                                                                                       |
+| Lane                   | One named model route (builder or persona) with its provider fallback chain. The single definition lives in `packages/ai` — never duplicated per app.                                                                                                                                                                                                      |
+| Thinking               | The live indicator in the AI chat, shown only while the model is genuinely working (until the first streamed token) — driven by the API, never a timer. Renders as an expandable trace (ThinkingTrace): shimmer header with measured elapsed seconds while open, parked "Thought · took Ns" after done, showing only reasoning the provider actually sent. |
+| Auto (composer)        | The chat box has no model or effort picker — every send goes to the product-default lane with fixed settings. What you type is what is sent.                                                                                                                                                                                                               |
+| Thread                 | One chat conversation on screen: user bubbles plus the assistant's trace/answer/cost rows, newest at the bottom.                                                                                                                                                                                                                                           |
+| Creation view          | The fullscreen New-bot overlay: brief composer + honest steps; mock until the builder is wired.                                                                                                                                                                                                                                                            |
+| Spend row              | One ai_spend ledger line per AI call (model, cost, credits, reason); NULL cost means the provider reported none — never zero.                                                                                                                                                                                                                              |
+| Red-block              | Publish is refused when the latest pre-flight scan has a Red row; rollback is never blocked.                                                                                                                                                                                                                                                               |
+| Builder run            | One async bot-building job (brief → model → draft version + spend), tracked in phases queued→generating→syncing→live/failed.                                                                                                                                                                                                                               |
+| Relogin                | Reconnecting a crashed bot in place (same supervision state kept) — unlike remove+add, which resets the crash counter.                                                                                                                                                                                                                                     |

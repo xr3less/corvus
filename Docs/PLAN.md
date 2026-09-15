@@ -4,7 +4,7 @@
 
 > The single source of truth for what's done and what's next. Tick boxes as work completes; keep current. Additive only — don't reorder phases without founder approval. Per `GLOBAL_RULES.md §3`, nothing is built that isn't planned here first.
 
-**Last updated:** 2026-09-15 (debt wave D-126: KI-006/KI-010/KI-011 closed, V1-7 progress backend, V1-9 supervisor, dashboard live-bound, deploy pipeline ready; gateway 143 + web 483 green, 0 failed)
+**Last updated:** 2026-09-15 (EOD: D-127 supervisor wiring + D-128 builder model call, both reviewer-PASS; first commits d8dcafa/1248ccc/13ad664; full doc audit — 06/07/08/05 trued, KI-014…KI-019 opened, L-020/L-021; ai 34 + gateway 162 + web 451 green)
 
 ---
 

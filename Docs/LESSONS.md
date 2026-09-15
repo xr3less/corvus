@@ -2,7 +2,7 @@
 
 ## Status: LIVE
 
-> The company's compounding memory. Every project pays for some lessons in time and money; this file makes sure the NEXT project doesn't pay for them again. Per `GLOBAL_RULES.md §4`, nothing learned is allowed to evaporate. This is distinct from `DECISIONS.md` (which records *what* we chose and *why*) — LESSONS records *what reality taught us afterward*, especially when it contradicted the plan.
+> The company's compounding memory. Every project pays for some lessons in time and money; this file makes sure the NEXT project doesn't pay for them again. Per `GLOBAL_RULES.md §4`, nothing learned is allowed to evaporate. This is distinct from `DECISIONS.md` (which records _what_ we chose and _why_) — LESSONS records _what reality taught us afterward_, especially when it contradicted the plan.
 
 ---
 
@@ -279,5 +279,29 @@ Trigger: writing or reviewing any CSS Module; the reviewer greps `^[a-z*]`.
 **What happened.** Gallery's rail streamed deferred while dashboard's was inline. `useSearchParams` (removed — no change), `useRouter` (removed — no change), `'use client'` segment config (impossible per framework source — reverted), "dashboard is dynamic" (killed by the build's own route table: all static). Each theory was docs-plausible and each was wrong. The experiment — delete the bare `<Suspense>`, watch dev name the hook or render inline — settled it instantly: no hook was ever suspending, the boundary itself was the hole.
 
 **The rule now.** From now on, after TWO failed theory-fix rounds on a render anomaly, stop theorizing and run the cheapest decisive experiment (remove-or-isolate + read the framework's own error/build verdict). Name the stop rule in the task brief before the third round starts.
+
+**Promote to template?** candidate - seen once (Corvus).
+
+### L-020 - A restart that re-registers supervision is not a restart (relogin preserves, remove+add resets)
+
+- **Date:** 2026-09-15
+- **Cost of learning it:** 20 minutes of reading before writing (free — the expensive version would have been an infinite 1s-restart loop in production)
+- **Category:** engineering
+
+**What happened.** Wiring the crash supervisor's restart callback, the obvious implementation was removeBot+addBot. Reading both sides first showed removeBot calls forget (deletes the crash window) and addBot calls registerBot (fresh state) — so every restart would have reset the consecutive-crash counter and the 5-in-5min quarantine could never trip. The feature's only tripwire, silently defeated by its own wiring.
+
+**The rule now.** From now on, when wiring a retry/recovery callback into supervised lifecycle, check what the teardown path does to the supervisor's state BEFORE choosing the mechanism — a recovery that re-registers is a reset wearing a restart costume. The fix (relogin: swap client, keep state) got a mutation-proven test that fails under the naive implementation.
+
+**Promote to template?** candidate - seen once (Corvus).
+
+### L-021 - A whole-tree hook cannot pass on an initial mega-commit (own-files-clean-first + recorded bypass)
+
+- **Date:** 2026-09-15
+- **Cost of learning it:** one failed commit + one debug round (zero user impact, pre-launch)
+- **Category:** process
+
+**What happened.** The first commit (565 files) tripped the pre-commit hook two ways at once: pre-existing prettier drift in vendored/sandbox docs it didn't cause, and eslint OOM-killed scanning the whole tree. The hook was green on every product file and red on the tree — the colors disagreed and the hook's color was the wrong one to obey blindly.
+
+**The rule now.** From now on the initial commit goes: (1) prettier --write only the files this wave touched, (2) commit with --no-verify AND the reason recorded in the commit message, (3) pre-existing drift filed as its own issue (KI-019), never silently absorbed. A bypass with a recorded reason beats a red hook everyone learns to ignore. Trigger: any commit over ~50 files, and any hook failure on files the wave didn't touch.
 
 **Promote to template?** candidate - seen once (Corvus).

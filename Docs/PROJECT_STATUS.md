@@ -6,9 +6,9 @@
 
 ---
 
-## Current state — 2026-09-15
+## Current state — 2026-09-15 (EOD)
 
-Debt wave DONE (D-126, 8 agents): /privacy + /terms live and footer-linked (KI-006 closed); /pryzm de-quarantined, clone-pryzm deleted (KI-011 closed); dashboard live-bound via GET /api/bots with mock fallback (KI-010 closed); V1-7 progress backend (jobs table + builder queue + poll UI, model call stubbed); V1-9 supervisor (crash counter + backoff + quarantine, prod wiring open); deploy pipeline ready (compose + GHCR + SSH, needs domain + secrets + first real run). Merged: typecheck clean, gateway 143 + web 483 green, 0 failed. Founder review next.
+All debts closed except 6 tracked opens (KI-014…KI-019). Today: debt wave (D-126) + supervisor on duty (D-127) + builder real model call via @corvus/ai (D-128, live-proven $0.0035/spec) + first commits (d8dcafa, 1248ccc, 13ad664 — tree clean) + full doc audit (stale claims fixed, 06/07/08/05 trued). Merged: typecheck clean, ai 34 + gateway 162 + web 451 green, 0 failed. Next: dashboard progress wiring (KI-014), then demo window — on founder go. Doc audit 2026-09-15 — 12 findings fixed (list in D-128 wave notes).
 
 Mock-debt wave DONE (D-124): dead buttons wired to real APIs (gallery fork/list, detail publish/rollback/invite/preflight/simulate/draft+patch, interview start/answer, rail logout), Upgrade honest-disabled, footer delinked, vote route prod-guarded. Full suite green (436+), all routes live 200. Founder review next.
 

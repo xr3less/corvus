@@ -32,8 +32,8 @@ One subsection per stage: input, output, mechanism, failure handling.
 
 - **Input:** approved behavior-spec draft.
 - **Output:** tested bot revision + migrated user data, running under supervision.
-- **How:** builder lane (wiro `glm/5-2` per D-026; Flash off-wiro after balance) generates Discord.js; sandbox gate (lint + auto-fix); per-bot PERSISTENT database (XP, warnings, economy balances, configs) that survives restarts, updates, and redeploys — data loss on restart is a launch-blocking defect class (founder directive D-007, proven by Wave C kill/storm tests); supervised runtime catches errors silently, retries/fixes in background, restarts without downtime — the user never sees a technical stack trace and never pays for platform-failure retries.
-- **Failure modes:** broken generation -> free retry (not billed); runtime error -> silent catch + fix + resume, plain-language notice only if user action needed; restart -> state reloaded from persistent DB, zero XP/record loss.
+- **How:** builder lane (wiro `glm/5-2` per D-026; Flash off-wiro after balance) drafts versioned behavior-spec patches (fenced JSON, parseSpec-validated; brief-to-draft worker with ai_spend metering, D-128); sandbox lint/auto-fix gate OPEN (not built); per-bot PERSISTENT database (XP, warnings, economy balances, configs) that survives restarts, updates, and redeploys — data loss on restart is a launch-blocking defect class (founder directive D-007, proven by Wave C kill/storm tests); supervised runtime catches errors silently, retries/fixes in background, restarts without downtime — the user never sees a technical stack trace and never pays for platform-failure retries.
+- **Failure modes:** empty provider response -> free retry (not billed); billable response, even unparseable -> spend recorded + run failed honestly (D-128); runtime error -> silent catch + fix + resume, plain-language notice only if user action needed; restart -> state reloaded from persistent DB, zero XP/record loss.
 - **Cost:** covered by allowance model; platform failures cost the user $0.
 
 ### Stage 3 — Preview (live demo window + simulator, pre-install)
@@ -55,15 +55,15 @@ Builder runs + deploys are ASYNC with live progress (queued → generating → s
 
 > Costs verified live 2026-09-07; swap risk handled by the provider ROUTER (D-021) — no provider SDKs anywhere, so swapping is config, not rewrite.
 
-| Provider | Used for | Cost | Lock-in if swapped |
-|---|---|---|---|
-| wiro.ai gateway | builder (glm/5-2) + persona (grok-4-1-fast) + standby lanes | $170 sunk ≈ 3,400 realistic builds; then PAYG per run | none (OpenAI-compatible baseURL+key) |
-| OpenRouter / api.z.ai | GLM-5.3-Flash route | ~$0.0055/run list | none (same interface) |
-| DeepSeek direct | cheapest fallback ($0.14/$0.28) | per run | none |
-| Anthropic direct | Sonnet quality fallback | $3/$15 conservative | none |
-| Creem.io (MoR) | subs + refill packs + trials | 3.9% + $0.40/txn | MEDIUM — customer records live there; export before any move; Paddle hot backup |
-| Contabo (interim) / Hetzner (target) | compute | ~€5.50 / ~€9/mo | LOW — Compose re-deploy migrates |
-| Discord | OAuth + gateway + invites | $0 | PLATFORM RISK (not lock-in): intents policy, 1h global command propagation, token-ban blast radius — mitigated per D-016 gotcha handling |
+| Provider                             | Used for                                                    | Cost                                                  | Lock-in if swapped                                                                                                                       |
+| ------------------------------------ | ----------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| wiro.ai gateway                      | builder (glm/5-2) + persona (grok-4-1-fast) + standby lanes | $170 sunk ≈ 3,400 realistic builds; then PAYG per run | none (OpenAI-compatible baseURL+key)                                                                                                     |
+| OpenRouter / api.z.ai                | GLM-5.3-Flash route                                         | ~$0.0055/run list                                     | none (same interface)                                                                                                                    |
+| DeepSeek direct                      | cheapest fallback ($0.14/$0.28)                             | per run                                               | none                                                                                                                                     |
+| Anthropic direct                     | Sonnet quality fallback                                     | $3/$15 conservative                                   | none                                                                                                                                     |
+| Creem.io (MoR)                       | subs + refill packs + trials                                | 3.9% + $0.40/txn                                      | MEDIUM — customer records live there; export before any move; Paddle hot backup                                                          |
+| Contabo (interim) / Hetzner (target) | compute                                                     | ~€5.50 / ~€9/mo                                       | LOW — Compose re-deploy migrates                                                                                                         |
+| Discord                              | OAuth + gateway + invites                                   | $0                                                    | PLATFORM RISK (not lock-in): intents policy, 1h global command propagation, token-ban blast radius — mitigated per D-016 gotcha handling |
 
 ---
 
