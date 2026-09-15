@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus settings simple preview: plan and workspace cards. Example data only.">
+
+  <!-- Tailwind CSS CDN (sandbox only) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Fonts: Geist + Geist Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (ISC license, free) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --pln-bg: #000000;
+      --pln-card: #0d0d10;
+      --pln-card2: #111114;
+      --pln-line: #1c1c20;
+      --pln-line-soft: #2a2a30;
+      --pln-fg: #ffffff;
+      --pln-body: #c9d1d9;
+      --pln-muted: #8a8a93;
+      --pln-focus: #3cc0ae;
+      --pln-pass: #22C55E;
+      --pln-warn: #f59e0b;
+    }
+    html { background: var(--pln-bg); }
+    body {
+      margin: 0;
+      background: var(--pln-bg);
+      color: var(--pln-fg);
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color-scheme: dark;
+    }
+    .pln-mono { font-family: 'Geist Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .pln-strip { margin: 0; text-align: center; font-size: 12px; padding: 8px 16px; color: #8a8a93; border-bottom: 1px solid #1c1c20; background: #0d0d10; }
+    .pln-shell { display: flex; min-height: 100vh; background: #000000; }
+    .pln-rail { width: 240px; flex: none; background: #000000; border-right: 1px solid var(--pln-line); padding: 16px 12px; display: flex; flex-direction: column; gap: 16px; }
+    .pln-workspace { display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-width: 0; }
+    .pln-avatar { width: 28px; height: 28px; flex: none; border-radius: 50%; background: #262626; color: #fafafa; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+    .pln-workspace-name { font-size: 14px; font-weight: 500; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pln-pro-pill { margin-left: auto; flex: none; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: #111111; color: var(--pln-body); }
+    .pln-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .pln-nav-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border: none; border-radius: 999px; background: transparent; color: var(--pln-muted); font: inherit; font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; text-decoration: none; transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-nav-item:hover { background: #111111; color: #ffffff; }
+    .pln-nav-item[aria-current="page"] { background: #262626; color: #fafafa; }
+    .pln-nav-item svg { width: 14px; height: 14px; flex: none; }
+    .pln-rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--pln-line); padding: 16px 8px 0; }
+    .pln-credits { margin: 0; color: var(--pln-body); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .pln-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .pln-meter-fill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+    .pln-upgrade { align-self: flex-start; padding: 6px 16px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: #262626; color: #fafafa; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .pln-upgrade:hover { background: #111111; border-color: var(--pln-muted); }
+    .pln-main { flex: 1; min-width: 0; padding: 32px 32px 48px; max-width: 1600px; width: 100%; }
+    .pln-title { margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em; color: #ffffff; }
+    .pln-sub { margin: 6px 0 0; font-size: 14px; line-height: 20px; color: var(--pln-muted); }
+    .pln-search { margin-top: 20px; max-width: 420px; height: 40px; width: 100%; padding: 0 16px; border-radius: 999px; border: 1px solid var(--pln-line); background: #111111; color: #ffffff; font: inherit; font-size: 14px; transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-search::placeholder { color: var(--pln-muted); }
+    .pln-search:hover { border-color: var(--pln-line-soft); }
+    .pln-filters { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .pln-filter { display: inline-flex; align-items: center; font: inherit; font-size: 12px; font-weight: 500; padding: 4px 14px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: transparent; color: var(--pln-body); cursor: pointer; transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-filter:hover { background: #111111; color: #ffffff; }
+    .pln-filter[aria-pressed="true"] { background: #262626; color: #fafafa; border-color: var(--pln-line-soft); }
+    .pln-grid { margin-top: 20px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .pln-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .pln-plans { margin-top: 20px; display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .pln-price { margin: 0; font-size: 24px; line-height: 30px; font-weight: 600; color: #ffffff; }
+    .pln-card { background: var(--pln-card); border: 1px solid var(--pln-line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .pln-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pln-pill { display: inline-flex; align-items: center; flex: none; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: transparent; color: var(--pln-body); white-space: nowrap; }
+    .pln-pill-cat { color: var(--pln-muted); }
+    .pln-pill-green { color: var(--pln-pass); border-color: rgba(34, 197, 94, 0.4); }
+    .pln-pill-warn { color: var(--pln-warn); border-color: rgba(245, 158, 11, 0.4); }
+    .pln-tile { width: 40px; height: 40px; border-radius: 12px; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fafafa; background: var(--pln-card2); border: 1px solid var(--pln-line); }
+    .pln-card-title { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; color: #ffffff; }
+    .pln-meta { margin: 0; font-size: 14px; line-height: 20px; color: var(--pln-body); }
+    .pln-last { margin: 0; font-size: 13px; line-height: 20px; color: var(--pln-muted); }
+    .pln-label { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; color: #ffffff; }
+    .pln-use { display: inline-flex; align-items: center; justify-content: center; width: 100%; margin-top: auto; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: transparent; color: #fafafa; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-use:hover { background: #111111; border-color: var(--pln-muted); }
+    .pln-action { padding: 6px 16px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: transparent; color: #fafafa; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-action:hover { background: #111111; border-color: var(--pln-muted); }
+    .pln-empty { margin-top: 20px; padding: 32px 24px; background: var(--pln-card); border: 1px solid var(--pln-line); border-radius: 16px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+    .pln-empty-text { margin: 0; font-size: 14px; color: var(--pln-muted); }
+    .pln-clear { padding: 6px 16px; border-radius: 999px; border: 1px solid var(--pln-line-soft); background: transparent; color: #fafafa; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .pln-clear:hover { background: #111111; border-color: var(--pln-muted); }
+    .pln-back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--pln-muted); text-decoration: none; transition: color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-back:hover { color: #ffffff; }
+    .pln-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pln-head-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+    .pln-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .pln-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--pln-line); font-size: 14px; line-height: 20px; }
+    .pln-row:last-child { border-bottom: none; }
+    .pln-row-text { color: var(--pln-body); flex: 1; min-width: 0; }
+    .pln-row-time { color: var(--pln-muted); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .pln-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .pln-dot-pass { background: var(--pln-pass); }
+    .pln-dot-warn { background: var(--pln-warn); }
+    .pln-q { margin: 0; color: var(--pln-muted); font-size: 13px; line-height: 20px; font-weight: 500; }
+    .pln-a { margin: 0; color: #ffffff; font-size: 15px; line-height: 24px; font-weight: 500; }
+    .pln-composer { margin-top: 20px; display: flex; align-items: center; gap: 8px; max-width: 800px; }
+    .pln-input { flex: 1; min-width: 0; height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--pln-line); background: #111111; color: #ffffff; font: inherit; font-size: 14px; transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-input::placeholder { color: var(--pln-muted); }
+    .pln-input:hover { border-color: var(--pln-line-soft); }
+    .pln-send { flex: none; height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid #ffffff; background: #ffffff; color: #000000; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .pln-send:hover { background: #c9d1d9; border-color: #c9d1d9; }
+    .pln-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .pln-shell button:focus-visible, .pln-shell input:focus-visible, .pln-shell a:focus-visible { outline: 2px solid var(--pln-focus); outline-offset: 2px; }
+    @media (max-width: 900px) {
+      .pln-shell { flex-direction: column; }
+      .pln-rail { width: auto; border-right: none; border-bottom: 1px solid var(--pln-line); }
+      .pln-rail-foot { margin-top: 0; }
+      .pln-main { padding: 24px 16px 40px; }
+      .pln-grid { grid-template-columns: 1fr; }
+      .pln-plans { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Preview strip -->
+  <p class="pln-strip pln-mono">Design preview - example data.</p>
+
+  <div class="pln-shell">
+
+    <!-- Left rail -->
+    <nav aria-label="Primary" class="pln-rail">
+      <div class="pln-workspace">
+        <span aria-hidden="true" class="pln-avatar">M</span>
+        <span class="pln-workspace-name">My server</span>
+        <span class="pln-pro-pill">Pro</span>
+      </div>
+
+      <ul class="pln-nav-list">
+        <li><a class="pln-nav-item" href="plain-bots.html"><i data-lucide="bot" aria-hidden="true"></i>Bots</a></li>
+        <li><a class="pln-nav-item" href="templates-simple.html"><i data-lucide="layout-template" aria-hidden="true"></i>Templates</a></li>
+        <li><a class="pln-nav-item" href="plain-interview.html"><i data-lucide="messages-square" aria-hidden="true"></i>Interview</a></li>
+        <li><a class="pln-nav-item" href="plain-settings.html" aria-current="page"><i data-lucide="settings" aria-hidden="true"></i>Settings</a></li>
+      </ul>
+
+      <div class="pln-rail-foot">
+        <p class="pln-credits pln-mono">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="pln-meter">
+          <div class="pln-meter-fill"></div>
+        </div>
+        <button type="button" class="pln-upgrade" data-pln-dead title="Preview only — upgrades nothing">Upgrade</button>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="pln-main">
+      <h1 class="pln-title">Settings</h1>
+      <p class="pln-sub">Plan and workspace.</p>
+
+      <div class="pln-plans">
+        <div class="pln-card">
+          <div class="pln-card-top">
+            <p class="pln-label">Trial</p>
+            <span class="pln-pill">Current plan</span>
+          </div>
+          <p class="pln-price pln-mono">$0</p>
+          <p class="pln-meta">100 credits · 1 bot · 1 server · 3 days</p>
+          <button type="button" class="pln-action" style="margin-top:auto; align-self:flex-start" data-pln-dead title="Preview only — you are on this plan">Current plan</button>
+        </div>
+        <div class="pln-card">
+          <div class="pln-card-top">
+            <p class="pln-label">Pro</p>
+          </div>
+          <p class="pln-price pln-mono">$10/mo</p>
+          <p class="pln-meta">2000 credits · 2 bots · 5 servers</p>
+          <button type="button" class="pln-action" style="margin-top:auto; align-self:flex-start" data-pln-dead title="Preview only — upgrades nothing">Upgrade</button>
+        </div>
+        <div class="pln-card">
+          <div class="pln-card-top">
+            <p class="pln-label">Studio</p>
+          </div>
+          <p class="pln-price pln-mono">$29/mo</p>
+          <p class="pln-meta">6000 credits · 8 bots · 100 servers</p>
+          <button type="button" class="pln-action" style="margin-top:auto; align-self:flex-start" data-pln-dead title="Preview only — upgrades nothing">Upgrade</button>
+        </div>
+      </div>
+
+      <div class="pln-stack">
+        <div class="pln-card">
+          <p class="pln-meta">Workspace: My server</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-pln-dead]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.preventDefault(); });
+    });
+    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  </script>
+</body>
+</html>

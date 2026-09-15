@@ -1,0 +1,12 @@
+# Build outputs and generated files are never formatted.
+# (Workspace-owned per D-028: prettier resolves .prettierignore from the
+# workspace cwd, so each package carries its own. Mirrors eslint ignores.)
+.next/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+# Quarantined verbatim reference (D-058): byte-identical harvest, never reformatted.
+public/clone-pryzm/

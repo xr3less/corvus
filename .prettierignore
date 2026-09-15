@@ -1,0 +1,10 @@
+# Build outputs and generated files are never formatted.
+# (Mirrors the eslint ignores in eslint.config.mjs — same backstop rule per D-029:
+# reviewers may build, but build output must never be left scannable by a gate.)
+.next/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts

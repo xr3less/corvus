@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus templates simple preview: rail, search, uniform starter cards. Example data only.">
+
+  <!-- Tailwind CSS CDN (sandbox only) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Fonts: Geist + Geist Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (ISC license, free) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --uxs-bg: #000000;
+      --uxs-card: #0d0d10;
+      --uxs-card2: #111114;
+      --uxs-line: #1c1c20;
+      --uxs-line-soft: #2a2a30;
+      --uxs-fg: #ffffff;
+      --uxs-body: #c9d1d9;
+      --uxs-muted: #8a8a93;
+      --uxs-focus: #3cc0ae;
+      --uxs-pass: #22C55E;
+    }
+    html { background: var(--uxs-bg); }
+    body {
+      background: var(--uxs-bg);
+      color: var(--uxs-fg);
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color-scheme: dark;
+    }
+    .uxs-mono { font-family: 'Geist Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .uxs-shell { display: flex; min-height: 100vh; background: #000000; }
+    .uxs-rail {
+      width: 240px; flex: none;
+      background: #000000;
+      border-right: 1px solid var(--uxs-line);
+      padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .uxs-workspace { display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-width: 0; }
+    .uxs-avatar {
+      width: 28px; height: 28px; flex: none; border-radius: 50%;
+      background: #262626; color: #fafafa;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+    }
+    .uxs-workspace-name {
+      font-size: 14px; font-weight: 500; color: #ffffff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .uxs-pro-pill {
+      margin-left: auto; flex: none;
+      font-size: 12px; font-weight: 500;
+      padding: 2px 10px; border-radius: 999px;
+      border: 1px solid var(--uxs-line-soft);
+      background: #111111; color: var(--uxs-body);
+    }
+    .uxs-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .uxs-nav-item {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 8px 12px; border: none; border-radius: 999px;
+      background: transparent; color: var(--uxs-muted);
+      font: inherit; font-size: 14px; font-weight: 500; text-align: left; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .uxs-nav-item:hover { background: #111111; color: #ffffff; }
+    .uxs-nav-item[aria-current="page"] { background: #262626; color: #fafafa; }
+    .uxs-nav-item svg { width: 14px; height: 14px; flex: none; }
+    .uxs-rail-foot {
+      margin-top: auto; display: flex; flex-direction: column; gap: 8px;
+      border-top: 1px solid var(--uxs-line); padding: 16px 8px 0;
+    }
+    .uxs-credits { margin: 0; color: var(--uxs-body); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .uxs-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .uxs-meter-fill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+    .uxs-upgrade {
+      align-self: flex-start; padding: 6px 16px; border-radius: 999px;
+      border: 1px solid var(--uxs-line-soft); background: #262626; color: #fafafa;
+      font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .uxs-upgrade:hover { background: #111111; border-color: var(--uxs-muted); }
+    .uxs-main { flex: 1; min-width: 0; padding: 32px 32px 48px; max-width: 1600px; width: 100%; }
+    .uxs-title { margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em; color: #ffffff; }
+    .uxs-sub { margin: 6px 0 0; font-size: 14px; line-height: 20px; color: var(--uxs-muted); }
+    .uxs-search {
+      margin-top: 20px; max-width: 420px; height: 40px; width: 100%;
+      padding: 0 16px; border-radius: 999px;
+      border: 1px solid var(--uxs-line); background: #111111; color: #ffffff;
+      font: inherit; font-size: 14px;
+      transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .uxs-search::placeholder { color: var(--uxs-muted); }
+    .uxs-search:hover { border-color: var(--uxs-line-soft); }
+    .uxs-grid {
+      margin-top: 20px;
+      display: grid; gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    .uxs-card {
+      background: var(--uxs-card);
+      border: 1px solid var(--uxs-line);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .uxs-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .uxs-pill {
+      display: inline-flex; align-items: center; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid var(--uxs-line-soft);
+      background: transparent; color: var(--uxs-body); white-space: nowrap;
+    }
+    .uxs-pill-cat { color: var(--uxs-muted); }
+    .uxs-pill-green { color: var(--uxs-pass); border-color: rgba(34, 197, 94, 0.4); }
+    .uxs-tile {
+      width: 40px; height: 40px; border-radius: 12px; flex: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 600; color: #fafafa;
+      background: var(--uxs-card2); border: 1px solid var(--uxs-line);
+    }
+    .uxs-eyebrow { margin: 0; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; color: var(--uxs-muted); }
+    .uxs-card-title { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; color: #ffffff; }
+    .uxs-card-desc {
+      margin: 0; font-size: 14px; line-height: 20px; color: var(--uxs-body);
+      min-height: 40px;
+    }
+    .uxs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .uxs-chip {
+      display: inline-flex; align-items: center; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid var(--uxs-line);
+      background: var(--uxs-card2); color: var(--uxs-muted); white-space: nowrap;
+    }
+    .uxs-use {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; margin-top: auto; padding: 8px 16px; border-radius: 999px;
+      border: 1px solid var(--uxs-line-soft); background: transparent; color: #fafafa;
+      font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .uxs-use:hover { background: #111111; border-color: var(--uxs-muted); }
+    .uxs-empty {
+      margin-top: 20px; padding: 32px 24px;
+      background: var(--uxs-card); border: 1px solid var(--uxs-line); border-radius: 16px;
+      display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+    }
+    .uxs-empty-text { margin: 0; font-size: 14px; color: var(--uxs-muted); }
+    .uxs-clear {
+      padding: 6px 16px; border-radius: 999px;
+      border: 1px solid var(--uxs-line-soft); background: transparent; color: #fafafa;
+      font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .uxs-clear:hover { background: #111111; border-color: var(--uxs-muted); }
+    .uxs-shell button:focus-visible, .uxs-shell input:focus-visible, .uxs-shell a:focus-visible {
+      outline: 2px solid var(--uxs-focus); outline-offset: 2px;
+    }
+    @media (max-width: 900px) {
+      .uxs-shell { flex-direction: column; }
+      .uxs-rail { width: auto; border-right: none; border-bottom: 1px solid var(--uxs-line); }
+      .uxs-rail-foot { margin-top: 0; }
+      .uxs-main { padding: 24px 16px 40px; }
+      .uxs-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Preview strip -->
+  <p class="uxs-mono" style="margin:0; text-align:center; font-size:12px; padding:8px 16px; color:#8a8a93; border-bottom:1px solid #1c1c20; background:#0d0d10;">
+    Design preview - example data.
+  </p>
+
+  <div class="uxs-shell">
+
+    <!-- Left rail -->
+    <nav aria-label="Primary" class="uxs-rail">
+      <div class="uxs-workspace">
+        <span aria-hidden="true" class="uxs-avatar">M</span>
+        <span class="uxs-workspace-name">My server</span>
+        <span class="uxs-pro-pill">Pro</span>
+      </div>
+
+      <ul class="uxs-nav-list">
+        <li>
+          <a class="uxs-nav-item" href="plain-bots.html" style="text-decoration:none">
+            <i data-lucide="bot" aria-hidden="true"></i>Bots
+          </a>
+        </li>
+        <li>
+          <a class="uxs-nav-item" href="templates-simple.html" aria-current="page" style="text-decoration:none">
+            <i data-lucide="layout-template" aria-hidden="true"></i>Templates
+          </a>
+        </li>
+        <li>
+          <a class="uxs-nav-item" href="plain-interview.html" style="text-decoration:none">
+            <i data-lucide="messages-square" aria-hidden="true"></i>Interview
+          </a>
+        </li>
+        <li>
+          <a class="uxs-nav-item" href="plain-settings.html" style="text-decoration:none">
+            <i data-lucide="settings" aria-hidden="true"></i>Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="uxs-rail-foot">
+        <p class="uxs-credits uxs-mono">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="uxs-meter">
+          <div class="uxs-meter-fill"></div>
+        </div>
+        <button type="button" class="uxs-upgrade" data-uxs-dead>Upgrade</button>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="uxs-main" id="uxs-main">
+      <h1 class="uxs-title">Templates</h1>
+      <p class="uxs-sub">8 starters. Pick one, make it yours.</p>
+
+      <label for="uxs-search" class="uxs-mono" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">Search templates</label>
+      <input id="uxs-search" type="search" class="uxs-search" placeholder="Search templates…" autocomplete="off">
+
+      <div id="uxs-grid" class="uxs-grid" role="list" aria-label="Template gallery"></div>
+
+      <div id="uxs-empty" class="uxs-empty" hidden>
+        <p class="uxs-empty-text">No templates match this search.</p>
+        <button type="button" id="uxs-clear" class="uxs-clear">Clear search</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var uxsTemplates = [
+      { name: 'Welcome Wagon', category: 'welcome', desc: 'Post a friendly welcome message naming the new member within a minute of joining.', chips: ['welcome', 'naming the new member', 'within a minute'] },
+      { name: 'Mod Shield', category: 'moderation', desc: 'Delete messages with server-banned words and warn the author privately on first offense.', chips: ['moderation', 'banned words', 'warn privately'] },
+      { name: 'Ticket Desk', category: 'tickets', desc: 'Post a support panel with a button so members open a private ticket with one click.', chips: ['tickets', 'support panel', 'one click'] },
+      { name: 'Level Lounge', category: 'leveling', desc: 'Award experience for regular chat with a short cooldown so spam never farms levels.', chips: ['leveling', 'regular chat', 'cooldown'] },
+      { name: 'Role Reactor', category: 'reaction-roles', desc: 'Post a role-picker message where reacting with an emoji grants the matching role.', chips: ['reaction-roles', 'role-picker', 'matching role'] },
+      { name: 'Mod Log', category: 'logging', desc: 'Record edited and deleted messages with author, channel, and content for review.', chips: ['logging', 'edited and deleted', 'author and channel'] },
+      { name: 'Giveaway Grove', category: 'giveaways', desc: 'Start giveaways with a prize, duration, and winner count, then draw fairly at the end.', chips: ['giveaways', 'prize and duration', 'winner count'] },
+      { name: 'Coin Cellar', category: 'economy', desc: 'Grant coins for regular chat activity with a cooldown so idle spam never earns.', chips: ['economy', 'regular chat', 'cooldown'] }
+    ];
+
+    var uxsQuery = '';
+
+    function uxsFiltered() {
+      var q = uxsQuery.trim().toLowerCase();
+      if (!q) return uxsTemplates;
+      return uxsTemplates.filter(function (t) {
+        return t.name.toLowerCase().indexOf(q) !== -1 ||
+          t.desc.toLowerCase().indexOf(q) !== -1 ||
+          t.category.toLowerCase().indexOf(q) !== -1;
+      });
+    }
+
+    function uxsRender() {
+      var grid = document.getElementById('uxs-grid');
+      var empty = document.getElementById('uxs-empty');
+      var list = uxsFiltered();
+      grid.innerHTML = '';
+      list.forEach(function (t) {
+        var card = document.createElement('div');
+        card.className = 'uxs-card';
+        card.setAttribute('role', 'listitem');
+
+        var top = document.createElement('div');
+        top.className = 'uxs-card-top';
+        var kind = document.createElement('span');
+        kind.className = 'uxs-pill';
+        kind.textContent = 'Template';
+        var cat = document.createElement('span');
+        cat.className = 'uxs-pill uxs-pill-cat' + (t.category === 'moderation' ? ' uxs-pill-green' : '');
+        cat.textContent = t.category;
+        top.appendChild(kind);
+        top.appendChild(cat);
+        card.appendChild(top);
+
+        var tile = document.createElement('span');
+        tile.className = 'uxs-tile';
+        tile.setAttribute('aria-hidden', 'true');
+        tile.textContent = t.name.charAt(0);
+        card.appendChild(tile);
+
+        var title = document.createElement('h2');
+        title.className = 'uxs-card-title';
+        title.textContent = t.name;
+        card.appendChild(title);
+
+        var desc = document.createElement('p');
+        desc.className = 'uxs-card-desc';
+        desc.textContent = t.desc;
+        card.appendChild(desc);
+
+        var chips = document.createElement('div');
+        chips.className = 'uxs-chips';
+        t.chips.forEach(function (c) {
+          var chip = document.createElement('span');
+          chip.className = 'uxs-chip uxs-mono';
+          chip.textContent = c;
+          chips.appendChild(chip);
+        });
+        card.appendChild(chips);
+
+        var btn = document.createElement('a');
+        btn.href = '#';
+        btn.className = 'uxs-use';
+        btn.setAttribute('data-uxs-dead', '');
+        btn.setAttribute('title', 'Preview only — installs nothing');
+        btn.textContent = 'Use this template';
+        card.appendChild(btn);
+
+        grid.appendChild(card);
+      });
+      if (list.length === 0) {
+        grid.style.display = 'none';
+        empty.hidden = false;
+      } else {
+        grid.style.display = '';
+        empty.hidden = true;
+      }
+    }
+
+    var uxsSearch = document.getElementById('uxs-search');
+    uxsSearch.addEventListener('input', function () {
+      uxsQuery = uxsSearch.value;
+      uxsRender();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.activeElement === uxsSearch) {
+        uxsSearch.value = '';
+        uxsQuery = '';
+        uxsRender();
+      }
+    });
+    document.getElementById('uxs-clear').addEventListener('click', function () {
+      uxsSearch.value = '';
+      uxsQuery = '';
+      uxsRender();
+      uxsSearch.focus();
+    });
+
+    document.querySelectorAll('[data-uxs-dead]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.preventDefault(); });
+    });
+
+    uxsRender();
+    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empty state — 0 credits and day 4 preview</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  }
+  .uxd-preview {
+    padding: 10px 24px;
+    background: #0d0d10;
+    border-bottom: 1px solid #1c1c20;
+    color: #8a8a93;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .uxd-preview strong { color: #c9d1d9; font-weight: 600; }
+  .uxd-wrap { max-width: 720px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .uxd-kicker { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; font-weight: 500; }
+  .uxd-title { margin: 0; font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; }
+  .uxd-sub { margin: 0; color: #c9d1d9; font-size: 14px; line-height: 20px; }
+  .uxd-card {
+    background: #0d0d10;
+    border: 1px solid #1c1c20;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .uxd-card-title { margin: 0; font-size: 15px; line-height: 24px; font-weight: 600; }
+  .uxd-body { margin: 0; color: #c9d1d9; font-size: 14px; line-height: 20px; }
+  .uxd-countline { margin: 0; color: #c9d1d9; font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .uxd-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+  .uxd-meter-fill { height: 100%; width: 0%; border-radius: inherit; background: #262626; }
+  .uxd-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; line-height: 20px; font-weight: 500;
+    padding: 3px 12px 3px 10px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #111111; color: #f59e0b;
+    align-self: flex-start;
+  }
+  .uxd-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+  .uxd-list { margin: 0; padding-left: 18px; color: #c9d1d9; font-size: 14px; line-height: 22px; font-variant-numeric: tabular-nums; }
+  .uxd-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .uxd-btn {
+    padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #ffffff; background: #ffffff; color: #000000;
+    font: inherit; font-size: 14px; line-height: 20px; font-weight: 500;
+    cursor: not-allowed; opacity: 0.65;
+  }
+  .uxd-btn-ghost {
+    padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: transparent; color: #fafafa;
+    font: inherit; font-size: 14px; line-height: 20px; font-weight: 500;
+    cursor: not-allowed; opacity: 0.65;
+  }
+  .uxd-link { color: #c9d1d9; font-size: 14px; line-height: 20px; text-underline-offset: 3px; }
+  .uxd-foot { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; padding-bottom: 24px; }
+  @media (max-width: 900px) { .uxd-title { font-size: 24px; line-height: 28px; } }
+</style>
+</head>
+<body>
+  <div class="uxd-preview"><strong>Preview.</strong> Sandbox only, nothing here charges or changes your account. Every number matches Docs 02_strategy.md or dashboard page.tsx. Buttons are dead on purpose.</div>
+
+  <main class="uxd-wrap">
+    <p class="uxd-kicker">Money clarity, step 2 of 2</p>
+    <h1 class="uxd-title">0 credits. AI paused. Your bot stays online.</h1>
+    <p class="uxd-sub">This is the soft-cap. Nothing broke, nothing extra was charged, and your bot keeps doing its everyday work.</p>
+
+    <section class="uxd-card" aria-label="Zero credit balance">
+      <span class="uxd-pill"><span class="uxd-dot" aria-hidden="true"></span>AI paused, bot online</span>
+      <p class="uxd-countline">Credits 0 of 100</p>
+      <div class="uxd-meter" role="img" aria-label="0 of 100 trial credits left"><div class="uxd-meter-fill"></div></div>
+      <p class="uxd-body">Paused: builder runs at about 1.1 credits per run, persona replies at about 0.075 per message, image generation.</p>
+      <p class="uxd-body">Still running at 0 credits: welcome messages, reaction roles, automod actions, XP, tickets, logs.</p>
+    </section>
+
+    <section class="uxd-card" aria-label="Refill option">
+      <h2 class="uxd-card-title">Wake the AI with a refill</h2>
+      <p class="uxd-body">$5 pack is 1000 credits with 90-day expiry. About 900 builder runs, or about 13k persona replies, or a mix of the two. Credits land at once and the AI resumes.</p>
+      <div class="uxd-actions">
+        <button class="uxd-btn" type="button" disabled aria-disabled="true">Refill, $5 for 1000 credits</button>
+        <button class="uxd-btn-ghost" type="button" disabled aria-disabled="true">Compare Pro $10 and Studio $29</button>
+      </div>
+    </section>
+
+    <section class="uxd-card" aria-label="Trial end, day 4">
+      <h2 class="uxd-card-title">If the trial itself ends on day 4</h2>
+      <ul class="uxd-list">
+        <li>Pay for Pro $10 or Studio $29, or your bot sleeps</li>
+        <li>Sleep keeps your data 12 months, and it wakes on upgrade</li>
+        <li>Nothing is ever deleted for running out</li>
+        <li>No card was taken during the trial, so sleep charges nothing</li>
+      </ul>
+      <div class="uxd-actions">
+        <button class="uxd-btn" type="button" disabled aria-disabled="true">Upgrade to Pro, $10 per month</button>
+        <button class="uxd-btn-ghost" type="button" disabled aria-disabled="true">Upgrade to Studio, $29 per month</button>
+      </div>
+    </section>
+
+    <p class="uxd-sub"><a class="uxd-link" href="ux-d-money.html">Back to step 1 of 2: trial countdown, per-action costs, upgrade comparison</a></p>
+    <p class="uxd-foot">Sources: Docs 02_strategy.md refill, soft-cap, day-4 and 12-month rules. Tokens from page.module.backup-2026-09-12.css.</p>
+  </main>
+</body>
+</html>

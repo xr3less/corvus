@@ -1,0 +1,2656 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-black">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corvus Dashboard — My Server Bot Studio</title>
+  <meta name="description" content="Manage your Discord bots, create new automation in plain English, and monitor server health.">
+
+  <!-- Tailwind CSS v4 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Typography: Plus Jakarta Sans for UI/Display, Geist Mono for code/tabular numbers only -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0d0d12;
+      --surface-hover: #14141a;
+      --surface-inner: #16161c;
+      --surface-pill: #222226;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-bright: rgba(255, 255, 255, 0.16);
+      --line-hover: rgba(255, 255, 255, 0.22);
+      --fg: #fafafa;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      selection-background-color: #27272a;
+      selection-color: #ffffff;
+    }
+
+    /* Strict Font Separation: Monospace ONLY for tabular numbers and technical codes */
+    .font-display {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: -0.025em;
+    }
+    .font-mono {
+      font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Premium Surfaces & Tactical Depth Tokens (Linear / Apple Dark Mode Inspired) */
+    .card-surface {
+      background: #0d0d12;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 20px -2px rgba(0, 0, 0, 0.7);
+      border-radius: 20px;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+    .card-surface:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: #121217;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 6px 24px -2px rgba(0, 0, 0, 0.85);
+    }
+
+    .card-surface-subtle, .inner-block {
+      background: #16161c;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+      border-radius: 16px;
+    }
+
+    /* Technical Bento Pattern Overlay & Visualizer Tokens */
+    .bento-pattern {
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 10px);
+      -webkit-mask-image: radial-gradient(ellipse 80% 50% at 100% 0%, #000 70%, transparent 110%);
+      mask-image: radial-gradient(ellipse 80% 50% at 100% 0%, #000 70%, transparent 110%);
+      pointer-events: none;
+    }
+
+    .bento-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    /* Anti-AI-Slop Buttons: NO vertical lift ("buton kalkmasın"), subtle color/border transition only */
+    .btn-primary {
+      background: #fafafa;
+      color: #000000;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 13.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 22px;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      border: 1px solid #fafafa;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-primary:hover {
+      background: #ffffff;
+      opacity: 0.95;
+    }
+
+    .btn-dark {
+      background: #16161c;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      color: var(--fg);
+      font-weight: 500;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 18px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-dark:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      background: #222226;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 9999px;
+      color: var(--fg);
+      font-weight: 500;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 18px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-ghost:hover {
+      border-color: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Sidebar Navigation Pill — Strict 1:1 adherence to user reference */
+    .nav-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #a1a1aa;
+      border: 1px solid transparent;
+      transition: color 0.15s ease, background 0.15s ease;
+      text-decoration: none;
+      width: 100%;
+      cursor: pointer;
+      user-select: none;
+    }
+    .nav-pill:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-pill.active {
+      color: #ffffff;
+      background: #222226;
+      font-weight: 600;
+    }
+    .nav-pill.active i {
+      color: #ffffff;
+    }
+
+    /* Interactive tab view containers */
+    .dashboard-view {
+      display: none;
+    }
+    .dashboard-view.active {
+      display: block;
+      animation: fadeIn 0.18s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Interactive Tactile Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-flex;
+      height: 24px;
+      width: 44px;
+      flex-shrink: 0;
+      cursor: pointer;
+      border-radius: 9999px;
+      border: 2px solid transparent;
+      transition: background-color 0.2s ease-in-out;
+      outline: none;
+    }
+    .toggle-switch.active {
+      background-color: #22c55e;
+    }
+    .toggle-switch.inactive {
+      background-color: #27272a;
+    }
+    .toggle-switch-thumb {
+      pointer-events: none;
+      display: inline-block;
+      height: 20px;
+      width: 20px;
+      transform: translateX(0);
+      border-radius: 9999px;
+      background-color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease-in-out;
+    }
+    .toggle-switch.active .toggle-switch-thumb {
+      transform: translateX(20px);
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Focus accessibility */
+    :focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.35);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body class="h-full bg-black text-[#fafafa]">
+
+  <!-- ==================== APPSHELL LAYOUT ==================== -->
+  <div class="min-h-screen flex">
+
+    <!-- ============ 1. LEFT FIXED SIDEBAR ============ -->
+    <!-- Preserved 1:1 with user reference: 256px fixed, 7 clean pills, credit meter, profile pill -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-[#000000] border-r border-[rgba(255,255,255,0.08)] flex flex-col justify-between -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out">
+      
+      <!-- Upper Section -->
+      <div class="flex flex-col gap-6 p-4">
+        
+        <!-- Top Workspace Header: Avatar [M] + "My server" + Pro Badge -->
+        <div class="flex items-center justify-between px-2 py-1.5">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#16161c] border border-[rgba(255,255,255,0.12)] flex items-center justify-center text-white font-semibold text-[13px] tracking-tight shrink-0">
+              M
+            </div>
+            <span class="font-display font-semibold text-[15px] text-white tracking-tight">My server</span>
+          </div>
+          <span class="bg-[#222226] text-[#a1a1aa] px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide">
+            Pro
+          </span>
+        </div>
+
+        <!-- Navigation Menu List (7 clean pills without badge numbers) -->
+        <nav class="flex flex-col gap-1.5" aria-label="Main Navigation">
+          
+          <!-- 1. Home -->
+          <button type="button" class="nav-pill active" data-tab="home">
+            <i data-lucide="home" class="w-4 h-4 shrink-0"></i>
+            <span>Home</span>
+          </button>
+
+          <!-- 2. Bots -->
+          <button type="button" class="nav-pill" data-tab="bots">
+            <i data-lucide="bot" class="w-4 h-4 shrink-0"></i>
+            <span>Bots</span>
+          </button>
+
+          <!-- 3. Templates -->
+          <button type="button" class="nav-pill" data-tab="templates">
+            <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>
+            <span>Templates</span>
+          </button>
+
+          <!-- 4. Interview -->
+          <button type="button" class="nav-pill" data-tab="interview">
+            <i data-lucide="message-square" class="w-4 h-4 shrink-0"></i>
+            <span>Interview</span>
+          </button>
+
+          <!-- 5. Activity -->
+          <button type="button" class="nav-pill" data-tab="activity">
+            <i data-lucide="activity" class="w-4 h-4 shrink-0"></i>
+            <span>Activity</span>
+          </button>
+
+          <!-- 6. Pre-flight -->
+          <button type="button" class="nav-pill" data-tab="preflight">
+            <i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i>
+            <span>Pre-flight</span>
+          </button>
+
+          <!-- 7. Settings -->
+          <button type="button" class="nav-pill" data-tab="settings">
+            <i data-lucide="settings" class="w-4 h-4 shrink-0"></i>
+            <span>Settings</span>
+          </button>
+
+        </nav>
+      </div>
+
+      <!-- Bottom Region: Minimal Credit Meter + User Profile Pill -->
+      <div class="p-4 border-t border-[rgba(255,255,255,0.08)] flex flex-col gap-4 bg-[#000000]">
+        
+        <!-- Clean Credit Meter -->
+        <div class="px-2 flex flex-col gap-2">
+          <div class="flex items-center justify-between text-[12px]">
+            <span class="text-[#a1a1aa] font-medium">Credits</span>
+            <span class="font-mono text-[12px] text-[#fafafa] font-medium tabular-nums">98 / 100 remaining</span>
+          </div>
+          <div class="h-1 w-full bg-[#16161c] rounded-full overflow-hidden" role="progressbar" aria-valuenow="98" aria-valuemin="0" aria-valuemax="100">
+            <div class="h-full bg-white rounded-full w-[98%]"></div>
+          </div>
+        </div>
+
+        <!-- User Profile Pill -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-[#0d0d12] border border-[rgba(255,255,255,0.08)]">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-[#16161c] border border-[rgba(255,255,255,0.14)] flex items-center justify-center text-xs font-semibold text-white shrink-0">
+              F
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="text-[13px] font-semibold text-white leading-tight truncate">Founder</span>
+              <span class="text-[11px] text-[#71717a] leading-tight truncate">Administrator</span>
+            </div>
+          </div>
+          <button type="button" onclick="switchTab('settings')" class="text-[#71717a] hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5" title="Settings" aria-label="Settings">
+            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- Sidebar Backdrop for Mobile -->
+    <div id="sidebarBackdrop" class="fixed inset-0 z-30 bg-black/70 backdrop-blur-xs hidden lg:hidden"></div>
+
+    <!-- ============ MAIN CONTENT CANVAS ============ -->
+    <div class="flex-1 lg:pl-64 flex flex-col min-w-0 min-h-screen bg-[#000000]">
+      
+      <!-- ============ TOP HEADER ============ -->
+      <header class="sticky top-0 z-20 h-16 shrink-0 bg-[#000000]/90 backdrop-blur-md border-b border-[rgba(255,255,255,0.08)] px-6 sm:px-12 lg:px-16 flex items-center justify-between">
+        
+        <!-- Left: Mobile Menu & Current Context -->
+        <div class="flex items-center gap-4">
+          <button type="button" id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white hover:bg-white/5 transition-colors" aria-label="Toggle navigation menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+
+          <div class="flex items-center gap-3">
+            <span id="currentViewBreadcrumb" class="font-display font-semibold text-[15px] text-white">Home</span>
+            <span class="text-[#3f3f46]">·</span>
+            <div class="inline-flex items-center gap-2 text-xs text-[#a1a1aa]">
+              <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+              <span>Connected to Discord</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="flex items-center gap-3">
+          <button type="button" onclick="switchTab('preflight')" class="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[rgba(255,255,255,0.08)] bg-[#0d0d12] text-[12.5px] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#22c55e]"></i>
+            <span>Server Healthy</span>
+          </button>
+
+          <button type="button" id="openNewBotModal" class="btn-primary py-2 px-4.5 text-xs font-semibold">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>New Bot</span>
+          </button>
+        </div>
+
+      </header>
+
+      <!-- ============ SCROLLABLE TAB VIEWS ============ -->
+      <!-- Spacious Macro Layout: max-w-[1140px], px-6 sm:px-12 lg:px-16, py-12 sm:py-16 -->
+      <main class="flex-1 max-w-[1140px] w-full mx-auto px-6 sm:px-12 lg:px-16 py-12 sm:py-16">
+        
+        <!-- ============================================================== -->
+        <!-- VIEW 1: HOME (DEFAULT) — SPACIOUS MACRO-RHYTHM GAP-16          -->
+        <!-- ============================================================== -->
+        <div id="view-home" class="dashboard-view active flex flex-col gap-16">
+          
+          <!-- 1. Sleek, Minimalist Onboarding Progress Stepper -->
+          <section id="onboardingCard" class="card-surface p-7 sm:p-8 relative transition-all duration-300" aria-label="Server Setup Progress">
+            <button type="button" id="dismissOnboardingBtn" class="absolute top-6 right-6 text-[#71717a] hover:text-white transition-colors p-2 rounded-xl hover:bg-white/5" title="Dismiss onboarding guide" aria-label="Dismiss onboarding guide">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <div class="flex flex-col gap-6 max-w-4xl pr-8">
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white shrink-0">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i>
+                </div>
+                <h2 class="font-display text-base sm:text-lg font-bold text-white tracking-tight">
+                  Get started with your server
+                </h2>
+                <span class="px-3 py-1 rounded-full bg-[#16161c] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] text-xs font-semibold">
+                  2 of 3 completed
+                </span>
+              </div>
+
+              <!-- Hairline progress bar: 66% filled -->
+              <div class="h-1.5 w-full bg-[#16161c] rounded-full overflow-hidden border border-[rgba(255,255,255,0.06)]">
+                <div class="h-full bg-white rounded-full transition-all duration-500 w-[66%]"></div>
+              </div>
+
+              <!-- 3-Item Clean Row -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                <!-- Check 1: Done -->
+                <div class="flex items-center gap-3 p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)]">
+                  <div class="w-6 h-6 rounded-full bg-[#22c55e]/15 border border-[#22c55e]/30 flex items-center justify-center text-[#22c55e] shrink-0">
+                    <i data-lucide="check" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <span class="text-xs font-semibold text-white block truncate">Connect Discord server</span>
+                    <span class="text-[11px] text-[#71717a] block mt-0.5">My server connected</span>
+                  </div>
+                </div>
+
+                <!-- Check 2: Done -->
+                <div class="flex items-center gap-3 p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)]">
+                  <div class="w-6 h-6 rounded-full bg-[#22c55e]/15 border border-[#22c55e]/30 flex items-center justify-center text-[#22c55e] shrink-0">
+                    <i data-lucide="check" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <span class="text-xs font-semibold text-white block truncate">Starter roles & channels</span>
+                    <span class="text-[11px] text-[#71717a] block mt-0.5">14 roles mapped</span>
+                  </div>
+                </div>
+
+                <!-- Check 3: Active Action -->
+                <div class="flex items-center justify-between gap-3 p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.14)]">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-6 h-6 rounded-full border border-dashed border-[#71717a] flex items-center justify-center text-[#71717a] shrink-0">
+                      <span class="w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                    </div>
+                    <span class="text-xs font-semibold text-white truncate">Teach first behavior</span>
+                  </div>
+                  <button type="button" id="openBuilderFromStepperBtn" class="btn-primary text-xs py-1.5 px-3.5 shrink-0">
+                    <span>Open Builder →</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Understated Context -->
+              <div class="text-xs text-[#71717a] flex flex-wrap items-center gap-2 pt-1">
+                <span>In the builder:</span>
+                <span class="text-[#a1a1aa]">auto-role <span class="text-[#22c55e]">✓</span></span>
+                <span>·</span>
+                <span class="text-[#a1a1aa]">security scanner <span class="text-[#22c55e]">✓</span></span>
+                <span>·</span>
+                <span class="text-white font-medium">ready to test live</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. Spacious 4 Quick Metrics Grid -->
+          <section aria-label="Quick Server Metrics">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              <!-- Metric 1: Bots Online -->
+              <div class="card-surface p-7 sm:p-8 flex flex-col justify-between gap-5 relative overflow-hidden">
+                <div class="bento-pattern opacity-25"></div>
+                <div class="flex items-center justify-between relative z-10">
+                  <span class="bento-tag">Fleet Capacity</span>
+                  <div class="w-8 h-8 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white shrink-0">
+                    <i data-lucide="bot" class="w-4 h-4"></i>
+                  </div>
+                </div>
+                <div class="flex items-baseline gap-3 my-1 relative z-10">
+                  <span class="font-mono text-3xl sm:text-4xl font-bold text-white tabular-nums tracking-tight">2 / 3</span>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#22c55e]/15 border border-[#22c55e]/30 text-xs text-[#4ade80] font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse"></span>
+                    <span>Online</span>
+                  </span>
+                </div>
+                <span class="text-xs text-[#71717a] relative z-10">1 slot available in Pro plan</span>
+              </div>
+
+              <!-- Metric 2: Live Behaviors -->
+              <div class="card-surface p-7 sm:p-8 flex flex-col justify-between gap-5 relative overflow-hidden">
+                <div class="flex items-center justify-between relative z-10">
+                  <span class="bento-tag">Automation</span>
+                  <div class="w-8 h-8 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#4ade80] shrink-0">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                  </div>
+                </div>
+                <div class="flex items-baseline gap-3 my-1 relative z-10">
+                  <span class="font-mono text-3xl sm:text-4xl font-bold text-white tabular-nums tracking-tight">8 active</span>
+                  <span class="text-xs text-[#71717a]">in production</span>
+                </div>
+                <span class="text-xs text-[#71717a] relative z-10">Automating roles & moderation</span>
+              </div>
+
+              <!-- Metric 3: Commands Handled -->
+              <div class="card-surface p-7 sm:p-8 flex flex-col justify-between gap-5 relative overflow-hidden">
+                <div class="flex items-center justify-between relative z-10">
+                  <span class="bento-tag">Throughput</span>
+                  <div class="w-8 h-8 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white shrink-0">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                  </div>
+                </div>
+                <div class="flex items-end justify-between gap-3 my-1 relative z-10">
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-mono text-3xl sm:text-4xl font-bold text-white tabular-nums tracking-tight">1,420</span>
+                    <span class="text-xs text-[#71717a]">runs</span>
+                  </div>
+                  <!-- Dynamic Mini Bar-Chart Visualizer (Bento Equalizer) -->
+                  <div class="flex gap-1 items-end h-8 shrink-0 pb-0.5" title="7-day activity trend" aria-label="Activity equalizer">
+                    <div class="w-1.5 bg-white/80 rounded-full h-[20%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[40%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[30%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[65%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[50%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[85%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[70%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[90%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[80%] transition-all"></div>
+                    <div class="w-1.5 bg-white/80 rounded-full h-[100%] transition-all"></div>
+                  </div>
+                </div>
+                <span class="text-xs text-[#71717a] relative z-10">Processed in last 7 days</span>
+              </div>
+
+              <!-- Metric 4: Server Health -->
+              <div class="card-surface p-7 sm:p-8 flex flex-col justify-between gap-5 relative overflow-hidden">
+                <div class="flex items-center justify-between relative z-10">
+                  <span class="bento-tag">Reliability</span>
+                  <div class="w-8 h-8 rounded-full bg-white/10 border border-white/15 text-[#facc15] flex items-center justify-center shrink-0 text-sm font-semibold shadow-xs" title="Optimal Reliability">
+                    ★
+                  </div>
+                </div>
+                <div class="flex items-baseline gap-3 my-1 relative z-10">
+                  <span class="font-mono text-3xl sm:text-4xl font-bold text-white tabular-nums tracking-tight">99.98%</span>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#22c55e]/15 border border-[#22c55e]/30 text-xs text-[#4ade80] font-medium">
+                    <span class="text-[#facc15] font-bold">★</span>
+                    <span>Optimal</span>
+                  </span>
+                </div>
+                <span class="text-xs text-[#71717a] relative z-10">Gateway latency 42ms · Zero drops</span>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 3. Hero Bot Creator: Luxurious Centerpiece with Generous Breathing Room -->
+          <section id="heroPromptSection" class="card-surface p-8 sm:p-12 rounded-3xl relative overflow-hidden" aria-label="Bot Creator">
+            <div class="bento-pattern opacity-30"></div>
+            <div class="max-w-2xl relative z-10">
+              <span class="bento-tag mb-4">
+                <i data-lucide="sparkles" class="w-3 h-3 text-[#22c55e]"></i>
+                Studio AI Engine
+              </span>
+              <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug">
+                What would you like your bot to do?
+              </h1>
+              <p class="text-sm sm:text-base text-[#a1a1aa] mt-2 mb-8 leading-relaxed">
+                Describe your bot in plain words — we'll generate the commands, roles, and setup automatically.
+              </p>
+            </div>
+
+            <!-- Spacious Textarea -->
+            <div class="relative z-10">
+              <label for="homePromptInput" class="sr-only">Describe your bot</label>
+              <textarea 
+                id="homePromptInput" 
+                rows="4" 
+                placeholder="e.g. Welcome new members with a friendly greeting, assign them the Member role upon rule verification, and notify moderators if anyone posts scam links."
+                class="w-full rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] p-5 sm:p-6 text-[15px] leading-relaxed text-[#fafafa] placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(255,255,255,0.28)] resize-none transition-colors duration-150 shadow-inner min-h-[130px]"
+                spellcheck="false"
+              ></textarea>
+            </div>
+
+            <!-- Prompt Chips & Primary Action with Relaxed Spacing -->
+            <div class="mt-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs text-[#71717a] font-medium mr-1">Quick ideas:</span>
+                
+                <button type="button" class="prompt-chip px-4 py-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-xs text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-prompt="Welcome new members with a friendly greeting, give them the Member role when they click verify, and log joins to #welcome-log.">
+                  👋 Welcome & Auto-Role
+                </button>
+                
+                <button type="button" class="prompt-chip px-4 py-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-xs text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-prompt="Block Discord phishing links, stop join bursts during raids, and automatically timeout suspected spammers.">
+                  🛡️ Anti-Spam & Raid Shield
+                </button>
+                
+                <button type="button" class="prompt-chip px-4 py-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-xs text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-prompt="Let members click a button in #support to open a private ticket channel with moderators, with automatic transcripts when closed.">
+                  🎫 Support Ticket System
+                </button>
+              </div>
+
+              <button type="button" id="homeCreateBotBtn" class="btn-primary py-3 px-6 text-sm self-end lg:self-auto shrink-0 shadow-lg">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span>Create Bot</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- 4. Your Bots Fleet: Spacious 4-Card Responsive Grid -->
+          <section aria-label="Your Bots Fleet">
+            <div class="flex items-center justify-between mb-8">
+              <div class="flex items-center gap-3">
+                <h2 class="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">Your Bots</h2>
+                <span class="px-3 py-0.5 rounded-full bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.2)] text-[#4ade80] text-xs font-semibold">
+                  2 Live
+                </span>
+              </div>
+
+              <button type="button" onclick="switchTab('bots')" class="text-xs font-medium text-[#a1a1aa] hover:text-white transition-colors">
+                View all bots →
+              </button>
+            </div>
+
+            <!-- Bot Cards Grid: 3 Rich Bot Cards + 1 Slot Card -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+              
+              <!-- Card 1: Community Guardian -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 relative overflow-hidden" id="botCardGuardian">
+                <div class="bento-pattern opacity-20"></div>
+                <div class="flex flex-col gap-4 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#4ade80] shrink-0">
+                        <i data-lucide="shield" class="w-5 h-5"></i>
+                      </div>
+                      <span class="bento-tag">Primary Shield</span>
+                    </div>
+                    
+                    <!-- Interactive Toggle Switch -->
+                    <div class="flex items-center gap-2.5">
+                      <span class="bot-status-text inline-flex items-center gap-1.5 text-xs text-[#4ade80] font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                        Live
+                      </span>
+                      <button type="button" class="toggle-switch active" role="switch" aria-checked="true" data-bot-name="Community Guardian" onclick="toggleBotSwitch(this, 'Community Guardian', 'botCardGuardian')" title="Toggle Live/Paused">
+                        <span class="toggle-switch-thumb"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 class="font-display text-base sm:text-lg font-bold text-white">Community Guardian</h3>
+                    <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                      3 behaviors: Anti-Raid, Phishing Shield, Welcome sequence.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#71717a]">3,420 protected</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="showToast('Viewing logs for Community Guardian...')" class="btn-ghost text-xs py-1.5 px-3">
+                      Logs
+                    </button>
+                    <button type="button" onclick="showToast('Opening settings for Community Guardian...')" class="btn-dark text-xs py-1.5 px-3">
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: Study Room Helper -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 relative overflow-hidden" id="botCardStudy">
+                <div class="flex flex-col gap-4 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#4ade80] shrink-0">
+                        <i data-lucide="clock" class="w-5 h-5"></i>
+                      </div>
+                      <span class="bento-tag">Productivity</span>
+                    </div>
+                    
+                    <!-- Interactive Toggle Switch -->
+                    <div class="flex items-center gap-2.5">
+                      <span class="bot-status-text inline-flex items-center gap-1.5 text-xs text-[#4ade80] font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                        Live
+                      </span>
+                      <button type="button" class="toggle-switch active" role="switch" aria-checked="true" data-bot-name="Study Room Helper" onclick="toggleBotSwitch(this, 'Study Room Helper', 'botCardStudy')" title="Toggle Live/Paused">
+                        <span class="toggle-switch-thumb"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 class="font-display text-base sm:text-lg font-bold text-white">Study Room Helper</h3>
+                    <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                      2 behaviors: Focus Timers, Voice channel auto-roles.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#71717a]">1,280 focusers</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="showToast('Viewing logs for Study Room Helper...')" class="btn-ghost text-xs py-1.5 px-3">
+                      Logs
+                    </button>
+                    <button type="button" onclick="showToast('Opening settings for Study Room Helper...')" class="btn-dark text-xs py-1.5 px-3">
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3: Night Market Bot (Paused) -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 relative overflow-hidden" id="botCardMarket">
+                <div class="flex flex-col gap-4 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#71717a] shrink-0">
+                        <i data-lucide="moon" class="w-5 h-5"></i>
+                      </div>
+                      <span class="bento-tag">Economy</span>
+                    </div>
+                    
+                    <!-- Interactive Toggle Switch -->
+                    <div class="flex items-center gap-2.5">
+                      <span class="bot-status-text inline-flex items-center gap-1.5 text-xs text-[#71717a] font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#71717a]"></span>
+                        Paused
+                      </span>
+                      <button type="button" class="toggle-switch inactive" role="switch" aria-checked="false" data-bot-name="Night Market Bot" onclick="toggleBotSwitch(this, 'Night Market Bot', 'botCardMarket')" title="Toggle Live/Paused">
+                        <span class="toggle-switch-thumb"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 class="font-display text-base sm:text-lg font-bold text-white">Night Market Bot</h3>
+                    <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                      3 behaviors: XP Rewards, Coin Shop, Level Roles.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#71717a]">890 profiles</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="showToast('Opening editor for Night Market Bot...')" class="btn-ghost text-xs py-1.5 px-3">
+                      Edit
+                    </button>
+                    <button type="button" onclick="toggleBotSwitch(this, 'Night Market Bot', 'botCardMarket')" class="bot-action-btn btn-primary text-xs py-1.5 px-3">
+                      Resume
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 4: Unlock Additional Bot Slot -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 border-dashed border-[rgba(255,255,255,0.14)] bg-[#08080b] relative overflow-hidden">
+                <div class="flex flex-col gap-4 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-dashed border-[rgba(255,255,255,0.15)] flex items-center justify-center text-[#a1a1aa] shrink-0">
+                      <i data-lucide="lock" class="w-5 h-5"></i>
+                    </div>
+                    <span class="bento-tag">Pro Slot 4</span>
+                  </div>
+                  <div>
+                    <h3 class="font-display text-base sm:text-lg font-bold text-white">Unlock Slot</h3>
+                    <p class="text-xs sm:text-sm text-[#71717a] mt-2 leading-relaxed">
+                      Expand your server automation with multi-bot workflows and isolated workers.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#71717a]">Slot 4 available</span>
+                  <button type="button" onclick="showToast('Redirecting to plan upgrade...')" class="btn-dark text-xs py-1.5 px-3.5">
+                    Upgrade Plan
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 5. "Steal an Idea" Community Recipes (Airy & Spacious) -->
+          <section aria-label="Community Inspiration">
+            <div class="mb-8">
+              <span class="text-xs font-semibold text-[#71717a] uppercase tracking-wider block">What other communities are building</span>
+              <h2 class="font-display text-xl sm:text-2xl font-bold text-white tracking-tight mt-1">Steal an idea</h2>
+              <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5">Battle-tested community recipes. Click "Build it" to load directly into your prompt composer.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+              
+              <!-- Idea Card 1: 1v1 Matchmaking Queue -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 relative overflow-hidden">
+                <div class="flex flex-col gap-3 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <span class="bento-tag">Competitive</span>
+                    <span class="text-xs text-[#71717a]">3 behaviors</span>
+                  </div>
+                  <h3 class="font-display text-[15px] sm:text-base font-bold text-white leading-snug mt-1">
+                    “1v1 Matchmaking Queue with Elo ratings & rival records”
+                  </h3>
+                  <p class="text-xs text-[#71717a] mt-1">
+                    → 3 behaviors · /challenge /ranks · Elo tracker
+                  </p>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#a1a1aa]">Queue & ranks</span>
+                  <button type="button" class="steal-idea-btn btn-primary text-xs py-2 px-4" data-prompt="Build a competitive 1v1 matchmaking queue bot with /challenge and /ranks slash commands, Elo rating calculations, and a real-time leaderboard channel.">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span>Build it</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Idea Card 2: Staff Application System -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 relative overflow-hidden">
+                <div class="flex flex-col gap-3 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <span class="bento-tag">Staff Ops</span>
+                    <span class="text-xs text-[#71717a]">2 behaviors</span>
+                  </div>
+                  <h3 class="font-display text-[15px] sm:text-base font-bold text-white leading-snug mt-1">
+                    “Staff Application System — members submit forms, mods approve with buttons”
+                  </h3>
+                  <p class="text-xs text-[#71717a] mt-1">
+                    → 2 behaviors · /apply · mod review buttons
+                  </p>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#a1a1aa]">Application modal</span>
+                  <button type="button" class="steal-idea-btn btn-primary text-xs py-2 px-4" data-prompt="Create a staff application system where members use /apply to open a modal form. Submissions post to a private staff channel with one-click 'Accept' and 'Deny' buttons and DM feedback.">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span>Build it</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Idea Card 3: Daily Chat Streaks -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6 relative overflow-hidden">
+                <div class="flex flex-col gap-3 relative z-10">
+                  <div class="flex items-center justify-between">
+                    <span class="bento-tag">Engagement</span>
+                    <span class="text-xs text-[#71717a]">2 behaviors</span>
+                  </div>
+                  <h3 class="font-display text-[15px] sm:text-base font-bold text-white leading-snug mt-1">
+                    “Daily Chat Streaks — reward active chatters with Streak Master role”
+                  </h3>
+                  <p class="text-xs text-[#71717a] mt-1">
+                    → 2 behaviors · streak counter · auto-role
+                  </p>
+                </div>
+
+                <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between relative z-10">
+                  <span class="text-xs text-[#a1a1aa]">Streak counter</span>
+                  <button type="button" class="steal-idea-btn btn-primary text-xs py-2 px-4" data-prompt="Track daily chat streaks for every member, display streak counts with a /streak command, and automatically award the Streak Master role when reaching 30 consecutive active days.">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span>Build it</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 6. Pre-flight Quick Health Banner -->
+          <section class="card-surface p-6 sm:p-8 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+            <div class="bento-pattern opacity-20"></div>
+            <div class="flex items-center gap-4 relative z-10">
+              <div class="w-10 h-10 rounded-full bg-white/10 border border-white/15 text-[#facc15] flex items-center justify-center text-base shrink-0 font-semibold shadow-xs">
+                ★
+              </div>
+              <div>
+                <div class="flex items-center gap-2.5">
+                  <h4 class="text-sm sm:text-base font-semibold text-white">Server Health is Optimal</h4>
+                  <span class="bento-tag text-[#4ade80] border-[#22c55e]/30 bg-[#22c55e]/10">★ 99.98% Optimal</span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1">All 4 Discord security and permission checks are passing.</p>
+              </div>
+            </div>
+
+            <button type="button" onclick="switchTab('preflight')" class="btn-ghost text-xs py-2 px-5 shrink-0 relative z-10">
+              Run Diagnostics →
+            </button>
+          </section>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- VIEW 2: BOTS (FLEET MANAGEMENT)                                -->
+        <!-- ============================================================== -->
+        <div id="view-bots" class="dashboard-view flex flex-col gap-8">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+            <div>
+              <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">Your Bot Fleet</h1>
+              <p class="text-sm sm:text-base text-[#a1a1aa] mt-1.5">
+                Monitor and configure the bots serving your Discord server.
+              </p>
+            </div>
+
+            <button type="button" onclick="openModal()" class="btn-primary py-2.5 px-5 text-xs font-semibold">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Deploy New Bot</span>
+            </button>
+          </div>
+
+          <!-- Bot Fleet List with Airy Card Padding and Gaps -->
+          <div class="flex flex-col gap-6">
+            
+            <!-- Bot 1 Row Card -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-6 relative overflow-hidden">
+              <div class="bento-pattern opacity-20"></div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+                <div class="flex items-start gap-4">
+                  <div class="w-12 h-12 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#4ade80] shrink-0">
+                    <i data-lucide="shield" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-3">
+                      <h3 class="font-display text-base sm:text-lg font-bold text-white">Community Guardian</h3>
+                      <span class="bento-tag text-[#4ade80] border-[#22c55e]/30 bg-[#22c55e]/10">
+                        Live
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed max-w-2xl">
+                      Full automod suite: phishing link protection, raid burst suppression, and user welcome sequence.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                  <button type="button" onclick="showToast('Logs opened for Community Guardian')" class="btn-ghost text-xs py-2 px-4">
+                    View Logs
+                  </button>
+                  <button type="button" onclick="showToast('Configuring Community Guardian')" class="btn-dark text-xs py-2 px-4">
+                    Settings
+                  </button>
+                  <button type="button" onclick="toggleBotFleetRow(this, 'Community Guardian')" class="btn-ghost text-xs py-2 px-3.5 text-[#f87171] hover:text-white">
+                    Pause
+                  </button>
+                </div>
+              </div>
+
+              <!-- Stats bar -->
+              <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs relative z-10">
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Status</span>
+                  <span class="font-medium text-white flex items-center gap-1"><span class="text-[#facc15]">★</span><span>Online · 99.98% uptime</span></span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Members Handled</span>
+                  <span class="font-medium text-white">3,420 members</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Channels Monitored</span>
+                  <span class="font-medium text-white">18 text channels</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Last Action</span>
+                  <span class="font-medium text-white">2m ago (Spam filtered)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bot 2 Row Card -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div class="flex items-start gap-4">
+                  <div class="w-12 h-12 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#4ade80] shrink-0">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-3">
+                      <h3 class="font-display text-base sm:text-lg font-bold text-white">Study Room Helper</h3>
+                      <span class="px-2.5 py-0.5 rounded-full bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.2)] text-[#4ade80] text-xs font-semibold">
+                        Live
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed max-w-2xl">
+                      Focus session timers, quiet study voice auto-muting, and member streak tracking.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                  <button type="button" onclick="showToast('Logs opened for Study Room Helper')" class="btn-ghost text-xs py-2 px-4">
+                    View Logs
+                  </button>
+                  <button type="button" onclick="showToast('Configuring Study Room Helper')" class="btn-dark text-xs py-2 px-4">
+                    Settings
+                  </button>
+                  <button type="button" onclick="toggleBotFleetRow(this, 'Study Room Helper')" class="btn-ghost text-xs py-2 px-3.5 text-[#f87171] hover:text-white">
+                    Pause
+                  </button>
+                </div>
+              </div>
+
+              <!-- Stats bar -->
+              <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Status</span>
+                  <span class="font-medium text-white">Online · 99.9% uptime</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Active Focusers</span>
+                  <span class="font-medium text-white">1,280 members</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Voice Channels</span>
+                  <span class="font-medium text-white">4 study halls</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Last Action</span>
+                  <span class="font-medium text-white">45m ago (Timer finished)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bot 3 Row Card -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div class="flex items-start gap-4">
+                  <div class="w-12 h-12 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#71717a] shrink-0">
+                    <i data-lucide="moon" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-3">
+                      <h3 class="font-display text-base sm:text-lg font-bold text-white">Night Market Bot</h3>
+                      <span class="px-2.5 py-0.5 rounded-full bg-[#18181c] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] text-xs font-medium">
+                        Paused
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed max-w-2xl">
+                      Member leveling rewards, virtual coins, and collectible server role shop.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                  <button type="button" onclick="showToast('Editing Night Market Bot spec')" class="btn-ghost text-xs py-2 px-4">
+                    Edit Setup
+                  </button>
+                  <button type="button" onclick="toggleBotFleetRow(this, 'Night Market Bot')" class="btn-primary text-xs py-2 px-4.5">
+                    Resume Bot
+                  </button>
+                </div>
+              </div>
+
+              <!-- Stats bar -->
+              <div class="pt-5 border-t border-[rgba(255,255,255,0.06)] grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Status</span>
+                  <span class="font-medium text-[#a1a1aa]">Paused (Safe storage)</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Members Saved</span>
+                  <span class="font-medium text-white">890 profiles</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Preserved Config</span>
+                  <span class="font-medium text-white">12 custom items</span>
+                </div>
+                <div>
+                  <span class="text-[#71717a] block mb-0.5">Resume Time</span>
+                  <span class="font-medium text-white">Instant (~2 seconds)</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- VIEW 3: TEMPLATES (12 BLUEPRINTS WITH RELAXED SPACING)         -->
+        <!-- ============================================================== -->
+        <div id="view-templates" class="dashboard-view flex flex-col gap-8">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-2">
+            <div>
+              <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">Templates</h1>
+              <p class="text-sm sm:text-base text-[#a1a1aa] mt-1.5">
+                12 battle-tested bot blueprints — configure and add features to your bot with 1 click.
+              </p>
+            </div>
+
+            <!-- Search input -->
+            <div class="w-full sm:w-80 relative">
+              <i data-lucide="search" class="w-4 h-4 text-[#71717a] absolute left-4 top-1/2 -translate-y-1/2"></i>
+              <input 
+                type="text" 
+                id="templateSearchInput" 
+                placeholder="Search templates..." 
+                class="w-full rounded-full bg-[#16161c] border border-[rgba(255,255,255,0.08)] pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(255,255,255,0.25)] transition-colors"
+              >
+            </div>
+          </div>
+
+          <!-- Category Filter Tabs -->
+          <div class="flex flex-wrap items-center gap-3 border-b border-[rgba(255,255,255,0.08)] pb-6 mb-2" id="templateTabsContainer">
+            <button type="button" class="template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-white bg-white text-black transition-colors" data-filter="all">
+              All (12)
+            </button>
+            <button type="button" class="template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors" data-filter="moderation">
+              Moderation (2)
+            </button>
+            <button type="button" class="template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors" data-filter="engagement">
+              Engagement (4)
+            </button>
+            <button type="button" class="template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors" data-filter="utility">
+              Utility (4)
+            </button>
+            <button type="button" class="template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors" data-filter="automation">
+              Automation (2)
+            </button>
+          </div>
+
+          <!-- 12 Blueprint Cards Grid: Spacious gap-6 sm:gap-8 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8" id="templateCardsGrid">
+            
+            <!-- Template 1: Welcome Setup (Engagement) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="engagement" data-title="Welcome Setup" data-desc="Greet new members with a message and auto-assign roles">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="message-square" class="w-5 h-5"></i>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#222226] text-[#a1a1aa]">Popular</span>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#4ade80]">Engagement</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Welcome Setup</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Greet new members with a message, rules embed, and auto-assign starter roles.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · runs when a member joins
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Create an onboarding bot that greets new members, provides rule acceptance buttons, and gives them the Member role.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 2: Auto-Moderation (Moderation) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="moderation" data-title="Auto-Moderation" data-desc="Protect your server from spam bad words and unwanted links">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="shield" class="w-5 h-5"></i>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#222226] text-[#a1a1aa]">Popular</span>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#f87171]">Moderation</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Auto-Moderation</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Protect your server from spam, bad words, phishing URLs, and mass mention raids.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · checks every message
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Build a complete security bot with phishing URL scanning, anti-raid burst protection, and quarantine roles for suspicious accounts.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 3: Leveling System (Engagement) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="engagement" data-title="Leveling System" data-desc="Reward active members with XP levels and role rewards">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="trophy" class="w-5 h-5"></i>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#222226] text-[#a1a1aa]">Popular</span>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#4ade80]">Engagement</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Leveling System</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Reward active members with XP, rank leaderboards, and unlockable status roles.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · /rank /leaderboard
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Build an XP leveling bot that awards points per message, sends level-up cards, and gives active members custom roles.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 4: Reaction Roles (Utility) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="utility" data-title="Reaction Roles" data-desc="Let members choose roles by reacting to a message">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#60a5fa]">Utility</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Reaction Roles</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Let members self-assign topic, notification, or region roles by clicking buttons.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · runs on button clicks
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Build a reaction role system with buttons in #roles that allows members to choose notifications and interest roles.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 5: Custom Commands (Utility) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="utility" data-title="Custom Commands" data-desc="Create slash commands with custom responses and embeds">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="hash" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#60a5fa]">Utility</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Custom Commands</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Create slash commands with custom text, links, buttons, and dynamic server tags.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · your own /commands
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Create customizable slash commands like /rules, /links, and /faq with formatted embed responses.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 6: Embed Command (Utility) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="utility" data-title="Embed Command" data-desc="Create a slash command that posts a custom rich embed">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#60a5fa]">Utility</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Embed Command</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Design and publish clean Discord embeds with colors, thumbnail images, and footers.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · a /command that sends embed
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Create an embed publishing command that allows server administrators to send formatted announcements to any channel.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 7: Scheduled Messages (Automation) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="automation" data-title="Scheduled Messages" data-desc="Send recurring announcements or one-time reminders">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#fbbf24]">Automation</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Scheduled Messages</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Send recurring announcements, community event alerts, or daily reminder posts.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · runs on your schedule
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Create a scheduled announcements bot that posts weekly community check-ins and monthly event reminders automatically.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 8: Event Logging (Moderation) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="moderation" data-title="Event Logging" data-desc="Track message edits deletions member changes and more">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#f87171]">Moderation</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Event Logging</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Track deleted messages, channel modifications, member joins/leaves, and role changes.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · watches server events
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Build an audit logging bot that records deleted messages, edited messages, and member role adjustments in #mod-logs.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 9: Ticket System (Utility) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="utility" data-title="Ticket System" data-desc="Create support tickets with categories claiming and transcripts">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="ticket" class="w-5 h-5"></i>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#222226] text-[#a1a1aa]">Popular</span>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#60a5fa]">Utility</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Ticket System</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Private support tickets with categories, mod claiming, and transcript export.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · /ticket + support panel
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Create a support ticket bot with an 'Open Ticket' button in #support, private thread for staff, and instant FAQ auto-answers.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 10: Giveaways (Engagement) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="engagement" data-title="Giveaways" data-desc="Run giveaways with requirements multiple winners and rerolls">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="gift" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#4ade80]">Engagement</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Giveaways & Raffles</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Host automated community giveaways with role checks, timers, and verifiable rerolls.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · /giveaway + auto pick
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Build a giveaway bot with /gstart, countdown timer embeds, role entry requirements, and automated fair winner selection.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 11: Starboard (Engagement) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="engagement" data-title="Starboard" data-desc="Highlight popular messages with star reactions in a showcase channel">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="star" class="w-5 h-5"></i>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#222226] text-[#a1a1aa]">Popular</span>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#4ade80]">Engagement</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Starboard</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Pin the community's best messages to a #starboard channel when reaching star thresholds.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · watches star reactions
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Create a starboard bot that posts messages to #starboard when they receive 5 or more star reactions from members.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+            <!-- Template 12: Suggestions & Polls (Automation) -->
+            <div class="template-card card-surface p-7 sm:p-8 rounded-2xl flex flex-col justify-between gap-6" data-cat="automation" data-title="Suggestions & Polls" data-desc="Let members submit ideas with voting approval workflow and threads">
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="w-11 h-11 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-white">
+                    <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[11px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-md bg-[#16161c] text-[#fbbf24]">Automation</span>
+                </div>
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Suggestions & Polls</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-2 leading-relaxed">
+                    Collect member feedback with voting buttons, threaded discussion, and mod approval tags.
+                  </p>
+                </div>
+                <div class="text-xs text-[#71717a]">
+                  1 behavior · /suggest + voting thread
+                </div>
+              </div>
+              <button type="button" class="use-template-btn btn-ghost text-xs py-2.5 w-full justify-center font-medium" data-prompt="Build a suggestions bot with a /suggest command that formats submissions with upvote/downvote buttons in #suggestions.">
+                <span>Configure & add →</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Empty search result state -->
+          <div id="noTemplatesFound" class="card-surface p-12 text-center rounded-2xl hidden">
+            <p class="text-sm text-[#a1a1aa]">No templates found matching your search. Try another query or use the prompt composer.</p>
+          </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- VIEW 4: INTERVIEW (AI BOT WIZARD)                              -->
+        <!-- ============================================================== -->
+        <div id="view-interview" class="dashboard-view flex flex-col gap-8">
+          
+          <div class="mb-2">
+            <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">AI Bot Studio — Guided Setup</h1>
+            <p class="text-sm sm:text-base text-[#a1a1aa] mt-1.5">
+              Answer 3 simple questions. We will automatically generate the bot setup, slash commands, and role permissions.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Questionnaire Column -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+              
+              <!-- Question 1 -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+                <span class="text-xs font-semibold text-[#a1a1aa]">Step 1 of 3</span>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">What type of community do you run?</h3>
+                
+                <div class="grid grid-cols-2 gap-3 mt-1" id="wizardCommunity">
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-white hover:border-[rgba(255,255,255,0.25)] transition-colors active-opt cursor-pointer" data-val="Gaming">
+                    🎮 Gaming Community
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Study">
+                    📚 Study & Education
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Tech">
+                    💻 Tech & Developers
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Creator">
+                    🎨 Creators & Fans
+                  </button>
+                </div>
+              </div>
+
+              <!-- Question 2 -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+                <span class="text-xs font-semibold text-[#a1a1aa]">Step 2 of 3</span>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">What is your bot's primary duty?</h3>
+                
+                <div class="flex flex-col gap-3 mt-1" id="wizardDuty">
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-white hover:border-[rgba(255,255,255,0.25)] transition-colors active-opt cursor-pointer" data-val="Safety">
+                    🛡️ Keep server safe from spam and raids
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Welcome">
+                    👋 Welcome new members and assign roles
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-left text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Tickets">
+                    🎫 Handle private support questions
+                  </button>
+                </div>
+              </div>
+
+              <!-- Question 3 -->
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+                <span class="text-xs font-semibold text-[#a1a1aa]">Step 3 of 3</span>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">What tone should the bot use?</h3>
+                
+                <div class="grid grid-cols-3 gap-3 mt-1" id="wizardTone">
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-center text-xs sm:text-sm font-medium text-white hover:border-[rgba(255,255,255,0.25)] transition-colors active-opt cursor-pointer" data-val="Friendly">
+                    Friendly & Warm
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-center text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Crisp">
+                    Crisp & Direct
+                  </button>
+                  <button type="button" class="wizard-opt p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-center text-xs sm:text-sm font-medium text-[#a1a1aa] hover:border-[rgba(255,255,255,0.25)] transition-colors cursor-pointer" data-val="Playful">
+                    Playful & Fun
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" id="buildFromInterviewBtn" class="btn-primary py-3.5 px-6 w-full justify-center text-sm font-semibold mt-2 shadow-lg">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span>Build Bot from Setup</span>
+              </button>
+
+            </div>
+
+            <!-- Right Live Preview Column -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+              <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-6 sticky top-24">
+                <div class="flex items-center justify-between pb-4 border-b border-[rgba(255,255,255,0.06)]">
+                  <span class="text-xs font-semibold text-[#a1a1aa]">Live Bot Preview</span>
+                  <span class="text-xs text-[#4ade80] font-medium">Ready to deploy</span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 rounded-2xl bg-[#16161c] border border-[rgba(255,255,255,0.1)] flex items-center justify-center text-white shrink-0">
+                    <i data-lucide="bot" class="w-7 h-7"></i>
+                  </div>
+                  <div>
+                    <h4 id="previewBotName" class="font-display text-lg font-bold text-white">Vanguard Bot</h4>
+                    <p id="previewBotDesc" class="text-xs sm:text-sm text-[#a1a1aa] mt-0.5">Configured for Gaming · Anti-Spam & Moderation</p>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-3 pt-2">
+                  <span class="text-xs font-medium text-[#71717a]">Configured Slash Commands:</span>
+                  <div class="flex flex-col gap-2 font-mono text-xs">
+                    <div class="p-3 rounded-xl bg-[#16161c] text-[#fafafa] flex items-center justify-between">
+                      <span>/security scan</span>
+                      <span class="text-[#71717a]">Run server check</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-[#16161c] text-[#fafafa] flex items-center justify-between">
+                      <span>/verify</span>
+                      <span class="text-[#71717a]">Member rule check</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-[#16161c] text-[#fafafa] flex items-center justify-between">
+                      <span>/support</span>
+                      <span class="text-[#71717a]">Open private ticket</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-2 text-xs text-[#71717a] leading-relaxed border-t border-[rgba(255,255,255,0.06)]">
+                  Automatically manages channel permissions, logs all activity to #audit-log, and complies with Discord API limits.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- VIEW 5: PRE-FLIGHT (HEALTH & PERMISSIONS)                      -->
+        <!-- ============================================================== -->
+        <div id="view-preflight" class="dashboard-view flex flex-col gap-8">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-2">
+            <div>
+              <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">Pre-flight Diagnostics</h1>
+              <p class="text-sm sm:text-base text-[#a1a1aa] mt-1.5">
+                Real-time connection, intent, and role hierarchy checks for My server.
+              </p>
+            </div>
+
+            <button type="button" id="runPreflightCheckBtn" class="btn-primary py-2.5 px-5 text-xs font-semibold">
+              <i data-lucide="refresh-cw" class="w-4 h-4" id="preflightSpinIcon"></i>
+              <span id="preflightBtnLabel">Run Health Check</span>
+            </button>
+          </div>
+
+          <!-- 4 Spacious Health Checks Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            
+            <!-- Check 1 -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center text-[#22c55e]">
+                  <i data-lucide="wifi" class="w-5 h-5"></i>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-[#22c55e]/10 text-[#4ade80] text-xs font-semibold">
+                  Connected
+                </span>
+              </div>
+              <div>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">Bot Connection</h3>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  WebSocket connection to Discord Gateway is stable with 42ms ping latency.
+                </p>
+              </div>
+            </div>
+
+            <!-- Check 2 -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center text-[#22c55e]">
+                  <i data-lucide="key" class="w-5 h-5"></i>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-[#22c55e]/10 text-[#4ade80] text-xs font-semibold">
+                  Granted
+                </span>
+              </div>
+              <div>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">Admin Permissions</h3>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Manage Roles, Manage Channels, and Moderate Members permissions are active.
+                </p>
+              </div>
+            </div>
+
+            <!-- Check 3 -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center text-[#22c55e]">
+                  <i data-lucide="folder-sync" class="w-5 h-5"></i>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-[#22c55e]/10 text-[#4ade80] text-xs font-semibold">
+                  Synced
+                </span>
+              </div>
+              <div>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">Channels & Roles Synced</h3>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  All 52 channels and 14 community roles are mapped and ready for instant bot response.
+                </p>
+              </div>
+            </div>
+
+            <!-- Check 4 -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-4">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center text-[#22c55e]">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-[#22c55e]/10 text-[#4ade80] text-xs font-semibold">
+                  Active
+                </span>
+              </div>
+              <div>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">Privileged Intents</h3>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Server Members Intent and Message Content Intent are verified in Discord Developer Portal.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Status Indicator Banner -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-[#0d0d12] border border-[rgba(255,255,255,0.06)] text-center text-xs sm:text-sm text-[#a1a1aa] mt-2">
+            Last verified: <span id="preflightLastChecked" class="text-white font-medium">Just now</span> · All 4 checks passing. Your server is fully protected.
+          </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- VIEW 6: ACTIVITY (TIMELINE & LOGS)                             -->
+        <!-- ============================================================== -->
+        <div id="view-activity" class="dashboard-view flex flex-col gap-8">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-2">
+            <div>
+              <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">Activity Log</h1>
+              <p class="text-sm sm:text-base text-[#a1a1aa] mt-1.5">
+                Recent actions taken by your automated bots in My server.
+              </p>
+            </div>
+
+            <button type="button" onclick="showToast('Exporting activity logs as CSV...')" class="btn-ghost text-xs py-2 px-4.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Export CSV</span>
+            </button>
+          </div>
+
+          <!-- Activity List Container -->
+          <div class="card-surface rounded-2xl divide-y divide-[rgba(255,255,255,0.06)] overflow-hidden">
+            
+            <!-- Event 1 -->
+            <div class="p-6 sm:p-7 flex items-start gap-5">
+              <div class="w-10 h-10 rounded-xl bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex items-center justify-center text-[#f59e0b] shrink-0 mt-0.5">
+                <i data-lucide="shield-alert" class="w-4.5 h-4.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm sm:text-base font-semibold text-white">Community Guardian</span>
+                  <span class="font-mono text-xs text-[#71717a]">2m ago</span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Auto-moderated a malicious link posted in <span class="text-white font-medium">#general</span> and warned the user.
+                </p>
+              </div>
+            </div>
+
+            <!-- Event 2 -->
+            <div class="p-6 sm:p-7 flex items-start gap-5">
+              <div class="w-10 h-10 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center text-[#22c55e] shrink-0 mt-0.5">
+                <i data-lucide="user-check" class="w-4.5 h-4.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm sm:text-base font-semibold text-white">Community Guardian</span>
+                  <span class="font-mono text-xs text-[#71717a]">14m ago</span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Assigned <span class="text-[#4ade80] font-medium">@Member</span> role to <span class="text-white font-medium">@alex_k</span> upon rule acceptance.
+                </p>
+              </div>
+            </div>
+
+            <!-- Event 3 -->
+            <div class="p-6 sm:p-7 flex items-start gap-5">
+              <div class="w-10 h-10 rounded-xl bg-[#3b82f6]/10 border border-[#3b82f6]/20 flex items-center justify-center text-[#60a5fa] shrink-0 mt-0.5">
+                <i data-lucide="clock" class="w-4.5 h-4.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm sm:text-base font-semibold text-white">Study Room Helper</span>
+                  <span class="font-mono text-xs text-[#71717a]">45m ago</span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Started a 25-minute Pomodoro study session in <span class="text-white font-medium">Focus Lounge #1</span> for 6 members.
+                </p>
+              </div>
+            </div>
+
+            <!-- Event 4 -->
+            <div class="p-6 sm:p-7 flex items-start gap-5">
+              <div class="w-10 h-10 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center text-[#22c55e] shrink-0 mt-0.5">
+                <i data-lucide="message-square" class="w-4.5 h-4.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm sm:text-base font-semibold text-white">Support Desk</span>
+                  <span class="font-mono text-xs text-[#71717a]">2h ago</span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Resolved ticket <span class="text-white font-medium">#1042</span> with automated FAQ response for verification steps.
+                </p>
+              </div>
+            </div>
+
+            <!-- Event 5 -->
+            <div class="p-6 sm:p-7 flex items-start gap-5">
+              <div class="w-10 h-10 rounded-xl bg-[#71717a]/10 border border-[#71717a]/20 flex items-center justify-center text-[#a1a1aa] shrink-0 mt-0.5">
+                <i data-lucide="shield-check" class="w-4.5 h-4.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm sm:text-base font-semibold text-white">Pre-flight Diagnostics</span>
+                  <span class="font-mono text-xs text-[#71717a]">5h ago</span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1.5 leading-relaxed">
+                  Automated guild scan passed: All 4 checks verified on My server.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- VIEW 7: SETTINGS                                               -->
+        <!-- ============================================================== -->
+        <div id="view-settings" class="dashboard-view flex flex-col gap-8">
+          
+          <div class="mb-2">
+            <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">Workspace Settings</h1>
+            <p class="text-sm sm:text-base text-[#a1a1aa] mt-1.5">
+              Manage your Discord server connection, notifications, and subscription plan.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-6 max-w-3xl">
+            
+            <!-- Section: Server Info -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Discord Server Connection</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1">Linked to "My server" via Discord OAuth2</p>
+                </div>
+                <button type="button" onclick="showToast('Re-syncing Discord permissions...')" class="btn-ghost text-xs py-2 px-3.5">
+                  Re-sync
+                </button>
+              </div>
+
+              <div class="p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)] flex items-center justify-between text-xs sm:text-sm">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-[#18181c] border border-[#27272a] flex items-center justify-center text-white font-semibold">
+                    M
+                  </div>
+                  <div>
+                    <span class="text-white font-medium block">My server</span>
+                    <span class="text-[#71717a] text-xs">Guild ID: 10849204928104820</span>
+                  </div>
+                </div>
+                <span class="text-[#4ade80] font-medium text-xs">● Connected</span>
+              </div>
+            </div>
+
+            <!-- Section: Notification Channel -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-5">
+              <div>
+                <h3 class="font-display text-base sm:text-lg font-bold text-white">Alert Notifications</h3>
+                <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1">Choose where Corvus bots send security alerts and error reports.</p>
+              </div>
+
+              <div class="flex flex-col gap-3">
+                <label class="text-xs font-semibold text-[#fafafa]">Security Alert Channel</label>
+                <select class="w-full rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-[rgba(255,255,255,0.25)]">
+                  <option>#mod-logs (Recommended)</option>
+                  <option>#admin-chat</option>
+                  <option>#bot-commands</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section: Subscription Plan -->
+            <div class="card-surface p-7 sm:p-8 rounded-2xl flex flex-col gap-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-display text-base sm:text-lg font-bold text-white">Plan & Allowance</h3>
+                  <p class="text-xs sm:text-sm text-[#a1a1aa] mt-1">Corvus Pro tier</p>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-[#222226] text-[#a1a1aa] text-xs font-medium">
+                  Active
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)] text-xs sm:text-sm">
+                <div>
+                  <span class="text-white font-medium block">98 / 100 Credits Available</span>
+                  <span class="text-[#71717a] text-xs">Monthly renewal on Oct 1, 2026</span>
+                </div>
+                <a href="index.html#pricing" class="btn-primary text-xs py-2 px-4">
+                  Manage Plan
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Dashboard Footer with Generous Margin -->
+        <footer class="mt-20 pt-8 border-t border-[rgba(255,255,255,0.08)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717a]">
+          <div>
+            Corvus Autonomous Fleet Management · Connected to Discord API v10
+          </div>
+          <div class="flex items-center gap-6">
+            <a href="index.html" class="hover:text-white transition-colors">Landing Page</a>
+            <a href="index.html#pricing" class="hover:text-white transition-colors">Pricing</a>
+            <a href="index.html#faq" class="hover:text-white transition-colors">Documentation</a>
+          </div>
+        </footer>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ==================== UPGRADED 2-STEP DISCORD SETUP MODAL ==================== -->
+  <div id="newBotModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="w-full max-w-2xl card-surface p-7 sm:p-8 border border-[rgba(255,255,255,0.15)] shadow-2xl relative max-h-[90vh] overflow-y-auto rounded-3xl">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-5 border-b border-[rgba(255,255,255,0.08)]">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.12)] flex items-center justify-center text-white shrink-0">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 id="modalTitle" class="text-base sm:text-lg font-bold text-white tracking-tight">Connect to Discord</h3>
+            <p class="text-xs text-[#a1a1aa] mt-0.5">Connect — Invite — Server Setup</p>
+          </div>
+        </div>
+        <button type="button" id="closeNewBotModal" class="text-[#71717a] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5" aria-label="Close modal">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Mode Selector Tabs: Instant OAuth vs Custom Bot Token -->
+      <div class="pt-5 pb-3">
+        <div class="grid grid-cols-2 gap-2 p-1.5 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)]">
+          <button type="button" id="modalTabOauth" class="modal-tab-btn flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold bg-[#222226] text-white transition-colors cursor-pointer">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+            <span>Instant Server Invite (OAuth)</span>
+          </button>
+          <button type="button" id="modalTabToken" class="modal-tab-btn flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold text-[#a1a1aa] hover:text-white transition-colors cursor-pointer">
+            <i data-lucide="key" class="w-3.5 h-3.5"></i>
+            <span>I have a bot token</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= OPTION A: INSTANT OAUTH FLOW ================= -->
+      <div id="modalContentOauth" class="py-4 flex flex-col gap-5">
+        <div class="p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)] flex items-center justify-between text-xs sm:text-sm">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-[#18181c] border border-[#27272a] flex items-center justify-center text-white font-semibold">
+              M
+            </div>
+            <div>
+              <span class="text-white font-medium block">My server</span>
+              <span class="text-[#71717a] text-xs">Guild ID: 10849204928104820</span>
+            </div>
+          </div>
+          <span class="text-[#4ade80] font-medium text-xs">● Connected</span>
+        </div>
+
+        <div>
+          <label for="modalBotName" class="block text-xs font-semibold text-[#fafafa] mb-2">Bot Name</label>
+          <input type="text" id="modalBotName" placeholder="e.g. Server Assistant" class="w-full rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] px-4 py-3 text-xs sm:text-sm text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(255,255,255,0.25)]">
+        </div>
+
+        <div>
+          <label for="modalBotPrompt" class="block text-xs font-semibold text-[#fafafa] mb-2">What should this bot do?</label>
+          <textarea id="modalBotPrompt" rows="3" placeholder="e.g. Welcome new users, give them the Member role, and delete spam links..." class="w-full rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)] p-4 text-xs sm:text-sm text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(255,255,255,0.25)] resize-none"></textarea>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-3">
+          <button type="button" id="cancelModalBtn" class="btn-ghost text-xs py-2 px-4.5">
+            Cancel
+          </button>
+          <button type="button" id="submitModalBtn" class="btn-primary text-xs py-2.5 px-5">
+            <span>Authorize & Connect with Discord</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= OPTION B: GUIDED 2-STEP BOT TOKEN WIZARD ================= -->
+      <div id="modalContentToken" class="py-4 hidden flex flex-col gap-5">
+        
+        <!-- Wizard Navigation & Progress Header -->
+        <div class="p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.06)] flex flex-col gap-3">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-white">Setup Guide</span>
+            <span id="wizardStepNumber" class="font-mono text-[#a1a1aa] font-medium">1 / 2</span>
+          </div>
+          <div class="h-1.5 w-full bg-[#27272a] rounded-full overflow-hidden">
+            <div id="wizardProgressBar" class="h-full bg-white rounded-full transition-all duration-300 w-1/2"></div>
+          </div>
+          <div class="flex items-center justify-between pt-1 text-xs">
+            <button type="button" id="stepperStep1Tab" class="text-white font-semibold flex items-center gap-2 cursor-pointer">
+              <span class="w-5 h-5 rounded-full bg-white text-black font-mono text-[11px] flex items-center justify-center font-bold">1</span>
+              <span>Create Application</span>
+            </button>
+            <button type="button" id="stepperStep2Tab" class="text-[#71717a] font-medium flex items-center gap-2 cursor-pointer">
+              <span class="w-5 h-5 rounded-full bg-[#27272a] text-white font-mono text-[11px] flex items-center justify-center">2</span>
+              <span>Configure Application</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 1 Content: Create Application -->
+        <div id="wizardStep1Content" class="flex flex-col gap-5">
+          <div class="p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)]">
+            <h4 class="text-sm font-bold text-white">Step 1: Create a Discord Application</h4>
+            <p class="text-xs text-[#a1a1aa] mt-1">Go to the Discord Developer Portal and create a new application.</p>
+          </div>
+
+          <!-- Instructions 1 & 2 -->
+          <div class="flex flex-col gap-4 text-xs sm:text-sm">
+            <div class="flex items-start gap-3.5">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold font-mono text-xs flex items-center justify-center shrink-0 mt-0.5">
+                1
+              </div>
+              <div class="flex-1">
+                <span class="font-semibold text-white block">Open Discord Developer Portal</span>
+                <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" class="btn-dark text-xs py-2 px-3.5 mt-2 inline-flex items-center gap-2">
+                  <span>Open Developer Portal</span>
+                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold font-mono text-xs flex items-center justify-center shrink-0 mt-0.5">
+                2
+              </div>
+              <div class="flex-1">
+                <span class="font-semibold text-white block">Click "New Application"</span>
+                <p class="text-[#a1a1aa] text-xs mt-1">Top right corner of the Developer Portal. Name your bot and click "Create".</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tip Box -->
+          <div class="p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.12)] flex items-start gap-3 text-xs text-[#fbbf24]">
+            <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="font-semibold">Tip:</strong> Make sure you're logged into Discord with the account you want to own this bot.
+            </div>
+          </div>
+
+          <!-- Visual Reference Mockup (Dark Mode) -->
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-[#71717a]">Visual Reference</span>
+            <div class="rounded-xl bg-[#08080b] border border-[rgba(255,255,255,0.08)] p-4 text-xs">
+              <div class="flex items-center justify-between pb-2.5 border-b border-[rgba(255,255,255,0.06)]">
+                <span class="font-semibold text-white text-[13px]">Applications</span>
+                <span class="px-3 py-1 rounded-md bg-[#222226] text-white font-medium text-[11px] border border-[rgba(255,255,255,0.1)]">+ New Application</span>
+              </div>
+              <p class="text-[11px] text-[#71717a] pt-2.5">Your apps will appear here...</p>
+            </div>
+          </div>
+
+          <!-- Step 1 Actions -->
+          <div class="pt-3 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeModal()" class="btn-ghost text-xs py-2 px-4.5">
+              Cancel
+            </button>
+            <button type="button" id="goToStep2Btn" class="btn-primary text-xs py-2.5 px-5">
+              <span>Next: Configure Application →</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2 Content: Configure Application & Intents -->
+        <div id="wizardStep2Content" class="hidden flex flex-col gap-5">
+          <div class="p-4 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.08)]">
+            <h4 class="text-sm font-bold text-white">Step 2: Configure Your Application</h4>
+            <p class="text-xs text-[#a1a1aa] mt-1">Enable required permissions and copy your bot token.</p>
+          </div>
+
+          <!-- Steps Checklist -->
+          <div class="flex flex-col gap-4 text-xs sm:text-sm">
+            <div class="flex items-start gap-3.5">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold font-mono text-xs flex items-center justify-center shrink-0 mt-0.5">
+                1
+              </div>
+              <div class="flex-1">
+                <span class="font-semibold text-white block">Enable Privileged Gateway Intents</span>
+                <p class="text-[#a1a1aa] text-xs mt-1 leading-relaxed">On the Bot page, scroll to "Privileged Gateway Intents" and enable all three toggles: <strong>Presence Intent</strong>, <strong>Server Members Intent</strong>, and <strong>Message Content Intent</strong>.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold font-mono text-xs flex items-center justify-center shrink-0 mt-0.5">
+                2
+              </div>
+              <div class="flex-1">
+                <span class="font-semibold text-white block">Click "Save Changes"</span>
+                <p class="text-[#a1a1aa] text-xs mt-1">The green button at the bottom of the Bot page.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold font-mono text-xs flex items-center justify-center shrink-0 mt-0.5">
+                3
+              </div>
+              <div class="flex-1">
+                <span class="font-semibold text-white block">Copy your bot token</span>
+                <p class="text-[#a1a1aa] text-xs mt-1">Scroll up to the TOKEN section, click "Reset Token" to reveal it, then copy it.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Token Input Form -->
+          <div class="p-5 rounded-xl bg-[#16161c] border border-[rgba(255,255,255,0.1)] flex flex-col gap-3">
+            <label for="customBotTokenInput" class="block text-xs font-semibold text-white">Paste your bot token to verify setup:</label>
+            <input 
+              type="password" 
+              id="customBotTokenInput" 
+              placeholder="Paste your bot token (e.g. MTA4OTI...)" 
+              class="w-full rounded-xl bg-[#08080b] border border-[rgba(255,255,255,0.1)] px-4 py-3 font-mono text-xs text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(255,255,255,0.3)]"
+            >
+            <button type="button" id="verifyBotTokenBtn" class="btn-primary w-full py-3 justify-center text-xs font-semibold">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span id="verifyBtnText">Verify & Continue</span>
+            </button>
+            <span class="text-[11px] text-[#71717a] text-center">Your token is encrypted locally and never shared.</span>
+          </div>
+
+          <!-- Visual Reference Mockup for Intents -->
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-[#71717a]">Visual Reference</span>
+            <div class="rounded-xl bg-[#08080b] border border-[rgba(255,255,255,0.08)] p-4 text-xs flex flex-col gap-2.5">
+              <div class="flex items-center justify-between pb-2 border-b border-[rgba(255,255,255,0.06)]">
+                <span class="font-semibold text-white">Privileged Gateway Intents</span>
+                <span class="text-[11px] text-[#22c55e] font-medium">3 Enabled</span>
+              </div>
+              <div class="flex items-center justify-between py-1">
+                <span class="text-[#a1a1aa] text-xs">PRESENCE INTENT <span class="bg-[#f87171]/20 text-[#f87171] text-[10px] px-1.5 py-0.5 rounded ml-1.5 font-medium">Required</span></span>
+                <span class="w-3 h-3 rounded-full bg-[#22c55e]"></span>
+              </div>
+              <div class="flex items-center justify-between py-1">
+                <span class="text-[#a1a1aa] text-xs">SERVER MEMBERS INTENT <span class="bg-[#f87171]/20 text-[#f87171] text-[10px] px-1.5 py-0.5 rounded ml-1.5 font-medium">Required</span></span>
+                <span class="w-3 h-3 rounded-full bg-[#22c55e]"></span>
+              </div>
+              <div class="flex items-center justify-between py-1">
+                <span class="text-[#a1a1aa] text-xs">MESSAGE CONTENT INTENT <span class="bg-[#f87171]/20 text-[#f87171] text-[10px] px-1.5 py-0.5 rounded ml-1.5 font-medium">Required</span></span>
+                <span class="w-3 h-3 rounded-full bg-[#22c55e]"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 Actions -->
+          <div class="pt-3 flex items-center justify-between">
+            <button type="button" id="backToStep1Btn" class="btn-ghost text-xs py-2 px-4.5">
+              ← Back to Step 1
+            </button>
+            <button type="button" onclick="closeModal()" class="text-xs text-[#71717a] hover:text-white transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- ==================== INTERACTIVITY JAVASCRIPT ==================== -->
+  <script>
+    // 1. Toast Notification Utility
+    function showToast(message, type = 'default') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-xl card-surface border border-[rgba(255,255,255,0.18)] bg-[#16161c] text-[#fafafa] text-xs sm:text-sm shadow-2xl transition-opacity duration-200 opacity-0';
+      
+      const icon = document.createElement('i');
+      icon.setAttribute('data-lucide', type === 'success' ? 'check-circle-2' : 'info');
+      icon.className = `w-4.5 h-4.5 shrink-0 ${type === 'success' ? 'text-[#22c55e]' : 'text-white'}`;
+      
+      const text = document.createElement('span');
+      text.textContent = message;
+
+      toast.appendChild(icon);
+      toast.appendChild(text);
+      container.appendChild(toast);
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      // Fade in
+      requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+      });
+
+      // Auto dismiss
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+        setTimeout(() => {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 200);
+      }, 3200);
+    }
+
+    // 2. Tab Navigation System
+    const tabLabels = {
+      'home': 'Home',
+      'bots': 'Bots',
+      'templates': 'Templates',
+      'interview': 'Interview',
+      'activity': 'Activity',
+      'preflight': 'Pre-flight',
+      'settings': 'Settings'
+    };
+
+    function switchTab(tabName) {
+      // Update nav pills
+      document.querySelectorAll('.nav-pill').forEach(pill => {
+        if (pill.getAttribute('data-tab') === tabName) {
+          pill.classList.add('active');
+        } else {
+          pill.classList.remove('active');
+        }
+      });
+
+      // Update view containers
+      document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.remove('active');
+      });
+
+      const targetView = document.getElementById(`view-${tabName}`);
+      if (targetView) {
+        targetView.classList.add('active');
+      }
+
+      // Update breadcrumb
+      const breadcrumbEl = document.getElementById('currentViewBreadcrumb');
+      if (breadcrumbEl && tabLabels[tabName]) {
+        breadcrumbEl.textContent = tabLabels[tabName];
+      }
+
+      // Close mobile drawer if open
+      toggleSidebar(false);
+
+      // Re-initialize icons for new view
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.querySelectorAll('.nav-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        const tab = this.getAttribute('data-tab');
+        if (tab) switchTab(tab);
+      });
+    });
+
+    // 3. Mobile Sidebar Drawer Logic
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    function toggleSidebar(open) {
+      if (!sidebar) return;
+      if (open) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebarBackdrop?.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        sidebarBackdrop?.classList.add('hidden');
+      }
+    }
+
+    mobileMenuBtn?.addEventListener('click', () => toggleSidebar(true));
+    sidebarBackdrop?.addEventListener('click', () => toggleSidebar(false));
+
+    // 4. Onboarding Stepper Dismiss & "Open Builder" scroll
+    const dismissOnboardingBtn = document.getElementById('dismissOnboardingBtn');
+    const onboardingCard = document.getElementById('onboardingCard');
+    dismissOnboardingBtn?.addEventListener('click', () => {
+      if (onboardingCard) {
+        onboardingCard.style.opacity = '0';
+        onboardingCard.style.maxHeight = '0';
+        onboardingCard.style.padding = '0';
+        onboardingCard.style.margin = '0';
+        onboardingCard.style.overflow = 'hidden';
+        setTimeout(() => onboardingCard.remove(), 300);
+        showToast('Onboarding guide dismissed.');
+      }
+    });
+
+    const openBuilderFromStepperBtn = document.getElementById('openBuilderFromStepperBtn');
+    openBuilderFromStepperBtn?.addEventListener('click', () => {
+      const promptInput = document.getElementById('homePromptInput');
+      if (promptInput) {
+        promptInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        promptInput.focus();
+        showToast('Prompt composer ready. Type your bot description.');
+      }
+    });
+
+    // 5. Starter Prompt Chips (Home View)
+    const homePromptInput = document.getElementById('homePromptInput');
+    document.querySelectorAll('.prompt-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        const text = this.getAttribute('data-prompt');
+        if (homePromptInput && text) {
+          homePromptInput.value = text;
+          homePromptInput.focus();
+          showToast('Idea loaded into composer.', 'success');
+        }
+      });
+    });
+
+    // Home Create Bot Button
+    const homeCreateBotBtn = document.getElementById('homeCreateBotBtn');
+    homeCreateBotBtn?.addEventListener('click', function() {
+      const val = homePromptInput?.value.trim();
+      if (!val) {
+        showToast('Please describe what your bot should do or click an idea.');
+        homePromptInput?.focus();
+        return;
+      }
+      showToast('Bot created and deploying to My server...', 'success');
+      setTimeout(() => {
+        switchTab('bots');
+      }, 1000);
+    });
+
+    // 6. "Steal an Idea" Click Handlers
+    document.querySelectorAll('.steal-idea-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const promptText = this.getAttribute('data-prompt');
+        if (promptText && homePromptInput) {
+          homePromptInput.value = promptText;
+          homePromptInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          homePromptInput.focus();
+          showToast('Blueprint loaded into composer! Ready to build.', 'success');
+        }
+      });
+    });
+
+    // 7. Interactive Bot Switch Toggle (Home Fleet Cards)
+    function toggleBotSwitch(el, botName, cardId) {
+      const card = document.getElementById(cardId);
+      const switchBtn = card ? card.querySelector('.toggle-switch') : el;
+      const statusText = card ? card.querySelector('.bot-status-text') : null;
+      const actionBtn = card ? card.querySelector('.bot-action-btn') : null;
+
+      const isCurrentlyActive = switchBtn.classList.contains('active');
+
+      if (isCurrentlyActive) {
+        // Switch to Paused
+        switchBtn.classList.remove('active');
+        switchBtn.classList.add('inactive');
+        switchBtn.setAttribute('aria-checked', 'false');
+        if (statusText) {
+          statusText.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#71717a]"></span> Paused';
+          statusText.className = 'bot-status-text inline-flex items-center gap-1.5 text-xs text-[#71717a] font-medium';
+        }
+        if (actionBtn) {
+          actionBtn.textContent = 'Resume';
+          actionBtn.className = 'bot-action-btn btn-primary text-xs py-1.5 px-3';
+        }
+        showToast(`${botName} is now paused.`);
+      } else {
+        // Switch to Live
+        switchBtn.classList.remove('inactive');
+        switchBtn.classList.add('active');
+        switchBtn.setAttribute('aria-checked', 'true');
+        if (statusText) {
+          statusText.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span> Live';
+          statusText.className = 'bot-status-text inline-flex items-center gap-1.5 text-xs text-[#4ade80] font-medium';
+        }
+        if (actionBtn) {
+          actionBtn.textContent = 'Pause';
+          actionBtn.className = 'bot-action-btn btn-ghost text-xs py-1.5 px-3 text-[#f87171] hover:text-white';
+        }
+        showToast(`${botName} is now live and running.`, 'success');
+      }
+    }
+
+    // Toggle button in Bots view table rows
+    function toggleBotFleetRow(btn, botName) {
+      const isResume = btn.textContent.trim().toLowerCase().includes('resume');
+      if (isResume) {
+        btn.textContent = 'Pause';
+        btn.className = 'btn-ghost text-xs py-2 px-3.5 text-[#f87171] hover:text-white';
+        showToast(`${botName} is now live and running.`, 'success');
+      } else {
+        btn.textContent = 'Resume Bot';
+        btn.className = 'btn-primary text-xs py-2 px-4.5';
+        showToast(`${botName} paused. State safely preserved.`);
+      }
+    }
+
+    // 8. Template Filtering (Category Tabs & Search Input)
+    const filterButtons = document.querySelectorAll('.template-filter-btn');
+    const templateCards = document.querySelectorAll('.template-card');
+    const templateSearchInput = document.getElementById('templateSearchInput');
+    const noTemplatesFound = document.getElementById('noTemplatesFound');
+
+    let currentCategory = 'all';
+
+    function filterTemplates() {
+      const query = (templateSearchInput?.value || '').toLowerCase().trim();
+      let visibleCount = 0;
+
+      templateCards.forEach(card => {
+        const cat = card.getAttribute('data-cat') || '';
+        const title = (card.getAttribute('data-title') || '').toLowerCase();
+        const desc = (card.getAttribute('data-desc') || '').toLowerCase();
+
+        const matchesCat = (currentCategory === 'all' || cat === currentCategory);
+        const matchesQuery = (!query || title.includes(query) || desc.includes(query));
+
+        if (matchesCat && matchesQuery) {
+          card.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      if (noTemplatesFound) {
+        if (visibleCount === 0) {
+          noTemplatesFound.classList.remove('hidden');
+        } else {
+          noTemplatesFound.classList.add('hidden');
+        }
+      }
+    }
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        filterButtons.forEach(b => {
+          b.className = 'template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-[rgba(255,255,255,0.08)] bg-[#16161c] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors cursor-pointer';
+        });
+        this.className = 'template-filter-btn px-4 py-2 rounded-full text-xs font-medium border border-white bg-white text-black transition-colors cursor-pointer';
+        currentCategory = this.getAttribute('data-filter') || 'all';
+        filterTemplates();
+      });
+    });
+
+    templateSearchInput?.addEventListener('input', filterTemplates);
+
+    // Template "Use Template" / "Configure & add →" Buttons
+    document.querySelectorAll('.use-template-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const promptText = this.getAttribute('data-prompt');
+        if (promptText) {
+          switchTab('home');
+          if (homePromptInput) {
+            homePromptInput.value = promptText;
+            homePromptInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            homePromptInput.focus();
+          }
+          showToast('Template blueprint loaded into creator.', 'success');
+        }
+      });
+    });
+
+    // 9. Pre-flight Health Check Trigger
+    const runPreflightCheckBtn = document.getElementById('runPreflightCheckBtn');
+    const preflightSpinIcon = document.getElementById('preflightSpinIcon');
+    const preflightBtnLabel = document.getElementById('preflightBtnLabel');
+    const preflightLastChecked = document.getElementById('preflightLastChecked');
+
+    runPreflightCheckBtn?.addEventListener('click', function() {
+      runPreflightCheckBtn.disabled = true;
+      preflightSpinIcon?.classList.add('animate-spin');
+      if (preflightBtnLabel) preflightBtnLabel.textContent = 'Scanning...';
+
+      setTimeout(() => {
+        runPreflightCheckBtn.disabled = false;
+        preflightSpinIcon?.classList.remove('animate-spin');
+        if (preflightBtnLabel) preflightBtnLabel.textContent = 'Run Health Check';
+        
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (preflightLastChecked) preflightLastChecked.textContent = `Today at ${timeStr}`;
+        showToast('All 4 health checks verified successfully on My server.', 'success');
+      }, 1200);
+    });
+
+    // 10. AI Bot Wizard (Interview) Interactivity
+    const wizardOpts = document.querySelectorAll('.wizard-opt');
+    wizardOpts.forEach(opt => {
+      opt.addEventListener('click', function() {
+        const parent = this.parentElement;
+        parent.querySelectorAll('.wizard-opt').forEach(sibling => {
+          sibling.classList.remove('active-opt', 'text-white');
+          sibling.classList.add('text-[#a1a1aa]');
+        });
+        this.classList.add('active-opt', 'text-white');
+        this.classList.remove('text-[#a1a1aa]');
+        updatePreview();
+      });
+    });
+
+    function updatePreview() {
+      const community = document.querySelector('#wizardCommunity .active-opt')?.getAttribute('data-val') || 'Gaming';
+      const duty = document.querySelector('#wizardDuty .active-opt')?.getAttribute('data-val') || 'Safety';
+      
+      const previewBotName = document.getElementById('previewBotName');
+      const previewBotDesc = document.getElementById('previewBotDesc');
+
+      const nameMap = {
+        'Gaming': 'Vanguard Bot',
+        'Study': 'Study Sensei',
+        'Tech': 'DevOps Warden',
+        'Creator': 'Fanbase Hub'
+      };
+
+      if (previewBotName) previewBotName.textContent = nameMap[community] || 'Custom Assistant';
+      if (previewBotDesc) previewBotDesc.textContent = `Configured for ${community} · ${duty} Automation`;
+    }
+
+    document.getElementById('buildFromInterviewBtn')?.addEventListener('click', function() {
+      showToast('Assembling bot blueprint from answers...', 'success');
+      setTimeout(() => {
+        showToast('Bot successfully created and registered in fleet!', 'success');
+        switchTab('bots');
+      }, 1200);
+    });
+
+    // 11. Upgraded New Bot Modal (OAuth vs 2-Step Token Wizard)
+    const newBotModal = document.getElementById('newBotModal');
+    const openNewBotModal = document.getElementById('openNewBotModal');
+    const closeNewBotModal = document.getElementById('closeNewBotModal');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    const submitModalBtn = document.getElementById('submitModalBtn');
+
+    const modalTabOauth = document.getElementById('modalTabOauth');
+    const modalTabToken = document.getElementById('modalTabToken');
+    const modalContentOauth = document.getElementById('modalContentOauth');
+    const modalContentToken = document.getElementById('modalContentToken');
+
+    const wizardStep1Content = document.getElementById('wizardStep1Content');
+    const wizardStep2Content = document.getElementById('wizardStep2Content');
+    const stepperStep1Tab = document.getElementById('stepperStep1Tab');
+    const stepperStep2Tab = document.getElementById('stepperStep2Tab');
+    const goToStep2Btn = document.getElementById('goToStep2Btn');
+    const backToStep1Btn = document.getElementById('backToStep1Btn');
+    const wizardStepNumber = document.getElementById('wizardStepNumber');
+    const wizardProgressBar = document.getElementById('wizardProgressBar');
+    const verifyBotTokenBtn = document.getElementById('verifyBotTokenBtn');
+    const customBotTokenInput = document.getElementById('customBotTokenInput');
+
+    function openModal() {
+      newBotModal?.classList.remove('hidden');
+      document.getElementById('modalBotName')?.focus();
+      setModalTab('oauth');
+      setWizardStep(1);
+    }
+    function closeModal() {
+      newBotModal?.classList.add('hidden');
+    }
+
+    openNewBotModal?.addEventListener('click', openModal);
+    closeNewBotModal?.addEventListener('click', closeModal);
+    cancelModalBtn?.addEventListener('click', closeModal);
+
+    submitModalBtn?.addEventListener('click', function() {
+      const name = document.getElementById('modalBotName')?.value.trim() || 'New Bot';
+      closeModal();
+      showToast(`"${name}" connected and added to your server.`, 'success');
+      switchTab('bots');
+    });
+
+    function setModalTab(tab) {
+      if (tab === 'oauth') {
+        modalTabOauth.className = 'modal-tab-btn flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold bg-[#222226] text-white transition-colors cursor-pointer';
+        modalTabToken.className = 'modal-tab-btn flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold text-[#a1a1aa] hover:text-white transition-colors cursor-pointer';
+        modalContentOauth.classList.remove('hidden');
+        modalContentToken.classList.add('hidden');
+      } else {
+        modalTabToken.className = 'modal-tab-btn flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold bg-[#222226] text-white transition-colors cursor-pointer';
+        modalTabOauth.className = 'modal-tab-btn flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold text-[#a1a1aa] hover:text-white transition-colors cursor-pointer';
+        modalContentToken.classList.remove('hidden');
+        modalContentOauth.classList.add('hidden');
+        setWizardStep(1);
+      }
+    }
+
+    modalTabOauth?.addEventListener('click', () => setModalTab('oauth'));
+    modalTabToken?.addEventListener('click', () => setModalTab('token'));
+
+    function setWizardStep(step) {
+      if (step === 1) {
+        wizardStep1Content.classList.remove('hidden');
+        wizardStep2Content.classList.add('hidden');
+        wizardStepNumber.textContent = '1 / 2';
+        wizardProgressBar.className = 'h-full bg-white rounded-full transition-all duration-300 w-1/2';
+        stepperStep1Tab.className = 'text-white font-semibold flex items-center gap-2 cursor-pointer';
+        stepperStep2Tab.className = 'text-[#71717a] font-medium flex items-center gap-2 cursor-pointer';
+      } else {
+        wizardStep1Content.classList.add('hidden');
+        wizardStep2Content.classList.remove('hidden');
+        wizardStepNumber.textContent = '2 / 2';
+        wizardProgressBar.className = 'h-full bg-[#22c55e] rounded-full transition-all duration-300 w-full';
+        stepperStep1Tab.className = 'text-[#4ade80] font-semibold flex items-center gap-2 cursor-pointer';
+        stepperStep2Tab.className = 'text-white font-semibold flex items-center gap-2 cursor-pointer';
+        customBotTokenInput?.focus();
+      }
+    }
+
+    goToStep2Btn?.addEventListener('click', () => setWizardStep(2));
+    backToStep1Btn?.addEventListener('click', () => setWizardStep(1));
+    stepperStep1Tab?.addEventListener('click', () => setWizardStep(1));
+    stepperStep2Tab?.addEventListener('click', () => setWizardStep(2));
+
+    verifyBotTokenBtn?.addEventListener('click', () => {
+      const val = customBotTokenInput?.value.trim();
+      if (!val) {
+        showToast('Please paste your Discord Bot Token to verify.');
+        customBotTokenInput?.focus();
+        return;
+      }
+      const verifyBtnText = document.getElementById('verifyBtnText');
+      if (verifyBtnText) verifyBtnText.textContent = 'Verifying Gateway Intents...';
+      verifyBotTokenBtn.disabled = true;
+
+      setTimeout(() => {
+        verifyBotTokenBtn.disabled = false;
+        if (verifyBtnText) verifyBtnText.textContent = 'Verify & Continue';
+        closeModal();
+        showToast('Bot token verified! Privileged Intents active.', 'success');
+        switchTab('bots');
+      }, 1400);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !newBotModal?.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // 12. Initial Lucide Icons Render
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

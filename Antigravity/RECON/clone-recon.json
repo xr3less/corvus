@@ -1,0 +1,3849 @@
+{
+  "label": "clone",
+  "url": "http://127.0.0.1:8126/pryzm-clone.html",
+  "capturedAt": "2026-09-10T20:12:34.011Z",
+  "console": {
+    "errors": [],
+    "warnings": [],
+    "pageErrors": []
+  },
+  "captures": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "screenshot": "screenshots\\clone-1440.png",
+      "signals": {
+        "href": "http://127.0.0.1:8126/pryzm-clone.html",
+        "title": "Pryzm | Background & Visual Studio for Designers",
+        "lang": "en",
+        "bodyTextChars": 5666,
+        "scrollHeight": 7729,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "h1": [
+          "Backgrounds nobodyelse has, in seconds"
+        ],
+        "headings": [
+          {
+            "tag": "h1",
+            "text": "Backgrounds nobodyelse has, in seconds"
+          },
+          {
+            "tag": "h2",
+            "text": "Wire it up as a graph"
+          },
+          {
+            "tag": "h2",
+            "text": "Never start from a blank canvas"
+          },
+          {
+            "tag": "h3",
+            "text": "Ink Facet"
+          },
+          {
+            "tag": "h3",
+            "text": "Undergrowth"
+          },
+          {
+            "tag": "h3",
+            "text": "Pewter Fade"
+          },
+          {
+            "tag": "h3",
+            "text": "Pewter Stock"
+          },
+          {
+            "tag": "h3",
+            "text": "Violets"
+          },
+          {
+            "tag": "h3",
+            "text": "Bright Spark"
+          },
+          {
+            "tag": "h3",
+            "text": "Soft Blend"
+          },
+          {
+            "tag": "h3",
+            "text": "Purple Haze"
+          },
+          {
+            "tag": "h2",
+            "text": "Ship it as code, not a video"
+          },
+          {
+            "tag": "h2",
+            "text": "Free to create. Pro to export without limits."
+          },
+          {
+            "tag": "h3",
+            "text": "Free"
+          },
+          {
+            "tag": "h3",
+            "text": "Pryzm Pro"
+          },
+          {
+            "tag": "h2",
+            "text": "Good questions, answered."
+          },
+          {
+            "tag": "h2",
+            "text": "Stay in the loop"
+          },
+          {
+            "tag": "h2",
+            "text": "Your next backgroundis a minute away."
+          }
+        ],
+        "metaDescription": "Pryzm is a visual studio for designers. Create original backgrounds and textures for your websites, templates, and designs in seconds, right in your browser.",
+        "counts": {
+          "links": 31,
+          "images": 23,
+          "video": 0,
+          "canvas": 0,
+          "sections": 24,
+          "forms": 2,
+          "buttons": 12,
+          "inputs": 10,
+          "interactive": 53,
+          "scripts": 1,
+          "stylesheets": 1
+        },
+        "frameworks": {
+          "react": false,
+          "next": false,
+          "vue": false,
+          "nuxt": false,
+          "svelte": false,
+          "astro": false,
+          "three": false,
+          "gsap": false,
+          "lenis": false
+        },
+        "scripts": [
+          "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
+        ],
+        "stylesheets": [
+          "http://127.0.0.1:8126/assets/fonts/fonts.css"
+        ],
+        "sections": [
+          {
+            "tag": "header",
+            "id": "siteNav",
+            "className": "sticky top-0 z-50 transition-all",
+            "text": "Pryzm Inspiration Lab BETA Pricing Open studio Sign in InspirationLab BETAPricingSign in",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 1440,
+              "height": 70
+            },
+            "style": {
+              "display": "block",
+              "position": "sticky",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto flex items-center justify-between px-5 md:px-8 py-4",
+            "text": "Pryzm Inspiration Lab BETA Pricing Open studio Sign in",
+            "rect": {
+              "x": 20,
+              "y": 0,
+              "width": 1400,
+              "height": 70
+            },
+            "style": {
+              "display": "flex",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "main",
+            "id": "top",
+            "className": "",
+            "text": "Pearl Grid, IridescentHalftone Green Mist, MossPhoto & Grain Fluted Ember, RustFluted Glass Scanline, MossPhoto & Scanlines Green Mist, MintPhoto & Grain Dot Fade, VioletHalftone Nebula, CobaltAberration & Grain ✳ New: share a look, remix a",
+            "rect": {
+              "x": 0,
+              "y": 70,
+              "width": 1440,
+              "height": 7299
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "relative overflow-hidden",
+            "text": "Pearl Grid, IridescentHalftone Green Mist, MossPhoto & Grain Fluted Ember, RustFluted Glass Scanline, MossPhoto & Scanlines Green Mist, MintPhoto & Grain Dot Fade, VioletHalftone Nebula, CobaltAberration & Grain ✳ New: share a look, remix a",
+            "rect": {
+              "x": 0,
+              "y": 70,
+              "width": 1440,
+              "height": 1080
+            },
+            "style": {
+              "display": "block",
+              "position": "relative",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "studio",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pt-6 pb-10",
+            "text": "✳◐◫🗑❐🗀 Effects Blobs ⓘ Waves Pixelate Dither Halftone ✦ Randomize⟳ Reset ▷ Animate1.0× ⛶ ⊞ ⊟ ⧉ Copy Look💾 Save ⤓ Export Props↩ ↪ Gradient Color#0A0A0A Drag stops to reposition. Click the bar to add a stop (max 8). Opacity65% ShapeLinear ",
+            "rect": {
+              "x": 20,
+              "y": 1150,
+              "width": 1400,
+              "height": 856
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "flow",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pt-24 pb-8",
+            "text": "Flow Wire it up as a graph Feed a gradient and effects into a base and watch it resolve live. Open Flow ↗ GradientSOURCE Angle BasePREVIEW",
+            "rect": {
+              "x": 20,
+              "y": 2007,
+              "width": 1400,
+              "height": 819
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "remix",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24",
+            "text": "Remix Never start from a blank canvas Click any look to remix it in the studio and make it your own. Browse inspiration ProLabInk FacetA magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.gradient ·",
+            "rect": {
+              "x": 20,
+              "y": 2825,
+              "width": 1400,
+              "height": 1167
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProLabInk FacetA magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.gradient · beam · glass",
+            "rect": {
+              "x": 52,
+              "y": 3086,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProUndergrowthA figure blurred among dark leaves, soft and nearly out of focus.grain",
+            "rect": {
+              "x": 390,
+              "y": 3086,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Pewter FadeA wash of cool blue lit by a warm bloom, blurred into a dreamlike square.grain",
+            "rect": {
+              "x": 728,
+              "y": 3086,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProPewter StockA lone figure adrift in a grainy green haze — moody and quietly cinematic.grain",
+            "rect": {
+              "x": 1066,
+              "y": 3086,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProVioletsA cluster of violets blurred behind frosted glass, bleeding color through a soft chromatic edge and grain.glass · grain · aberration",
+            "rect": {
+              "x": 52,
+              "y": 3499,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Bright SparkA hot magenta burst under frosted glass, softened with grain.glass · grain",
+            "rect": {
+              "x": 390,
+              "y": 3499,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Soft BlendA quiet indigo-to-blue blend with just a whisper of grain.grain",
+            "rect": {
+              "x": 728,
+              "y": 3499,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProPurple HazeA soft violet glow behind frosted glass, finished with a fine film grain.glass · grain",
+            "rect": {
+              "x": 1066,
+              "y": 3499,
+              "width": 322,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24",
+            "text": "Embed Ship it as code, not a video Export any look as a live background for Framer, React or plain HTML. It stays sharp at any size, fills any shape, animates without a video file, and nothing about it depends on us. Try it in the studio Pr",
+            "rect": {
+              "x": 20,
+              "y": 3992,
+              "width": 1400,
+              "height": 742
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "pricing",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24 text-center",
+            "text": "Pricing Free to create. Pro to export without limits. Go Pro to drop the watermark and unlock Small, HD, Full HD, 2K, and 4K, longer loops, and higher frame rates. Monthly Yearly 3 months free Free $0 forever Everything you need to design. ",
+            "rect": {
+              "x": 20,
+              "y": 4734,
+              "width": 1400,
+              "height": 1014
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "faq",
+            "className": "max-w-3xl mx-auto px-5 py-16 md:py-24",
+            "text": "Good questions, answered. What's free, and what needs Pro?+The whole studio is open to explore with no account needed to start. Exporting needs a free account: free export goes up to Preview size — clean (no watermark) for PNG, watermarked ",
+            "rect": {
+              "x": 336,
+              "y": 5747,
+              "width": 768,
+              "height": 755
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pb-16",
+            "text": "Stay in the loop Hear when we ship a new effect or add a look worth stealing. Email address Subscribe Occasional product emails. Unsubscribe in one click, anytime.",
+            "rect": {
+              "x": 20,
+              "y": 6502,
+              "width": 1400,
+              "height": 415
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "cta",
+            "className": "text-center px-5 py-16 md:py-20",
+            "text": "Your next backgroundis a minute away. Open the studio and make something no one else has. Open studio See pricing Built for design work, personal or commercial.",
+            "rect": {
+              "x": 0,
+              "y": 6916,
+              "width": 1440,
+              "height": 453
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "footer",
+            "id": "",
+            "className": "border-t border-white/10",
+            "text": "Pryzm Original backgrounds and animated loops, made in your browser. Email address Subscribe New features & gallery drops ProductStudioInspirationFlowPricing HelpAboutDocsSupportPrivacyTerms ElsewhereFramer templatesX / Twitter © 2026 Pryzm",
+            "rect": {
+              "x": 0,
+              "y": 7369,
+              "width": 1440,
+              "height": 361
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "ProductStudioInspirationFlowPricing",
+            "rect": {
+              "x": 479,
+              "y": 7426,
+              "width": 276,
+              "height": 189
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "HelpAboutDocsSupportPrivacyTerms",
+            "rect": {
+              "x": 795,
+              "y": 7426,
+              "width": 276,
+              "height": 189
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "ElsewhereFramer templatesX / Twitter",
+            "rect": {
+              "x": 1112,
+              "y": 7426,
+              "width": 276,
+              "height": 189
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          }
+        ],
+        "cssVariables": [
+          [
+            "--bg",
+            "#000000"
+          ],
+          [
+            "--surface",
+            "#0b0b0d"
+          ],
+          [
+            "--surface2",
+            "#141417"
+          ],
+          [
+            "--line",
+            "rgba(255,255,255,.09)"
+          ],
+          [
+            "--fg",
+            "#fafafa"
+          ],
+          [
+            "--muted",
+            "#a1a1aa"
+          ],
+          [
+            "--faint",
+            "#71717a"
+          ]
+        ],
+        "rootVariables": [
+          [
+            "--bg",
+            "#000000"
+          ],
+          [
+            "--surface",
+            "#0b0b0d"
+          ],
+          [
+            "--surface2",
+            "#141417"
+          ],
+          [
+            "--line",
+            "rgba(255,255,255,.09)"
+          ],
+          [
+            "--fg",
+            "#fafafa"
+          ],
+          [
+            "--muted",
+            "#a1a1aa"
+          ],
+          [
+            "--faint",
+            "#71717a"
+          ]
+        ],
+        "palette": {
+          "body": {
+            "backgroundColor": "rgb(0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "header": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "nav": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "main": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "footer": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "oklab(0.999994 0.0000455678 0.0000200868 / 0.1)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "buttons": [
+            {
+              "text": "Open studio",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Sign in",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open studio →",
+              "backgroundColor": "rgb(250, 250, 250)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open Flow ↗",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Browse inspiration",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Try it in the studio",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Monthly",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Yearly 3 months free",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.871 0.006 286.286)",
+              "borderColor": "oklch(0.871 0.006 286.286)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open studio",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Get Pryzm Pro",
+              "backgroundColor": "rgb(250, 250, 250)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "What's free, and what needs Pro?+",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            }
+          ]
+        },
+        "motion": {
+          "htmlScrollBehavior": "smooth",
+          "scrollSnapRules": 0,
+          "smoothScrollRules": 1,
+          "stickyOrFixedCount": 1
+        },
+        "fonts": [
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter Fallback",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins Fallback",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono Fallback"
+        ],
+        "fontFaces": [
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2\") format(\"woff2\"); unicode-range: U+460-52F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2\") format(\"woff2\"); unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2\") format(\"woff2\"); unicode-range: U+1F00-1FFF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2\") format(\"woff2\"); unicode-range: U+370-377, U+37A-37F, U+384-38A, U+38C, U+38E-3A1, U+3A3-3FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2\") format(\"woff2\"); unicode-range: U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+300-301, U+303-304, U+308-309, U+323, U+329, U+1EA0-1EF9, U+20AB; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Inter Fallback\"; src: local(\"Arial\"); ascent-override: 90.44%; descent-override: 22.52%; line-gap-override: 0%; size-adjust: 107.12%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Poppins Fallback\"; src: local(\"Arial\"); ascent-override: 93.62%; descent-override: 31.21%; line-gap-override: 8.92%; size-adjust: 112.16%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2\") format(\"woff2\"); unicode-range: U+460-52F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2\") format(\"woff2\"); unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2\") format(\"woff2\"); unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2\") format(\"woff2\"); unicode-range: U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+300-301, U+303-304, U+308-309, U+323, U+329, U+1EA0-1EF9, U+20AB; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Geist Mono Fallback\"; src: local(\"Arial\"); ascent-override: 74.67%; descent-override: 21.92%; line-gap-override: 0%; size-adjust: 134.59%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          }
+        ],
+        "resources": {
+          "images": [
+            "http://127.0.0.1:8126/assets/images/pryzm.design/15-5123652a60.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/1-8a802146d6.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/6-3f21c0f6c1.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/3-2a02a828a1.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/18-6e6d3ed328.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/19-7bfbba5e18.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/10-78a1bd812a.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/16-249988f9bf.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/14-df6e8fca09.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/4-7bfa1dcaf8.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/5-1b4a2eb530.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/11-0b4424149a.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/12-495e56b3ce.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/signin-f20ce09ebb.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/footer3-1087a09b15.webp"
+          ],
+          "fonts": [
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2",
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2",
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+          ],
+          "media": []
+        },
+        "images": [
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/1-8a802146d6.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/15-5123652a60.webp",
+            "srcset": "",
+            "alt": "Pearl Grid, Iridescent",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/6-3f21c0f6c1.webp",
+            "srcset": "",
+            "alt": "Green Mist, Moss",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/3-2a02a828a1.webp",
+            "srcset": "",
+            "alt": "Fluted Ember, Rust",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/18-6e6d3ed328.webp",
+            "srcset": "",
+            "alt": "Scanline, Moss",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/19-7bfbba5e18.webp",
+            "srcset": "",
+            "alt": "Green Mist, Mint",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/10-78a1bd812a.webp",
+            "srcset": "",
+            "alt": "Dot Fade, Violet",
+            "width": 640,
+            "height": 360
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/16-249988f9bf.webp",
+            "srcset": "",
+            "alt": "Nebula, Cobalt",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/14-df6e8fca09.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/4-7bfa1dcaf8.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/5-1b4a2eb530.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/11-0b4424149a.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/12-495e56b3ce.webp",
+            "srcset": "",
+            "alt": "Studio canvas preview of a dotted halftone look",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp",
+            "srcset": "",
+            "alt": "Ink Facet — magenta beam behind fluted glass",
+            "width": 1000,
+            "height": 892
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp",
+            "srcset": "",
+            "alt": "Undergrowth — figure blurred among dark leaves",
+            "width": 640,
+            "height": 471
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp",
+            "srcset": "",
+            "alt": "Pewter Fade — cool blue wash with warm bloom",
+            "width": 640,
+            "height": 627
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp",
+            "srcset": "",
+            "alt": "Pewter Stock — lone figure in grainy green haze",
+            "width": 490,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp",
+            "srcset": "",
+            "alt": "Violets — flowers blurred behind frosted glass",
+            "width": 1000,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png",
+            "srcset": "",
+            "alt": "Bright Spark — hot magenta burst under frosted glass",
+            "width": 750,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png",
+            "srcset": "",
+            "alt": "Soft Blend — quiet indigo to blue blend",
+            "width": 750,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png",
+            "srcset": "",
+            "alt": "Purple Haze — soft violet glow behind frosted glass",
+            "width": 1000,
+            "height": 563
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/signin-f20ce09ebb.webp",
+            "srcset": "",
+            "alt": "Live exported background running in a browser frame",
+            "width": 1920,
+            "height": 1440
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/footer3-1087a09b15.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 1200,
+            "height": 600
+          }
+        ],
+        "canvases": []
+      }
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "screenshot": "screenshots\\clone-768.png",
+      "signals": {
+        "href": "http://127.0.0.1:8126/pryzm-clone.html",
+        "title": "Pryzm | Background & Visual Studio for Designers",
+        "lang": "en",
+        "bodyTextChars": 5666,
+        "scrollHeight": 8772,
+        "viewport": {
+          "width": 768,
+          "height": 900
+        },
+        "h1": [
+          "Backgrounds nobodyelse has, in seconds"
+        ],
+        "headings": [
+          {
+            "tag": "h1",
+            "text": "Backgrounds nobodyelse has, in seconds"
+          },
+          {
+            "tag": "h2",
+            "text": "Wire it up as a graph"
+          },
+          {
+            "tag": "h2",
+            "text": "Never start from a blank canvas"
+          },
+          {
+            "tag": "h3",
+            "text": "Ink Facet"
+          },
+          {
+            "tag": "h3",
+            "text": "Undergrowth"
+          },
+          {
+            "tag": "h3",
+            "text": "Pewter Fade"
+          },
+          {
+            "tag": "h3",
+            "text": "Pewter Stock"
+          },
+          {
+            "tag": "h3",
+            "text": "Violets"
+          },
+          {
+            "tag": "h3",
+            "text": "Bright Spark"
+          },
+          {
+            "tag": "h3",
+            "text": "Soft Blend"
+          },
+          {
+            "tag": "h3",
+            "text": "Purple Haze"
+          },
+          {
+            "tag": "h2",
+            "text": "Ship it as code, not a video"
+          },
+          {
+            "tag": "h2",
+            "text": "Free to create. Pro to export without limits."
+          },
+          {
+            "tag": "h3",
+            "text": "Free"
+          },
+          {
+            "tag": "h3",
+            "text": "Pryzm Pro"
+          },
+          {
+            "tag": "h2",
+            "text": "Good questions, answered."
+          },
+          {
+            "tag": "h2",
+            "text": "Stay in the loop"
+          },
+          {
+            "tag": "h2",
+            "text": "Your next backgroundis a minute away."
+          }
+        ],
+        "metaDescription": "Pryzm is a visual studio for designers. Create original backgrounds and textures for your websites, templates, and designs in seconds, right in your browser.",
+        "counts": {
+          "links": 31,
+          "images": 23,
+          "video": 0,
+          "canvas": 0,
+          "sections": 24,
+          "forms": 2,
+          "buttons": 12,
+          "inputs": 10,
+          "interactive": 53,
+          "scripts": 1,
+          "stylesheets": 1
+        },
+        "frameworks": {
+          "react": false,
+          "next": false,
+          "vue": false,
+          "nuxt": false,
+          "svelte": false,
+          "astro": false,
+          "three": false,
+          "gsap": false,
+          "lenis": false
+        },
+        "scripts": [
+          "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
+        ],
+        "stylesheets": [
+          "http://127.0.0.1:8126/assets/fonts/fonts.css"
+        ],
+        "sections": [
+          {
+            "tag": "header",
+            "id": "siteNav",
+            "className": "sticky top-0 z-50 transition-all",
+            "text": "Pryzm Inspiration Lab BETA Pricing Open studio Sign in InspirationLab BETAPricingSign in",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 768,
+              "height": 70
+            },
+            "style": {
+              "display": "block",
+              "position": "sticky",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto flex items-center justify-between px-5 md:px-8 py-4",
+            "text": "Pryzm Inspiration Lab BETA Pricing Open studio Sign in",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 768,
+              "height": 70
+            },
+            "style": {
+              "display": "flex",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "main",
+            "id": "top",
+            "className": "",
+            "text": "Pearl Grid, IridescentHalftone Green Mist, MossPhoto & Grain Fluted Ember, RustFluted Glass Scanline, MossPhoto & Scanlines Green Mist, MintPhoto & Grain Dot Fade, VioletHalftone Nebula, CobaltAberration & Grain ✳ New: share a look, remix a",
+            "rect": {
+              "x": 0,
+              "y": 70,
+              "width": 768,
+              "height": 8342
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "relative overflow-hidden",
+            "text": "Pearl Grid, IridescentHalftone Green Mist, MossPhoto & Grain Fluted Ember, RustFluted Glass Scanline, MossPhoto & Scanlines Green Mist, MintPhoto & Grain Dot Fade, VioletHalftone Nebula, CobaltAberration & Grain ✳ New: share a look, remix a",
+            "rect": {
+              "x": 0,
+              "y": 70,
+              "width": 768,
+              "height": 1080
+            },
+            "style": {
+              "display": "block",
+              "position": "relative",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "studio",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pt-6 pb-10",
+            "text": "✳◐◫🗑❐🗀 Effects Blobs ⓘ Waves Pixelate Dither Halftone ✦ Randomize⟳ Reset ▷ Animate1.0× ⛶ ⊞ ⊟ ⧉ Copy Look💾 Save ⤓ Export Props↩ ↪ Gradient Color#0A0A0A Drag stops to reposition. Click the bar to add a stop (max 8). Opacity65% ShapeLinear ",
+            "rect": {
+              "x": 0,
+              "y": 1150,
+              "width": 768,
+              "height": 856
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "flow",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pt-24 pb-8",
+            "text": "Flow Wire it up as a graph Feed a gradient and effects into a base and watch it resolve live. Open Flow ↗ GradientSOURCE Angle BasePREVIEW",
+            "rect": {
+              "x": 0,
+              "y": 2007,
+              "width": 768,
+              "height": 877
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "remix",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24",
+            "text": "Remix Never start from a blank canvas Click any look to remix it in the studio and make it your own. Browse inspiration ProLabInk FacetA magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.gradient ·",
+            "rect": {
+              "x": 0,
+              "y": 2884,
+              "width": 768,
+              "height": 2054
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProLabInk FacetA magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.gradient · beam · glass",
+            "rect": {
+              "x": 32,
+              "y": 3204,
+              "width": 344,
+              "height": 392
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProUndergrowthA figure blurred among dark leaves, soft and nearly out of focus.grain",
+            "rect": {
+              "x": 392,
+              "y": 3204,
+              "width": 344,
+              "height": 392
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Pewter FadeA wash of cool blue lit by a warm bloom, blurred into a dreamlike square.grain",
+            "rect": {
+              "x": 32,
+              "y": 3612,
+              "width": 344,
+              "height": 392
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProPewter StockA lone figure adrift in a grainy green haze — moody and quietly cinematic.grain",
+            "rect": {
+              "x": 392,
+              "y": 3612,
+              "width": 344,
+              "height": 392
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProVioletsA cluster of violets blurred behind frosted glass, bleeding color through a soft chromatic edge and grain.glass · grain · aberration",
+            "rect": {
+              "x": 32,
+              "y": 4020,
+              "width": 344,
+              "height": 413
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Bright SparkA hot magenta burst under frosted glass, softened with grain.glass · grain",
+            "rect": {
+              "x": 392,
+              "y": 4020,
+              "width": 344,
+              "height": 413
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Soft BlendA quiet indigo-to-blue blend with just a whisper of grain.grain",
+            "rect": {
+              "x": 32,
+              "y": 4450,
+              "width": 344,
+              "height": 392
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProPurple HazeA soft violet glow behind frosted glass, finished with a fine film grain.glass · grain",
+            "rect": {
+              "x": 392,
+              "y": 4450,
+              "width": 344,
+              "height": 392
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24",
+            "text": "Embed Ship it as code, not a video Export any look as a live background for Framer, React or plain HTML. It stays sharp at any size, fills any shape, animates without a video file, and nothing about it depends on us. Try it in the studio Pr",
+            "rect": {
+              "x": 0,
+              "y": 4938,
+              "width": 768,
+              "height": 742
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "pricing",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24 text-center",
+            "text": "Pricing Free to create. Pro to export without limits. Go Pro to drop the watermark and unlock Small, HD, Full HD, 2K, and 4K, longer loops, and higher frame rates. Monthly Yearly 3 months free Free $0 forever Everything you need to design. ",
+            "rect": {
+              "x": 0,
+              "y": 5680,
+              "width": 768,
+              "height": 1111
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "faq",
+            "className": "max-w-3xl mx-auto px-5 py-16 md:py-24",
+            "text": "Good questions, answered. What's free, and what needs Pro?+The whole studio is open to explore with no account needed to start. Exporting needs a free account: free export goes up to Preview size — clean (no watermark) for PNG, watermarked ",
+            "rect": {
+              "x": 0,
+              "y": 6790,
+              "width": 768,
+              "height": 755
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pb-16",
+            "text": "Stay in the loop Hear when we ship a new effect or add a look worth stealing. Email address Subscribe Occasional product emails. Unsubscribe in one click, anytime.",
+            "rect": {
+              "x": 0,
+              "y": 7545,
+              "width": 768,
+              "height": 415
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "cta",
+            "className": "text-center px-5 py-16 md:py-20",
+            "text": "Your next backgroundis a minute away. Open the studio and make something no one else has. Open studio See pricing Built for design work, personal or commercial.",
+            "rect": {
+              "x": 0,
+              "y": 7959,
+              "width": 768,
+              "height": 453
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "footer",
+            "id": "",
+            "className": "border-t border-white/10",
+            "text": "Pryzm Original backgrounds and animated loops, made in your browser. Email address Subscribe New features & gallery drops ProductStudioInspirationFlowPricing HelpAboutDocsSupportPrivacyTerms ElsewhereFramer templatesX / Twitter © 2026 Pryzm",
+            "rect": {
+              "x": 0,
+              "y": 8412,
+              "width": 768,
+              "height": 361
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "ProductStudioInspirationFlowPricing",
+            "rect": {
+              "x": 381,
+              "y": 8469,
+              "width": 92,
+              "height": 189
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "HelpAboutDocsSupportPrivacyTerms",
+            "rect": {
+              "x": 513,
+              "y": 8469,
+              "width": 92,
+              "height": 189
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "ElsewhereFramer templatesX / Twitter",
+            "rect": {
+              "x": 644,
+              "y": 8469,
+              "width": 92,
+              "height": 189
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          }
+        ],
+        "cssVariables": [
+          [
+            "--bg",
+            "#000000"
+          ],
+          [
+            "--surface",
+            "#0b0b0d"
+          ],
+          [
+            "--surface2",
+            "#141417"
+          ],
+          [
+            "--line",
+            "rgba(255,255,255,.09)"
+          ],
+          [
+            "--fg",
+            "#fafafa"
+          ],
+          [
+            "--muted",
+            "#a1a1aa"
+          ],
+          [
+            "--faint",
+            "#71717a"
+          ]
+        ],
+        "rootVariables": [
+          [
+            "--bg",
+            "#000000"
+          ],
+          [
+            "--surface",
+            "#0b0b0d"
+          ],
+          [
+            "--surface2",
+            "#141417"
+          ],
+          [
+            "--line",
+            "rgba(255,255,255,.09)"
+          ],
+          [
+            "--fg",
+            "#fafafa"
+          ],
+          [
+            "--muted",
+            "#a1a1aa"
+          ],
+          [
+            "--faint",
+            "#71717a"
+          ]
+        ],
+        "palette": {
+          "body": {
+            "backgroundColor": "rgb(0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "header": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "nav": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "main": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "footer": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "oklab(0.999994 0.0000455678 0.0000200868 / 0.1)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "buttons": [
+            {
+              "text": "Open studio",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Sign in",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open studio →",
+              "backgroundColor": "rgb(250, 250, 250)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open Flow ↗",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Browse inspiration",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Try it in the studio",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Monthly",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Yearly 3 months free",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.871 0.006 286.286)",
+              "borderColor": "oklch(0.871 0.006 286.286)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open studio",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Get Pryzm Pro",
+              "backgroundColor": "rgb(250, 250, 250)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "What's free, and what needs Pro?+",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            }
+          ]
+        },
+        "motion": {
+          "htmlScrollBehavior": "smooth",
+          "scrollSnapRules": 0,
+          "smoothScrollRules": 1,
+          "stickyOrFixedCount": 1
+        },
+        "fonts": [
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter Fallback",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins Fallback",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono Fallback"
+        ],
+        "fontFaces": [
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2\") format(\"woff2\"); unicode-range: U+460-52F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2\") format(\"woff2\"); unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2\") format(\"woff2\"); unicode-range: U+1F00-1FFF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2\") format(\"woff2\"); unicode-range: U+370-377, U+37A-37F, U+384-38A, U+38C, U+38E-3A1, U+3A3-3FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2\") format(\"woff2\"); unicode-range: U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+300-301, U+303-304, U+308-309, U+323, U+329, U+1EA0-1EF9, U+20AB; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Inter Fallback\"; src: local(\"Arial\"); ascent-override: 90.44%; descent-override: 22.52%; line-gap-override: 0%; size-adjust: 107.12%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Poppins Fallback\"; src: local(\"Arial\"); ascent-override: 93.62%; descent-override: 31.21%; line-gap-override: 8.92%; size-adjust: 112.16%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2\") format(\"woff2\"); unicode-range: U+460-52F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2\") format(\"woff2\"); unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2\") format(\"woff2\"); unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2\") format(\"woff2\"); unicode-range: U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+300-301, U+303-304, U+308-309, U+323, U+329, U+1EA0-1EF9, U+20AB; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Geist Mono Fallback\"; src: local(\"Arial\"); ascent-override: 74.67%; descent-override: 21.92%; line-gap-override: 0%; size-adjust: 134.59%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          }
+        ],
+        "resources": {
+          "images": [
+            "http://127.0.0.1:8126/assets/images/pryzm.design/15-5123652a60.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/1-8a802146d6.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/6-3f21c0f6c1.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/3-2a02a828a1.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/18-6e6d3ed328.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/19-7bfbba5e18.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/10-78a1bd812a.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/16-249988f9bf.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/14-df6e8fca09.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/4-7bfa1dcaf8.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/5-1b4a2eb530.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/11-0b4424149a.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/12-495e56b3ce.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/signin-f20ce09ebb.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/footer3-1087a09b15.webp"
+          ],
+          "fonts": [
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2",
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2",
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+          ],
+          "media": []
+        },
+        "images": [
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/1-8a802146d6.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/15-5123652a60.webp",
+            "srcset": "",
+            "alt": "Pearl Grid, Iridescent",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/6-3f21c0f6c1.webp",
+            "srcset": "",
+            "alt": "Green Mist, Moss",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/3-2a02a828a1.webp",
+            "srcset": "",
+            "alt": "Fluted Ember, Rust",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/18-6e6d3ed328.webp",
+            "srcset": "",
+            "alt": "Scanline, Moss",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/19-7bfbba5e18.webp",
+            "srcset": "",
+            "alt": "Green Mist, Mint",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/10-78a1bd812a.webp",
+            "srcset": "",
+            "alt": "Dot Fade, Violet",
+            "width": 640,
+            "height": 360
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/16-249988f9bf.webp",
+            "srcset": "",
+            "alt": "Nebula, Cobalt",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/14-df6e8fca09.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/4-7bfa1dcaf8.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/5-1b4a2eb530.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/11-0b4424149a.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/12-495e56b3ce.webp",
+            "srcset": "",
+            "alt": "Studio canvas preview of a dotted halftone look",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp",
+            "srcset": "",
+            "alt": "Ink Facet — magenta beam behind fluted glass",
+            "width": 1000,
+            "height": 892
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp",
+            "srcset": "",
+            "alt": "Undergrowth — figure blurred among dark leaves",
+            "width": 640,
+            "height": 471
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp",
+            "srcset": "",
+            "alt": "Pewter Fade — cool blue wash with warm bloom",
+            "width": 640,
+            "height": 627
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp",
+            "srcset": "",
+            "alt": "Pewter Stock — lone figure in grainy green haze",
+            "width": 490,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp",
+            "srcset": "",
+            "alt": "Violets — flowers blurred behind frosted glass",
+            "width": 1000,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png",
+            "srcset": "",
+            "alt": "Bright Spark — hot magenta burst under frosted glass",
+            "width": 750,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png",
+            "srcset": "",
+            "alt": "Soft Blend — quiet indigo to blue blend",
+            "width": 750,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png",
+            "srcset": "",
+            "alt": "Purple Haze — soft violet glow behind frosted glass",
+            "width": 1000,
+            "height": 563
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/signin-f20ce09ebb.webp",
+            "srcset": "",
+            "alt": "Live exported background running in a browser frame",
+            "width": 1920,
+            "height": 1440
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/footer3-1087a09b15.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 1200,
+            "height": 600
+          }
+        ],
+        "canvases": []
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "screenshot": "screenshots\\clone-390.png",
+      "signals": {
+        "href": "http://127.0.0.1:8126/pryzm-clone.html",
+        "title": "Pryzm | Background & Visual Studio for Designers",
+        "lang": "en",
+        "bodyTextChars": 5212,
+        "scrollHeight": 11330,
+        "viewport": {
+          "width": 390,
+          "height": 900
+        },
+        "h1": [
+          "Backgrounds nobodyelse has, in seconds"
+        ],
+        "headings": [
+          {
+            "tag": "h1",
+            "text": "Backgrounds nobodyelse has, in seconds"
+          },
+          {
+            "tag": "h2",
+            "text": "Wire it up as a graph"
+          },
+          {
+            "tag": "h2",
+            "text": "Never start from a blank canvas"
+          },
+          {
+            "tag": "h3",
+            "text": "Ink Facet"
+          },
+          {
+            "tag": "h3",
+            "text": "Undergrowth"
+          },
+          {
+            "tag": "h3",
+            "text": "Pewter Fade"
+          },
+          {
+            "tag": "h3",
+            "text": "Pewter Stock"
+          },
+          {
+            "tag": "h3",
+            "text": "Violets"
+          },
+          {
+            "tag": "h3",
+            "text": "Bright Spark"
+          },
+          {
+            "tag": "h3",
+            "text": "Soft Blend"
+          },
+          {
+            "tag": "h3",
+            "text": "Purple Haze"
+          },
+          {
+            "tag": "h2",
+            "text": "Ship it as code, not a video"
+          },
+          {
+            "tag": "h2",
+            "text": "Free to create. Pro to export without limits."
+          },
+          {
+            "tag": "h3",
+            "text": "Free"
+          },
+          {
+            "tag": "h3",
+            "text": "Pryzm Pro"
+          },
+          {
+            "tag": "h2",
+            "text": "Good questions, answered."
+          },
+          {
+            "tag": "h2",
+            "text": "Stay in the loop"
+          },
+          {
+            "tag": "h2",
+            "text": "Your next backgroundis a minute away."
+          }
+        ],
+        "metaDescription": "Pryzm is a visual studio for designers. Create original backgrounds and textures for your websites, templates, and designs in seconds, right in your browser.",
+        "counts": {
+          "links": 31,
+          "images": 23,
+          "video": 0,
+          "canvas": 0,
+          "sections": 24,
+          "forms": 2,
+          "buttons": 12,
+          "inputs": 10,
+          "interactive": 53,
+          "scripts": 1,
+          "stylesheets": 1
+        },
+        "frameworks": {
+          "react": false,
+          "next": false,
+          "vue": false,
+          "nuxt": false,
+          "svelte": false,
+          "astro": false,
+          "three": false,
+          "gsap": false,
+          "lenis": false
+        },
+        "scripts": [
+          "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
+        ],
+        "stylesheets": [
+          "http://127.0.0.1:8126/assets/fonts/fonts.css"
+        ],
+        "sections": [
+          {
+            "tag": "header",
+            "id": "siteNav",
+            "className": "sticky top-0 z-50 transition-all",
+            "text": "Pryzm Inspiration Lab BETA Pricing Open studio Sign in InspirationLab BETAPricingSign in",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 76
+            },
+            "style": {
+              "display": "block",
+              "position": "sticky",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto flex items-center justify-between px-5 md:px-8 py-4",
+            "text": "Pryzm Inspiration Lab BETA Pricing Open studio Sign in",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 76
+            },
+            "style": {
+              "display": "flex",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "main",
+            "id": "top",
+            "className": "",
+            "text": "Pearl Grid, IridescentHalftone Green Mist, MossPhoto & Grain Fluted Ember, RustFluted Glass Scanline, MossPhoto & Scanlines Green Mist, MintPhoto & Grain Dot Fade, VioletHalftone Nebula, CobaltAberration & Grain ✳ New: share a look, remix a",
+            "rect": {
+              "x": 0,
+              "y": 76,
+              "width": 390,
+              "height": 10339
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "relative overflow-hidden",
+            "text": "Pearl Grid, IridescentHalftone Green Mist, MossPhoto & Grain Fluted Ember, RustFluted Glass Scanline, MossPhoto & Scanlines Green Mist, MintPhoto & Grain Dot Fade, VioletHalftone Nebula, CobaltAberration & Grain ✳ New: share a look, remix a",
+            "rect": {
+              "x": 0,
+              "y": 76,
+              "width": 390,
+              "height": 1080
+            },
+            "style": {
+              "display": "block",
+              "position": "relative",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "studio",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pt-6 pb-10",
+            "text": "✳◐◫🗑❐🗀 Effects Blobs ⓘ Waves Pixelate Dither Halftone ✦ Randomize⟳ Reset ▷ Animate1.0× ⛶ ⊞ ⊟ ⧉ Copy Look💾 Save ⤓ Export Props↩ ↪ Gradient Color#0A0A0A Drag stops to reposition. Click the bar to add a stop (max 8). Opacity65% ShapeLinear ",
+            "rect": {
+              "x": 0,
+              "y": 1156,
+              "width": 390,
+              "height": 709
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "flow",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pt-24 pb-8",
+            "text": "Flow Wire it up as a graph Feed a gradient and effects into a base and watch it resolve live. Open Flow ↗ GradientSOURCE Angle BasePREVIEW",
+            "rect": {
+              "x": 0,
+              "y": 1865,
+              "width": 390,
+              "height": 849
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "remix",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24",
+            "text": "Remix Never start from a blank canvas Click any look to remix it in the studio and make it your own. Browse inspiration ProLabInk FacetA magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.gradient ·",
+            "rect": {
+              "x": 0,
+              "y": 2714,
+              "width": 390,
+              "height": 3658
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProLabInk FacetA magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.gradient · beam · glass",
+            "rect": {
+              "x": 20,
+              "y": 3046,
+              "width": 350,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProUndergrowthA figure blurred among dark leaves, soft and nearly out of focus.grain",
+            "rect": {
+              "x": 20,
+              "y": 3458,
+              "width": 350,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Pewter FadeA wash of cool blue lit by a warm bloom, blurred into a dreamlike square.grain",
+            "rect": {
+              "x": 20,
+              "y": 3871,
+              "width": 350,
+              "height": 382
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProPewter StockA lone figure adrift in a grainy green haze — moody and quietly cinematic.grain",
+            "rect": {
+              "x": 20,
+              "y": 4269,
+              "width": 350,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProVioletsA cluster of violets blurred behind frosted glass, bleeding color through a soft chromatic edge and grain.glass · grain · aberration",
+            "rect": {
+              "x": 20,
+              "y": 4682,
+              "width": 350,
+              "height": 418
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Bright SparkA hot magenta burst under frosted glass, softened with grain.glass · grain",
+            "rect": {
+              "x": 20,
+              "y": 5116,
+              "width": 350,
+              "height": 382
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "Soft BlendA quiet indigo-to-blue blend with just a whisper of grain.grain",
+            "rect": {
+              "x": 20,
+              "y": 5513,
+              "width": 350,
+              "height": 382
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "article",
+            "id": "",
+            "className": "card overflow-hidden group reveal in",
+            "text": "ProPurple HazeA soft violet glow behind frosted glass, finished with a fine film grain.glass · grain",
+            "rect": {
+              "x": 20,
+              "y": 5911,
+              "width": 350,
+              "height": 397
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgb(11, 11, 13)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24",
+            "text": "Embed Ship it as code, not a video Export any look as a live background for Framer, React or plain HTML. It stays sharp at any size, fills any shape, animates without a video file, and nothing about it depends on us. Try it in the studio Pr",
+            "rect": {
+              "x": 0,
+              "y": 6372,
+              "width": 390,
+              "height": 947
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "pricing",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24 text-center",
+            "text": "Pricing Free to create. Pro to export without limits. Go Pro to drop the watermark and unlock Small, HD, Full HD, 2K, and 4K, longer loops, and higher frame rates. Monthly Yearly 3 months free Free $0 forever Everything you need to design. ",
+            "rect": {
+              "x": 0,
+              "y": 7319,
+              "width": 390,
+              "height": 1497
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "faq",
+            "className": "max-w-3xl mx-auto px-5 py-16 md:py-24",
+            "text": "Good questions, answered. What's free, and what needs Pro?+The whole studio is open to explore with no account needed to start. Exporting needs a free account: free export goes up to Preview size — clean (no watermark) for PNG, watermarked ",
+            "rect": {
+              "x": 0,
+              "y": 8815,
+              "width": 390,
+              "height": 711
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "",
+            "className": "max-w-[1400px] mx-auto px-5 md:px-8 pb-16",
+            "text": "Stay in the loop Hear when we ship a new effect or add a look worth stealing. Email address Subscribe Occasional product emails. Unsubscribe in one click, anytime.",
+            "rect": {
+              "x": 0,
+              "y": 9526,
+              "width": 390,
+              "height": 495
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "section",
+            "id": "cta",
+            "className": "text-center px-5 py-16 md:py-20",
+            "text": "Your next backgroundis a minute away. Open the studio and make something no one else has. Open studio See pricing Built for design work, personal or commercial.",
+            "rect": {
+              "x": 0,
+              "y": 10021,
+              "width": 390,
+              "height": 395
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "footer",
+            "id": "",
+            "className": "border-t border-white/10",
+            "text": "Pryzm Original backgrounds and animated loops, made in your browser. Email address Subscribe New features & gallery drops ProductStudioInspirationFlowPricing HelpAboutDocsSupportPrivacyTerms ElsewhereFramer templatesX / Twitter © 2026 Pryzm",
+            "rect": {
+              "x": 0,
+              "y": 10415,
+              "width": 390,
+              "height": 915
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "ProductStudioInspirationFlowPricing",
+            "rect": {
+              "x": 20,
+              "y": 10701,
+              "width": 350,
+              "height": 147
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "HelpAboutDocsSupportPrivacyTerms",
+            "rect": {
+              "x": 20,
+              "y": 10887,
+              "width": 350,
+              "height": 178
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          },
+          {
+            "tag": "nav",
+            "id": "",
+            "className": "",
+            "text": "ElsewhereFramer templatesX / Twitter",
+            "rect": {
+              "x": 20,
+              "y": 11105,
+              "width": 350,
+              "height": 85
+            },
+            "style": {
+              "display": "block",
+              "position": "static",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "fontSize": "16px"
+            }
+          }
+        ],
+        "cssVariables": [
+          [
+            "--bg",
+            "#000000"
+          ],
+          [
+            "--surface",
+            "#0b0b0d"
+          ],
+          [
+            "--surface2",
+            "#141417"
+          ],
+          [
+            "--line",
+            "rgba(255,255,255,.09)"
+          ],
+          [
+            "--fg",
+            "#fafafa"
+          ],
+          [
+            "--muted",
+            "#a1a1aa"
+          ],
+          [
+            "--faint",
+            "#71717a"
+          ]
+        ],
+        "rootVariables": [
+          [
+            "--bg",
+            "#000000"
+          ],
+          [
+            "--surface",
+            "#0b0b0d"
+          ],
+          [
+            "--surface2",
+            "#141417"
+          ],
+          [
+            "--line",
+            "rgba(255,255,255,.09)"
+          ],
+          [
+            "--fg",
+            "#fafafa"
+          ],
+          [
+            "--muted",
+            "#a1a1aa"
+          ],
+          [
+            "--faint",
+            "#71717a"
+          ]
+        ],
+        "palette": {
+          "body": {
+            "backgroundColor": "rgb(0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "header": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "nav": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "main": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "rgb(250, 250, 250)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "footer": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(250, 250, 250)",
+            "borderColor": "oklab(0.999994 0.0000455678 0.0000200868 / 0.1)",
+            "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+            "backgroundImage": ""
+          },
+          "buttons": [
+            {
+              "text": "Open studio",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Sign in",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open studio →",
+              "backgroundColor": "rgb(250, 250, 250)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open Flow ↗",
+              "backgroundColor": "rgb(28, 28, 31)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.12)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Browse inspiration",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Try it in the studio",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Monthly",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Yearly 3 months free",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.871 0.006 286.286)",
+              "borderColor": "oklch(0.871 0.006 286.286)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Open studio",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgba(255, 255, 255, 0.09)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "Get Pryzm Pro",
+              "backgroundColor": "rgb(250, 250, 250)",
+              "color": "rgb(0, 0, 0)",
+              "borderColor": "rgb(0, 0, 0)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            },
+            {
+              "text": "What's free, and what needs Pro?+",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(250, 250, 250)",
+              "borderColor": "rgb(250, 250, 250)",
+              "fontFamily": "Inter, \"Inter Fallback\", system-ui, sans-serif",
+              "backgroundImage": ""
+            }
+          ]
+        },
+        "motion": {
+          "htmlScrollBehavior": "smooth",
+          "scrollSnapRules": 0,
+          "smoothScrollRules": 1,
+          "stickyOrFixedCount": 1
+        },
+        "fonts": [
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter",
+          "Inter Fallback",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins",
+          "Poppins Fallback",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono",
+          "Geist Mono Fallback"
+        ],
+        "fontFaces": [
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2\") format(\"woff2\"); unicode-range: U+460-52F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2\") format(\"woff2\"); unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2\") format(\"woff2\"); unicode-range: U+1F00-1FFF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2\") format(\"woff2\"); unicode-range: U+370-377, U+37A-37F, U+384-38A, U+38C, U+38E-3A1, U+3A3-3FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2\") format(\"woff2\"); unicode-range: U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+300-301, U+303-304, U+308-309, U+323, U+329, U+1EA0-1EF9, U+20AB; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2"
+            ],
+            "cssText": "@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Inter Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Inter Fallback\"; src: local(\"Arial\"); ascent-override: 90.44%; descent-override: 22.52%; line-gap-override: 0%; size-adjust: 107.12%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "500",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(\"pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "600",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(\"pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2\") format(\"woff2\"); unicode-range: U+900-97F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins",
+            "weight": "700",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2"
+            ],
+            "cssText": "@font-face { font-family: Poppins; font-style: normal; font-weight: 700; font-display: swap; src: url(\"pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Poppins Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Poppins Fallback\"; src: local(\"Arial\"); ascent-override: 93.62%; descent-override: 31.21%; line-gap-override: 8.92%; size-adjust: 112.16%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2\") format(\"woff2\"); unicode-range: U+460-52F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2\") format(\"woff2\"); unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2\") format(\"woff2\"); unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2\") format(\"woff2\"); unicode-range: U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+300-301, U+303-304, U+308-309, U+323, U+329, U+1EA0-1EF9, U+20AB; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2\") format(\"woff2\"); unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono",
+            "weight": "100 900",
+            "style": "normal",
+            "srcUrls": [
+              "pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2"
+            ],
+            "cssText": "@font-face { font-family: \"Geist Mono\"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(\"pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2\") format(\"woff2\"); unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          },
+          {
+            "family": "Geist Mono Fallback",
+            "weight": "",
+            "style": "",
+            "srcUrls": [],
+            "cssText": "@font-face { font-family: \"Geist Mono Fallback\"; src: local(\"Arial\"); ascent-override: 74.67%; descent-override: 21.92%; line-gap-override: 0%; size-adjust: 134.59%; }",
+            "sheetHref": "http://127.0.0.1:8126/assets/fonts/fonts.css"
+          }
+        ],
+        "resources": {
+          "images": [
+            "http://127.0.0.1:8126/assets/images/pryzm.design/1-8a802146d6.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/6-3f21c0f6c1.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/15-5123652a60.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/3-2a02a828a1.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/18-6e6d3ed328.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/19-7bfbba5e18.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/10-78a1bd812a.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/16-249988f9bf.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/14-df6e8fca09.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/4-7bfa1dcaf8.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/5-1b4a2eb530.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/11-0b4424149a.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/12-495e56b3ce.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png",
+            "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/signin-f20ce09ebb.webp",
+            "http://127.0.0.1:8126/assets/images/pryzm.design/footer3-1087a09b15.webp"
+          ],
+          "fonts": [
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2",
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2",
+            "http://127.0.0.1:8126/assets/fonts/pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+          ],
+          "media": []
+        },
+        "images": [
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/1-8a802146d6.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/15-5123652a60.webp",
+            "srcset": "",
+            "alt": "Pearl Grid, Iridescent",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/6-3f21c0f6c1.webp",
+            "srcset": "",
+            "alt": "Green Mist, Moss",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/3-2a02a828a1.webp",
+            "srcset": "",
+            "alt": "Fluted Ember, Rust",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/18-6e6d3ed328.webp",
+            "srcset": "",
+            "alt": "Scanline, Moss",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/19-7bfbba5e18.webp",
+            "srcset": "",
+            "alt": "Green Mist, Mint",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/10-78a1bd812a.webp",
+            "srcset": "",
+            "alt": "Dot Fade, Violet",
+            "width": 640,
+            "height": 360
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/16-249988f9bf.webp",
+            "srcset": "",
+            "alt": "Nebula, Cobalt",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/14-df6e8fca09.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/4-7bfa1dcaf8.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/5-1b4a2eb530.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 853
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/11-0b4424149a.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/12-495e56b3ce.webp",
+            "srcset": "",
+            "alt": "Studio canvas preview of a dotted halftone look",
+            "width": 640,
+            "height": 480
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp",
+            "srcset": "",
+            "alt": "Ink Facet — magenta beam behind fluted glass",
+            "width": 1000,
+            "height": 892
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp",
+            "srcset": "",
+            "alt": "Undergrowth — figure blurred among dark leaves",
+            "width": 640,
+            "height": 471
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp",
+            "srcset": "",
+            "alt": "Pewter Fade — cool blue wash with warm bloom",
+            "width": 640,
+            "height": 627
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp",
+            "srcset": "",
+            "alt": "Pewter Stock — lone figure in grainy green haze",
+            "width": 490,
+            "height": 640
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp",
+            "srcset": "",
+            "alt": "Violets — flowers blurred behind frosted glass",
+            "width": 1000,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png",
+            "srcset": "",
+            "alt": "Bright Spark — hot magenta burst under frosted glass",
+            "width": 750,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png",
+            "srcset": "",
+            "alt": "Soft Blend — quiet indigo to blue blend",
+            "width": 750,
+            "height": 1000
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png",
+            "srcset": "",
+            "alt": "Purple Haze — soft violet glow behind frosted glass",
+            "width": 1000,
+            "height": 563
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/signin-f20ce09ebb.webp",
+            "srcset": "",
+            "alt": "Live exported background running in a browser frame",
+            "width": 1920,
+            "height": 1440
+          },
+          {
+            "src": "http://127.0.0.1:8126/assets/images/pryzm.design/footer3-1087a09b15.webp",
+            "srcset": "",
+            "alt": "",
+            "width": 1200,
+            "height": 600
+          }
+        ],
+        "canvases": []
+      }
+    }
+  ]
+}

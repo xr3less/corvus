@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home — Corvus (Design Preview)</title>
+<meta name="description" content="Corvus dashboard home design preview. Example data only.">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg:#000000; --card:#0d0d10; --line:#1c1c20; --line2:#2a2a30;
+    --fg:#ffffff; --muted:#8a8a93; --muted2:#c9d1d9;
+    --trial:#f59e0b; --pass:#22C55E; --focus:#3cc0ae;
+  }
+  html{ font-size:16px; }
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',ui-sans-serif,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; color-scheme:dark;
+  }
+  .mono{ font-family:'Geist Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+  .strip{
+    font-family:'Geist Mono',ui-monospace,monospace; font-size:12px; text-align:center;
+    color:var(--muted); background:#0d0d10; border-bottom:1px solid var(--line); padding:8px 16px;
+  }
+  .shell{ display:flex; min-height:calc(100vh - 33px); }
+  .rail{
+    width:240px; flex:none; background:#000; border-right:1px solid var(--line);
+    padding:16px 12px; display:flex; flex-direction:column; gap:16px;
+    position:sticky; top:0; height:calc(100vh - 33px);
+  }
+  .workspace{ display:flex; align-items:center; gap:8px; padding:4px 8px; min-width:0; }
+  .avatar-sm{
+    width:28px; height:28px; flex:none; border-radius:50%; background:#262626; color:#fafafa;
+    display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:600;
+  }
+  .ws-name{ font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pro{
+    margin-left:auto; flex:none; font-size:12px; font-weight:500; padding:2px 10px; border-radius:999px;
+    border:1px solid var(--line2); background:#111111; color:var(--muted2);
+  }
+  .navlist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .navitem{
+    display:flex; align-items:center; gap:10px; width:100%; padding:8px 12px; border-radius:999px;
+    color:var(--muted); font-size:14px; font-weight:500; text-decoration:none;
+    transition:background-color 200ms ease, color 200ms ease;
+  }
+  .navitem:hover{ background:#111111; color:#ffffff; }
+  .navitem.active{ background:#262626; color:#fafafa; }
+  .navitem svg{ width:14px; height:14px; flex:none; }
+  .railfoot{ margin-top:auto; display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding:16px 8px 0; }
+  .creditsline{ margin:0; color:var(--muted2); font-size:13px; font-weight:500; }
+  .meter{ height:4px; border-radius:999px; background:#262626; overflow:hidden; }
+  .meter > div{ height:100%; width:82%; border-radius:inherit; background:#ffffff; }
+  .upgrade{
+    align-self:flex-start; padding:6px 16px; border-radius:999px; border:1px solid var(--line2);
+    background:#262626; color:#fafafa; font-size:13px; font-weight:500; cursor:pointer;
+  }
+  .upgrade:hover{ background:#111111; border-color:var(--muted); }
+  .main{ flex:1; min-width:0; padding:32px; display:flex; flex-direction:column; gap:20px; }
+  .page-title{ margin:0; font-size:32px; line-height:38px; font-weight:700; letter-spacing:-0.01em; }
+  .page-sub{ margin:4px 0 0; color:var(--muted); font-size:16px; line-height:24px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .card-title{ margin:0; font-size:20px; line-height:28px; font-weight:600; }
+  .card-sub{ margin:0; color:var(--muted); font-size:15px; line-height:22px; }
+  .setupbar{ height:10px; border-radius:999px; background:#262626; overflow:hidden; }
+  .setupbar > div{ height:100%; width:50%; border-radius:inherit; background:#ffffff; }
+  .steps{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .step{
+    background:#111111; border:1px solid var(--line); border-radius:16px; padding:20px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .step.current{ border-color:var(--line2); }
+  .stepnum{
+    width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:600; background:#262626; color:#fafafa; border:1px solid var(--line2);
+  }
+  .step.done .stepnum{ background:#ffffff; color:#000000; border-color:#ffffff; }
+  .stepname{ font-size:16px; font-weight:600; }
+  .stepstate{ font-size:13px; color:var(--muted); }
+  .stepstate.here{ color:var(--muted2); }
+  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .stat{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px; display:flex; flex-direction:column; gap:10px; }
+  .stat-label{ color:var(--muted); font-size:15px; font-weight:500; }
+  .stat-num{ font-size:30px; line-height:36px; font-weight:500; }
+  .botgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .botcard{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px;
+    display:flex; flex-direction:column; gap:12px; text-decoration:none; color:inherit;
+    transition:border-color 200ms ease, background-color 200ms ease;
+  }
+  .botcard:hover{ border-color:var(--line2); background:#111113; }
+  .bot-top{ display:flex; align-items:center; gap:16px; }
+  .avatar-lg{
+    width:56px; height:56px; flex:none; border-radius:50%; background:#262626; color:#fafafa;
+    display:inline-flex; align-items:center; justify-content:center; font-size:20px; font-weight:600;
+    border:1px solid var(--line2);
+  }
+  .bot-name{ margin:0; font-size:19px; line-height:26px; font-weight:600; }
+  .bot-meta{ margin:2px 0 0; color:var(--muted); font-size:14px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; flex:none; align-self:flex-start;
+    font-size:13px; font-weight:500; padding:3px 12px 3px 10px; border-radius:999px;
+    border:1px solid var(--line2); background:#111111; white-space:nowrap;
+  }
+  .pill .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+  .pill-online{ color:var(--pass); } .pill-online .dot{ background:var(--focus); }
+  .pill-trial{ color:var(--trial); } .pill-trial .dot{ background:var(--trial); }
+  .pill-offline{ color:var(--muted); } .pill-offline .dot{ background:var(--muted); }
+  .bot-last{ margin:0; color:var(--muted2); font-size:14px; line-height:22px; border-top:1px solid var(--line); padding-top:12px; }
+  .bot-last span{ color:var(--muted); }
+  .twocol{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .rows{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .arow{
+    display:flex; align-items:baseline; gap:12px; padding:14px 0; border-bottom:1px solid var(--line);
+    font-variant-numeric:tabular-nums;
+  }
+  .arow:last-child{ border-bottom:none; }
+  .atext{ color:var(--muted2); font-size:15px; line-height:22px; flex:1; min-width:0; }
+  .atext strong{ color:#ffffff; font-weight:600; }
+  .atime{ color:var(--muted); font-size:13px; white-space:nowrap; }
+  .btn-primary{
+    display:inline-flex; align-items:center; justify-content:center; height:46px; padding:0 24px;
+    border-radius:999px; border:1px solid #ffffff; background:#ffffff; color:#000000;
+    font-size:15px; font-weight:600; white-space:nowrap; cursor:pointer; text-decoration:none;
+  }
+  .btn-primary:hover{ background:var(--muted2); border-color:var(--muted2); }
+  .btn-ghost{
+    display:inline-flex; align-items:center; justify-content:center; height:46px; padding:0 24px;
+    border-radius:999px; border:1px solid var(--line2); background:transparent; color:#fafafa;
+    font-size:15px; font-weight:600; white-space:nowrap; cursor:pointer; text-decoration:none;
+  }
+  .btn-ghost:hover{ background:#111111; border-color:var(--muted); }
+  .ws-line{ margin:0; font-size:16px; font-weight:600; }
+  .trial-line{ margin:0; color:var(--muted2); font-size:15px; line-height:24px; }
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  @media (max-width:1100px){
+    .stats{ grid-template-columns:repeat(2,1fr); }
+    .botgrid{ grid-template-columns:1fr; }
+    .twocol{ grid-template-columns:1fr; }
+    .steps{ grid-template-columns:repeat(2,1fr); }
+    .rail{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<p class="strip">Design preview - example data.</p>
+
+<div class="shell">
+  <nav aria-label="Primary" class="rail">
+    <div class="workspace">
+      <span aria-hidden="true" class="avatar-sm">M</span>
+      <span class="ws-name">My server</span>
+      <span class="pro">Pro</span>
+    </div>
+    <ul class="navlist">
+      <li><a class="navitem active" aria-current="page" href="dash-home.html"><i data-lucide="home"></i>Home</a></li>
+      <li><a class="navitem" href="dash-bots.html"><i data-lucide="bot"></i>Bots</a></li>
+      <li><a class="navitem" href="dash-templates.html"><i data-lucide="layout-template"></i>Templates</a></li>
+      <li><a class="navitem" href="dash-bots.html#builder"><i data-lucide="messages-square"></i>Interview</a></li>
+      <li><a class="navitem" href="dash-home.html#week"><i data-lucide="activity"></i>Activity</a></li>
+      <li><a class="navitem" href="dash-bots.html#preflight"><i data-lucide="shield-check"></i>Pre-flight</a></li>
+      <li><a class="navitem" href="dash-home.html#workspace"><i data-lucide="settings"></i>Settings</a></li>
+    </ul>
+    <div class="railfoot">
+      <p class="creditsline mono">Credits 82/100</p>
+      <div class="meter" role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><div></div></div>
+      <button type="button" class="upgrade" data-dead>Upgrade</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div>
+      <h1 class="page-title">Home</h1>
+      <p class="page-sub">Your bots at a glance.</p>
+    </div>
+
+    <section class="card" aria-label="Get started">
+      <div>
+        <h2 class="card-title">Get started (2/4)</h2>
+        <p class="card-sub">Two steps done. Describe your bot to keep going.</p>
+      </div>
+      <div class="setupbar" role="progressbar" aria-label="Setup progress" aria-valuenow="2" aria-valuemin="0" aria-valuemax="4"><div></div></div>
+      <div class="steps">
+        <div class="step done">
+          <span class="stepnum" aria-hidden="true">1</span>
+          <span class="stepname">Connect your server</span>
+          <span class="stepstate">Done</span>
+        </div>
+        <div class="step current">
+          <span class="stepnum" aria-hidden="true">2</span>
+          <span class="stepname">Describe your bot</span>
+          <span class="stepstate here">You are here</span>
+        </div>
+        <div class="step">
+          <span class="stepnum" aria-hidden="true">3</span>
+          <span class="stepname">Test it</span>
+          <span class="stepstate">Next</span>
+        </div>
+        <div class="step">
+          <span class="stepnum" aria-hidden="true">4</span>
+          <span class="stepname">Go live</span>
+          <span class="stepstate">Next</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Totals">
+      <div class="stat"><span class="stat-label">Bots live</span><span class="stat-num mono">1</span></div>
+      <div class="stat"><span class="stat-label">Trial</span><span class="stat-num mono">1</span></div>
+      <div class="stat"><span class="stat-label">Servers</span><span class="stat-num mono">6</span></div>
+      <div class="stat"><span class="stat-label">Credits left</span><span class="stat-num mono">18</span></div>
+    </section>
+
+    <section aria-label="Your bots">
+      <div style="margin-bottom:12px;">
+        <h2 class="card-title">Your bots</h2>
+      </div>
+      <div class="botgrid">
+        <a class="botcard" href="dash-bots.html">
+          <div class="bot-top">
+            <span class="avatar-lg" aria-hidden="true">S</span>
+            <div><h3 class="bot-name">Study Hall</h3><p class="bot-meta mono">1,240 members · 3 servers</p></div>
+          </div>
+          <span class="pill pill-online"><span class="dot" aria-hidden="true"></span>Live</span>
+          <p class="bot-last">Published Study Hall v12 <span>· 2h ago</span></p>
+        </a>
+        <a class="botcard" href="dash-bots.html">
+          <div class="bot-top">
+            <span class="avatar-lg" aria-hidden="true">D</span>
+            <div><h3 class="bot-name">Draft Arena</h3><p class="bot-meta mono">86 members · 1 server</p></div>
+          </div>
+          <span class="pill pill-trial"><span class="dot" aria-hidden="true"></span>Trial</span>
+          <p class="bot-last">Published Draft Arena v12 <span>· 2h ago</span></p>
+        </a>
+        <a class="botcard" href="dash-bots.html">
+          <div class="bot-top">
+            <span class="avatar-lg" aria-hidden="true">N</span>
+            <div><h3 class="bot-name">Night Market mods</h3><p class="bot-meta mono">2,013 members · 2 servers</p></div>
+          </div>
+          <span class="pill pill-offline"><span class="dot" aria-hidden="true"></span>Offline</span>
+          <p class="bot-last">Published Night Market mods v12 <span>· 2h ago</span></p>
+        </a>
+      </div>
+    </section>
+
+    <div class="twocol">
+      <section class="card" id="week" aria-label="This week" tabindex="-1">
+        <h2 class="card-title">This week</h2>
+        <ul class="rows">
+          <li class="arow"><span class="atext"><strong>Study Hall</strong> — Published Study Hall v12</span><span class="atime">2h ago</span></li>
+          <li class="arow"><span class="atext"><strong>Draft Arena</strong> — Simulated welcome flow</span><span class="atime">5h ago</span></li>
+          <li class="arow"><span class="atext"><strong>Night Market mods</strong> — Rolled back Night Market mods to v11</span><span class="atime">yesterday</span></li>
+          <li class="arow"><span class="atext"><strong>Study Hall</strong> — Published Study Hall v11</span><span class="atime">3d ago</span></li>
+        </ul>
+      </section>
+      <section class="card" id="workspace" aria-label="Workspace" tabindex="-1">
+        <h2 class="card-title">Workspace</h2>
+        <p class="ws-line">Workspace: My server</p>
+        <p class="trial-line">Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+        <div><button type="button" class="btn-primary" data-dead>Upgrade</button></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('[data-dead]').forEach(function (el) {
+    el.addEventListener('click', function (e) { e.preventDefault(); });
+  });
+  if (window.lucide) { lucide.createIcons(); }
+</script>
+</body>
+</html>

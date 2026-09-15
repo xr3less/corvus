@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Templates, Reflowed Preview</title>
+<meta name="description" content="Template picker preview. Example data only, nothing installs from this page.">
+<style>
+  .uxc-root {
+    margin: 0;
+    background: #000000;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+  }
+  .uxc-preview {
+    margin: 0;
+    text-align: center;
+    font-size: 12px;
+    line-height: 20px;
+    padding: 8px 16px;
+    background: #0d0d10;
+    color: #8a8a93;
+    border-bottom: 1px solid #1c1c20;
+    font-variant-numeric: tabular-nums;
+  }
+  .uxc-shell { display: flex; min-height: calc(100vh - 37px); }
+  .uxc-rail {
+    width: 240px; flex: none;
+    background: #000000;
+    border-right: 1px solid #1c1c20;
+    padding: 16px 12px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .uxc-workspace { display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-width: 0; }
+  .uxc-avatar {
+    width: 28px; height: 28px; flex: none; border-radius: 50%;
+    background: #262626; color: #fafafa;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; line-height: 20px; font-weight: 600;
+  }
+  .uxc-name {
+    font-size: 14px; line-height: 20px; font-weight: 500; color: #ffffff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .uxc-pro {
+    margin-left: auto; flex: none;
+    font-size: 12px; line-height: 16px; font-weight: 500;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #111111; color: #c9d1d9;
+  }
+  .uxc-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .uxc-navlink {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 8px 12px; border: none; border-radius: 999px;
+    background: transparent; color: #8a8a93; font: inherit;
+    font-size: 14px; line-height: 20px; font-weight: 500; text-align: left; cursor: pointer;
+  }
+  .uxc-navlink:hover { background: #111111; color: #ffffff; }
+  .uxc-navlink[aria-current="page"] { background: #262626; color: #fafafa; }
+  .uxc-railfoot {
+    margin-top: auto; display: flex; flex-direction: column; gap: 8px;
+    border-top: 1px solid #1c1c20; padding: 16px 8px 0;
+  }
+  .uxc-credits { margin: 0; color: #c9d1d9; font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .uxc-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+  .uxc-meterfill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+  .uxc-upgrade {
+    align-self: flex-start; padding: 6px 16px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #262626; color: #fafafa;
+    font: inherit; font-size: 13px; line-height: 20px; font-weight: 500; cursor: pointer;
+  }
+  .uxc-upgrade:hover { background: #111111; border-color: #8a8a93; }
+  .uxc-main { flex: 1; min-width: 0; padding: 24px; max-width: 960px; width: 100%; margin: 0 auto; }
+  .uxc-title { font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; margin: 0; color: #ffffff; }
+  .uxc-sub { margin: 8px 0 0; color: #8a8a93; font-size: 14px; line-height: 20px; }
+  .uxc-target {
+    margin: 16px 0 0; padding: 12px 16px; border-radius: 12px;
+    background: #0d0d10; border: 1px solid #1c1c20;
+    color: #c9d1d9; font-size: 14px; line-height: 20px;
+  }
+  .uxc-target strong { color: #ffffff; font-weight: 600; }
+  .uxc-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-top: 20px; }
+  .uxc-searchwrap { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 200px; max-width: 340px; }
+  .uxc-searchlabel { color: #8a8a93; font-size: 13px; line-height: 20px; font-weight: 500; }
+  .uxc-search {
+    height: 40px; padding: 0 16px; border-radius: 999px;
+    border: 1px solid #1c1c20; background: #111111; color: #ffffff;
+    font: inherit; font-size: 14px; line-height: 20px; width: 100%; box-sizing: border-box;
+  }
+  .uxc-search::placeholder { color: #8a8a93; }
+  .uxc-search:hover { border-color: #2a2a30; }
+  .uxc-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+  .uxc-pill {
+    padding: 6px 14px; border-radius: 999px; border: 1px solid transparent;
+    background: transparent; color: #8a8a93; font: inherit;
+    font-size: 13px; line-height: 20px; font-weight: 500; cursor: pointer;
+  }
+  .uxc-pill:hover { background: #111111; color: #ffffff; }
+  .uxc-pill[aria-pressed="true"] { background: #262626; border-color: #2a2a30; color: #fafafa; }
+  .uxc-count { margin: 12px 0 0; color: #8a8a93; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums; }
+  .uxc-grid { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .uxc-card {
+    background: #0d0d10; border: 1px solid #1c1c20; border-radius: 16px;
+    padding: 16px; display: flex; flex-direction: column; gap: 8px; margin: 0;
+  }
+  .uxc-cardtop { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .uxc-cardname { margin: 0; font-weight: 600; font-size: 15px; line-height: 24px; color: #ffffff; }
+  .uxc-cat {
+    display: inline-flex; align-items: center; flex: none;
+    font-size: 12px; line-height: 20px; font-weight: 500;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #111111; color: #c9d1d9; white-space: nowrap;
+  }
+  .uxc-desc { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; }
+  .uxc-detail { border-top: 1px solid #1c1c20; padding-top: 8px; }
+  .uxc-summary { color: #fafafa; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; padding: 8px 0; }
+  .uxc-summary:hover { color: #ffffff; }
+  .uxc-factlist { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; }
+  .uxc-fact {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 8px 0; border-bottom: 1px solid #1c1c20;
+    font-size: 14px; line-height: 20px;
+  }
+  .uxc-fact:last-child { border-bottom: none; }
+  .uxc-factlabel { color: #8a8a93; font-size: 13px; line-height: 20px; font-weight: 500; }
+  .uxc-facttext { color: #c9d1d9; font-size: 14px; line-height: 20px; margin: 0; }
+  .uxc-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .uxc-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #2a2a30; color: #fafafa; background: transparent;
+    font: inherit; font-size: 14px; line-height: 20px; font-weight: 500;
+    white-space: nowrap; cursor: pointer;
+  }
+  .uxc-btn:hover { background: #111111; border-color: #8a8a93; }
+  .uxc-btnsolid { background: #ffffff; border-color: #ffffff; color: #000000; }
+  .uxc-btnsolid:hover { background: #c9d1d9; border-color: #c9d1d9; }
+  .uxc-note { margin: 8px 0 0; color: #8a8a93; font-size: 13px; line-height: 20px; min-height: 20px; }
+  .uxc-empty {
+    margin: 16px 0 0; padding: 24px 20px; background: #0d0d10;
+    border: 1px solid #2a2a30; border-radius: 16px;
+    display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+  }
+  .uxc-emptytext { margin: 0; color: #ffffff; font-size: 15px; line-height: 24px; font-weight: 500; }
+  .uxc-sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .uxc-root button:focus-visible, .uxc-root input:focus-visible, .uxc-root summary:focus-visible {
+    outline: 2px solid #3cc0ae; outline-offset: 2px;
+  }
+  @media (max-width: 900px) {
+    .uxc-shell { flex-direction: column; }
+    .uxc-rail { width: auto; border-right: none; border-bottom: 1px solid #1c1c20; }
+    .uxc-railfoot { margin-top: 0; }
+    .uxc-grid { grid-template-columns: 1fr; }
+    .uxc-title { font-size: 24px; line-height: 28px; }
+  }
+</style>
+</head>
+<body class="uxc-root">
+
+<p class="uxc-preview">Design preview, example data. Nothing on this page installs or changes your server.</p>
+
+<div class="uxc-shell">
+
+  <nav class="uxc-rail" aria-label="Primary">
+    <div class="uxc-workspace">
+      <span class="uxc-avatar" aria-hidden="true">M</span>
+      <span class="uxc-name">My server</span>
+      <span class="uxc-pro">Pro</span>
+    </div>
+    <ul class="uxc-nav">
+      <li><button type="button" class="uxc-navlink">Bots</button></li>
+      <li><button type="button" class="uxc-navlink" aria-current="page">Templates</button></li>
+      <li><button type="button" class="uxc-navlink">Activity</button></li>
+      <li><button type="button" class="uxc-navlink">Settings</button></li>
+    </ul>
+    <div class="uxc-railfoot">
+      <p class="uxc-credits">Credits 82/100</p>
+      <div class="uxc-meter" role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100">
+        <div class="uxc-meterfill"></div>
+      </div>
+      <button type="button" class="uxc-upgrade" data-uxc-dead="Upgrade is disabled in this preview. Your balance stays 82 of 100." title="Upgrade is disabled in this preview. Your balance stays 82 of 100.">Upgrade</button>
+    </div>
+  </nav>
+
+  <main class="uxc-main" id="uxc-main">
+    <h1 class="uxc-title">Templates</h1>
+    <p class="uxc-sub">8 starters. Pick one, make it yours.</p>
+
+    <p class="uxc-target">Install target in this preview: <strong>My server</strong>. Nothing installs from this page. Open a card to see what members would get before you decide.</p>
+
+    <div class="uxc-filters">
+      <div class="uxc-searchwrap">
+        <label class="uxc-searchlabel" for="uxc-search">Search templates</label>
+        <input class="uxc-search" id="uxc-search" type="search" placeholder="Search templates" autocomplete="off">
+      </div>
+      <div class="uxc-pills" id="uxc-pills" role="group" aria-label="Filter templates by category"></div>
+    </div>
+    <p class="uxc-count" id="uxc-count" aria-live="polite"></p>
+
+    <ul class="uxc-grid" id="uxc-grid" aria-label="Template gallery"></ul>
+
+    <div class="uxc-empty" id="uxc-empty" hidden>
+      <p class="uxc-emptytext">No templates match this search.</p>
+      <button type="button" class="uxc-btn" id="uxc-clear">Clear search</button>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var uxcTemplates = [
+    { uxcName: "Welcome Wagon", uxcCategory: "welcome", uxcDesc: "Post a friendly welcome message naming the new member within a minute of joining.", uxcSee: "Members would see a friendly welcome message that names them, shortly after they join." },
+    { uxcName: "Mod Shield", uxcCategory: "moderation", uxcDesc: "Delete messages with server-banned words and warn the author privately on first offense.", uxcSee: "Members would see nothing new unless a message uses a server-banned word. The author gets a private warning on first offense." },
+    { uxcName: "Ticket Desk", uxcCategory: "tickets", uxcDesc: "Post a support panel with a button so members open a private ticket with one click.", uxcSee: "Members would see a support panel with a button that opens a private ticket." },
+    { uxcName: "Level Lounge", uxcCategory: "leveling", uxcDesc: "Award experience for regular chat with a short cooldown so spam never farms levels.", uxcSee: "Members would see experience for regular chat, with a short cooldown." },
+    { uxcName: "Role Reactor", uxcCategory: "reaction-roles", uxcDesc: "Post a role-picker message where reacting with an emoji grants the matching role.", uxcSee: "Members would see a role-picker message where reacting grants the matching role." },
+    { uxcName: "Mod Log", uxcCategory: "logging", uxcDesc: "Record edited and deleted messages with author, channel, and content for review.", uxcSee: "Members would see nothing new. Moderators get a log of edited and deleted messages with author, channel, and content." },
+    { uxcName: "Giveaway Grove", uxcCategory: "giveaways", uxcDesc: "Start giveaways with a prize, duration, and winner count, then draw fairly at the end.", uxcSee: "Members would see a giveaway with a prize, duration, and winner count, then a fair draw." },
+    { uxcName: "Coin Cellar", uxcCategory: "economy", uxcDesc: "Grant coins for regular chat activity with a cooldown so idle spam never earns.", uxcSee: "Members would see coins for regular chat activity, with a cooldown." }
+  ];
+
+  var uxcState = { uxcCategory: "all", uxcQuery: "" };
+
+  var uxcGrid = document.getElementById("uxc-grid");
+  var uxcPills = document.getElementById("uxc-pills");
+  var uxcCount = document.getElementById("uxc-count");
+  var uxcSearch = document.getElementById("uxc-search");
+  var uxcEmpty = document.getElementById("uxc-empty");
+  var uxcClear = document.getElementById("uxc-clear");
+
+  function uxcCategories() {
+    var uxcCats = ["all"];
+    uxcTemplates.forEach(function (uxcT) {
+      if (uxcCats.indexOf(uxcT.uxcCategory) === -1) { uxcCats.push(uxcT.uxcCategory); }
+    });
+    return uxcCats;
+  }
+
+  function uxcFiltered() {
+    var uxcQ = uxcState.uxcQuery.trim().toLowerCase();
+    return uxcTemplates.filter(function (uxcT) {
+      if (uxcState.uxcCategory !== "all" && uxcT.uxcCategory !== uxcState.uxcCategory) { return false; }
+      if (uxcQ && uxcT.uxcName.toLowerCase().indexOf(uxcQ) === -1 && uxcT.uxcDesc.toLowerCase().indexOf(uxcQ) === -1) { return false; }
+      return true;
+    });
+  }
+
+  function uxcDeadLabel(uxcVerb, uxcName) {
+    return uxcVerb + " is disabled in this preview. " + uxcName + " installs nothing.";
+  }
+
+  function uxcBindDead(uxcRoot) {
+    var uxcDead = uxcRoot.querySelectorAll("[data-uxc-dead]");
+    Array.prototype.forEach.call(uxcDead, function (uxcEl) {
+      uxcEl.addEventListener("click", function (uxcE) {
+        uxcE.preventDefault();
+        var uxcCard = uxcEl.closest(".uxc-card");
+        var uxcNote = uxcCard ? uxcCard.querySelector(".uxc-note") : null;
+        if (uxcNote) { uxcNote.textContent = uxcEl.getAttribute("data-uxc-dead"); }
+      });
+    });
+  }
+
+  function uxcFact(uxcLabel, uxcText) {
+    var uxcLi = document.createElement("li");
+    uxcLi.className = "uxc-fact";
+    var uxcL = document.createElement("span");
+    uxcL.className = "uxc-factlabel";
+    uxcL.textContent = uxcLabel;
+    var uxcP = document.createElement("p");
+    uxcP.className = "uxc-facttext";
+    uxcP.textContent = uxcText;
+    uxcLi.appendChild(uxcL);
+    uxcLi.appendChild(uxcP);
+    return uxcLi;
+  }
+
+  function uxcRenderPills() {
+    uxcPills.innerHTML = "";
+    uxcCategories().forEach(function (uxcCat) {
+      var uxcB = document.createElement("button");
+      uxcB.type = "button";
+      uxcB.className = "uxc-pill";
+      uxcB.textContent = uxcCat === "all" ? "All" : uxcCat;
+      uxcB.setAttribute("aria-pressed", uxcState.uxcCategory === uxcCat ? "true" : "false");
+      uxcB.addEventListener("click", function () {
+        uxcState.uxcCategory = uxcCat;
+        uxcRender();
+      });
+      uxcPills.appendChild(uxcB);
+    });
+  }
+
+  function uxcRender() {
+    uxcRenderPills();
+    var uxcList = uxcFiltered();
+    uxcGrid.innerHTML = "";
+    uxcList.forEach(function (uxcT) {
+      var uxcCard = document.createElement("li");
+      uxcCard.className = "uxc-card";
+
+      var uxcTop = document.createElement("div");
+      uxcTop.className = "uxc-cardtop";
+      var uxcName = document.createElement("h2");
+      uxcName.className = "uxc-cardname";
+      uxcName.textContent = uxcT.uxcName;
+      var uxcCat = document.createElement("span");
+      uxcCat.className = "uxc-cat";
+      uxcCat.textContent = uxcT.uxcCategory;
+      uxcTop.appendChild(uxcName);
+      uxcTop.appendChild(uxcCat);
+      uxcCard.appendChild(uxcTop);
+
+      var uxcDesc = document.createElement("p");
+      uxcDesc.className = "uxc-desc";
+      uxcDesc.textContent = uxcT.uxcDesc;
+      uxcCard.appendChild(uxcDesc);
+
+      var uxcDetail = document.createElement("details");
+      uxcDetail.className = "uxc-detail";
+      var uxcSummary = document.createElement("summary");
+      uxcSummary.className = "uxc-summary";
+      uxcSummary.textContent = "What this does in your server";
+      uxcDetail.appendChild(uxcSummary);
+      var uxcFacts = document.createElement("ul");
+      uxcFacts.className = "uxc-factlist";
+      uxcFacts.appendChild(uxcFact("Members would see", uxcT.uxcSee));
+      uxcFacts.appendChild(uxcFact("Installs into", "My server, the bot shown in this preview. Nothing installs until you choose to install."));
+      uxcFacts.appendChild(uxcFact("Costs", "No added fee is shown in this preview. Your balance stays 82 of 100."));
+      uxcFacts.appendChild(uxcFact("Undo", "Remove the starter from your bot and its messages stop. One step."));
+      uxcDetail.appendChild(uxcFacts);
+      uxcCard.appendChild(uxcDetail);
+
+      var uxcActions = document.createElement("div");
+      uxcActions.className = "uxc-actions";
+      var uxcConfigure = document.createElement("button");
+      uxcConfigure.type = "button";
+      uxcConfigure.className = "uxc-btn";
+      uxcConfigure.textContent = "Configure";
+      uxcConfigure.setAttribute("data-uxc-dead", uxcDeadLabel("Configure", uxcT.uxcName));
+      uxcConfigure.setAttribute("title", uxcDeadLabel("Configure", uxcT.uxcName));
+      uxcConfigure.setAttribute("aria-disabled", "true");
+      var uxcFork = document.createElement("button");
+      uxcFork.type = "button";
+      uxcFork.className = "uxc-btn uxc-btnsolid";
+      uxcFork.textContent = "Fork into My server";
+      uxcFork.setAttribute("data-uxc-dead", uxcDeadLabel("Fork", uxcT.uxcName));
+      uxcFork.setAttribute("title", uxcDeadLabel("Fork", uxcT.uxcName));
+      uxcFork.setAttribute("aria-disabled", "true");
+      uxcActions.appendChild(uxcConfigure);
+      uxcActions.appendChild(uxcFork);
+      uxcCard.appendChild(uxcActions);
+
+      var uxcNote = document.createElement("p");
+      uxcNote.className = "uxc-note";
+      uxcNote.setAttribute("aria-live", "polite");
+      uxcCard.appendChild(uxcNote);
+
+      uxcGrid.appendChild(uxcCard);
+    });
+    uxcBindDead(uxcGrid);
+
+    uxcCount.textContent = "Showing " + uxcList.length + " of 8 starters.";
+    if (uxcList.length === 0) {
+      uxcGrid.hidden = true;
+      uxcEmpty.hidden = false;
+    } else {
+      uxcGrid.hidden = false;
+      uxcEmpty.hidden = true;
+    }
+  }
+
+  uxcSearch.addEventListener("input", function () {
+    uxcState.uxcQuery = uxcSearch.value;
+    uxcRender();
+  });
+
+  document.addEventListener("keydown", function (uxcE) {
+    if (uxcE.key === "Escape" && document.activeElement === uxcSearch) {
+      uxcSearch.value = "";
+      uxcState.uxcQuery = "";
+      uxcRender();
+    }
+  });
+
+  uxcClear.addEventListener("click", function () {
+    uxcSearch.value = "";
+    uxcState.uxcQuery = "";
+    uxcState.uxcCategory = "all";
+    uxcRender();
+    uxcSearch.focus();
+  });
+
+  uxcBindDead(document);
+
+  uxcRender();
+})();
+</script>
+</body>
+</html>

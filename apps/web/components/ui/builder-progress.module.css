@@ -1,0 +1,88 @@
+/* Builder-run progress — Corvus 04 dark tokens:
+   black field, hairline border, muted -> white labels, 8px radius, teal accent.
+   Motion is decorative only and is disabled under prefers-reduced-motion. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  background: #0c0c0e;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #71717a;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #3f3f46;
+  transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.label {
+  font-weight: 500;
+}
+
+.pending {
+  color: #71717a;
+}
+
+.done {
+  color: #a1a1aa;
+}
+
+.done .dot {
+  background: #a1a1aa;
+}
+
+.current {
+  color: #fafafa;
+}
+
+.current .dot {
+  background: #2dd4bf;
+  box-shadow: 0 0 0 3px rgb(45 212 191 / 0.18);
+}
+
+.empty,
+.error,
+.failed {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  text-wrap: pretty;
+}
+
+.empty {
+  color: #a1a1aa;
+}
+
+.error,
+.failed {
+  color: #fca5a5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    transition: none;
+  }
+}

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bots — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus dashboard design preview: two-pane card layout. Example data only.">
+
+  <!-- Tailwind CSS CDN (sandbox only - production port uses CSS Modules) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Fonts: Poppins (display), Geist Mono (numbers/labels) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (ISC license, free) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0b0b0d;
+      --surface2: #141417;
+      --card: #16161b;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-hard: #1c1c20;
+      --fg: #fafafa;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .display { font-family: 'Poppins', sans-serif; letter-spacing: -0.02em; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .navlink {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 8px 12px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      border: 1px solid transparent;
+      transition: color .2s ease, background .2s ease;
+      text-align: left;
+    }
+    .navlink:hover { color: var(--fg); background: rgba(255,255,255,.05); }
+    .navlink.active { color: var(--fg); background: var(--surface2); border-color: var(--line); }
+    .meter-track { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .meter-fill { height: 100%; width: 82%; border-radius: inherit; background: #34d399; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05); white-space: nowrap;
+    }
+    .pill-trial { color: #fbbf24; border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.08); }
+    .pill-live { color: #34d399; border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.08); }
+    .pill .dot { background: #8a8a93; }
+    .pill-live .dot { background: #34d399; }
+    .pill-trial .dot { background: #fbbf24; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #8a8a93; flex: none; }
+    .dot-pass { background: #34d399; }
+    .dot-warn { background: #fbbf24; }
+    .field {
+      height: 40px; padding: 0 16px; border-radius: 8px;
+      border: 1px solid var(--line); background: #0e0e11; color: var(--fg);
+      font-size: 14px; width: 100%; transition: border-color .2s ease;
+    }
+    .field::placeholder { color: var(--faint); }
+    .field:hover { border-color: rgba(255,255,255,.2); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 40px; padding: 0 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 500; white-space: nowrap;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .btn-primary { background: #fafafa; color: #0a0a0b; }
+    .btn-primary:hover { background: #ffffff; }
+    .btn-ghost { border: 1px solid rgba(255,255,255,.15); color: var(--fg); background: transparent; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+    .tabpill {
+      height: 32px; padding: 0 16px; border-radius: 999px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      border: 1px solid var(--line); background: transparent;
+      transition: background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    .tabpill:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    .tabpill[aria-pressed="true"] { background: #fafafa; color: #0a0a0b; border-color: #fafafa; }
+    .botcard {
+      text-align: left; width: 100%;
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      padding: 18px;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .botcard:hover { border-color: rgba(255,255,255,.22); background: #18181d; }
+    .botcard[aria-current="true"] { border-color: rgba(255,255,255,.28); background: #18181d; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%; flex: none;
+      display: grid; place-items: center;
+      font-size: 16px; font-weight: 600;
+      background: var(--surface2); border: 1px solid var(--line); color: var(--fg);
+    }
+    :focus-visible { outline: 2px solid #2dd4bf; outline-offset: 3px; border-radius: 6px; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-black">
+
+  <!-- 1. Preview strip -->
+  <p class="mono text-center text-[12px] px-4 py-2 border-b" style="color: var(--faint); border-color: var(--line-hard); background: var(--surface);">
+    Design preview - example data. Names and numbers below are placeholders.
+  </p>
+
+  <div class="flex min-h-screen">
+
+    <!-- 2. Left rail -->
+    <nav aria-label="Primary" class="hidden md:flex flex-col flex-none p-4 border-r" style="width: 260px; border-color: var(--line-hard); background: var(--surface); min-height: calc(100vh - 33px);">
+      <div class="flex items-center gap-3 px-1 py-2">
+        <span aria-hidden="true" class="avatar" style="width:36px; height:36px; font-size:14px;">M</span>
+        <span class="text-[14px] font-medium">My server</span>
+        <span class="pill mono" style="font-size:11px;">Pro</span>
+      </div>
+
+      <ul class="mt-4 space-y-1">
+        <li>
+          <button type="button" class="navlink active" aria-current="page">
+            <i data-lucide="bot" class="w-4 h-4" aria-hidden="true"></i>Bots
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="layout-template" class="w-4 h-4" aria-hidden="true"></i>Templates
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="messages-square" class="w-4 h-4" aria-hidden="true"></i>Interview
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="activity" class="w-4 h-4" aria-hidden="true"></i>Activity
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="shield-check" class="w-4 h-4" aria-hidden="true"></i>Pre-flight
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="settings" class="w-4 h-4" aria-hidden="true"></i>Settings
+          </button>
+        </li>
+      </ul>
+
+      <div class="mt-auto pt-6">
+        <p class="mono text-[12px] mb-2" style="color: var(--muted);">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="meter-track">
+          <div class="meter-fill"></div>
+        </div>
+        <button type="button" class="btn btn-ghost w-full mt-3">Upgrade</button>
+      </div>
+    </nav>
+
+    <!-- 3. Main content -->
+    <main id="main-content" class="flex-1 min-w-0 px-5 md:px-8 py-6 max-w-[1080px] mx-auto w-full">
+
+      <!-- Header row -->
+      <div class="flex items-baseline justify-between gap-4 flex-wrap">
+        <h1 class="display text-[28px] font-semibold">Bots</h1>
+        <p class="mono text-[13px]" style="color: var(--muted);">Live 1 / Trial 1 / Off 1</p>
+      </div>
+
+      <!-- Toolbar row -->
+      <div class="flex items-center gap-3 mt-4 flex-wrap">
+        <div class="flex-1 min-w-[200px] max-w-[340px]">
+          <label for="bot-search" class="sr-only">Search bots</label>
+          <input id="bot-search" type="search" placeholder="Search bots..." autocomplete="off" class="field">
+        </div>
+        <div role="group" aria-label="Filter bots by status" class="flex items-center gap-2">
+          <button type="button" class="tabpill" data-tab="all" aria-pressed="true">All</button>
+          <button type="button" class="tabpill" data-tab="live" aria-pressed="false">Live</button>
+          <button type="button" class="tabpill" data-tab="trial" aria-pressed="false">Trial</button>
+        </div>
+      </div>
+
+      <!-- Bot cards grid -->
+      <div id="bot-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5" role="list" aria-label="Bots"></div>
+
+      <!-- Empty state -->
+      <div id="empty-state" class="card hidden text-center px-6 py-10 mt-5">
+        <p class="text-[14px]" style="color: var(--muted);">No bots match this filter.</p>
+        <button type="button" id="clear-search" class="btn btn-ghost mt-4">Clear search</button>
+      </div>
+
+      <!-- 4. Detail section -->
+      <section aria-label="Bot details" class="mt-8" aria-live="polite">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 id="detail-name" class="display text-[22px] font-semibold">Study Hall</h2>
+          <span id="detail-status"></span>
+        </div>
+        <p id="detail-trial" class="text-[14px] mt-2 hidden" style="color: #fbbf24;">Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+        <div class="flex items-center gap-3 mt-4 flex-wrap">
+          <button type="button" class="btn btn-ghost">Open</button>
+          <button type="button" class="btn btn-primary">Publish</button>
+          <button type="button" class="btn btn-ghost" style="border-color: transparent;">Rollback</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+          <section aria-label="Recent activity" class="card p-5">
+            <h3 class="text-[15px] font-semibold">Recent activity</h3>
+            <ul id="detail-activity" class="mt-3 space-y-3"></ul>
+          </section>
+          <section aria-label="Pre-flight" class="card p-5">
+            <h3 class="text-[15px] font-semibold">Pre-flight</h3>
+            <ul class="mt-3 space-y-3 text-[14px]">
+              <li class="flex items-center gap-3">
+                <span aria-hidden="true" class="dot dot-pass"></span>
+                <span style="color: var(--muted);">Token and permissions look right</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <span aria-hidden="true" class="dot dot-pass"></span>
+                <span style="color: var(--muted);">Rate limits within caps</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <span aria-hidden="true" class="dot dot-warn"></span>
+                <span style="color: var(--muted);">Welcome reply targets a hidden channel</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <!-- 5. AI composer block -->
+      <section aria-label="Describe a change" class="mx-auto mt-10 mb-12" style="max-width: 640px;">
+        <form id="composer" class="card p-3 flex items-center gap-2">
+          <label for="ai-change" class="sr-only">Describe a change</label>
+          <input id="ai-change" type="text" placeholder="Describe a change…" autocomplete="off" class="field" style="border-color: transparent; background: transparent;">
+          <button type="submit" aria-label="Send change" class="btn btn-primary flex-none">Send</button>
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    var BOTS = [
+      { id: 'bot-1', name: 'Study Hall', status: 'online', label: 'Live', members: 1240, servers: 3 },
+      { id: 'bot-2', name: 'Draft Arena', status: 'trial', label: 'Trial', members: 86, servers: 1 },
+      { id: 'bot-3', name: 'Night Market mods', status: 'offline', label: 'Offline', members: 2013, servers: 2 }
+    ];
+
+    var state = { tab: 'all', query: '', selectedId: 'bot-1' };
+
+    function formatCount(value, singular, plural) {
+      return value.toLocaleString('en-US') + ' ' + (value === 1 ? singular : plural);
+    }
+
+    function activityFor(bot) {
+      return [
+        { text: 'Published ' + bot.name + ' v12', time: '2h ago' },
+        { text: 'Simulated welcome flow', time: '5h ago' },
+        { text: 'Rolled back ' + bot.name + ' to v11', time: 'yesterday' },
+        { text: 'Published ' + bot.name + ' v11', time: '3d ago' }
+      ];
+    }
+
+    function pillClass(status) {
+      if (status === 'online') return 'pill pill-live';
+      if (status === 'trial') return 'pill pill-trial';
+      return 'pill';
+    }
+
+    function filteredBots() {
+      var q = state.query.trim().toLowerCase();
+      return BOTS.filter(function (bot) {
+        if (state.tab === 'live' && bot.status !== 'online') return false;
+        if (state.tab === 'trial' && bot.status !== 'trial') return false;
+        if (q && bot.name.toLowerCase().indexOf(q) === -1) return false;
+        return true;
+      });
+    }
+
+    function selectedBot() {
+      var list = filteredBots();
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === state.selectedId) return list[i];
+      }
+      return list[0] || null;
+    }
+
+    function renderGrid() {
+      var grid = document.getElementById('bot-grid');
+      var empty = document.getElementById('empty-state');
+      var list = filteredBots();
+      grid.innerHTML = '';
+
+      list.forEach(function (bot) {
+        var card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'botcard';
+        card.setAttribute('role', 'listitem');
+        if (state.selectedId === bot.id) card.setAttribute('aria-current', 'true');
+
+        var top = document.createElement('div');
+        top.className = 'flex items-center gap-3';
+
+        var av = document.createElement('span');
+        av.setAttribute('aria-hidden', 'true');
+        av.className = 'avatar';
+        av.textContent = bot.name.charAt(0);
+        top.appendChild(av);
+
+        var nameWrap = document.createElement('div');
+        nameWrap.className = 'min-w-0';
+        var name = document.createElement('div');
+        name.className = 'text-[15px] font-semibold truncate';
+        name.textContent = bot.name;
+        var meta = document.createElement('div');
+        meta.className = 'mono text-[12px] mt-0.5';
+        meta.style.color = 'var(--faint)';
+        meta.textContent = formatCount(bot.members, 'member', 'members') + ' · ' + formatCount(bot.servers, 'server', 'servers');
+        nameWrap.appendChild(name);
+        nameWrap.appendChild(meta);
+        top.appendChild(nameWrap);
+        card.appendChild(top);
+
+        var row2 = document.createElement('div');
+        row2.className = 'mt-3';
+        var pill = document.createElement('span');
+        pill.className = pillClass(bot.status);
+        var dot = document.createElement('span');
+        dot.setAttribute('aria-hidden', 'true');
+        dot.className = 'dot';
+        pill.appendChild(dot);
+        pill.appendChild(document.createTextNode(bot.label));
+        row2.appendChild(pill);
+        card.appendChild(row2);
+
+        var act = document.createElement('p');
+        act.className = 'text-[13px] mt-3 truncate';
+        act.style.color = 'var(--muted)';
+        act.textContent = activityFor(bot)[0].text + ' · ' + activityFor(bot)[0].time;
+        card.appendChild(act);
+
+        card.addEventListener('click', function () {
+          state.selectedId = bot.id;
+          renderGrid();
+          renderDetail();
+        });
+        grid.appendChild(card);
+      });
+
+      if (list.length === 0) {
+        grid.classList.add('hidden');
+        empty.classList.remove('hidden');
+      } else {
+        grid.classList.remove('hidden');
+        empty.classList.add('hidden');
+      }
+    }
+
+    function renderDetail() {
+      var bot = selectedBot();
+      var nameEl = document.getElementById('detail-name');
+      var statusEl = document.getElementById('detail-status');
+      var trialEl = document.getElementById('detail-trial');
+      var actEl = document.getElementById('detail-activity');
+      if (!bot) {
+        nameEl.textContent = 'Select a bot to see details.';
+        statusEl.innerHTML = '';
+        trialEl.classList.add('hidden');
+        actEl.innerHTML = '';
+        return;
+      }
+      nameEl.textContent = bot.name;
+      statusEl.innerHTML = '';
+      var pill = document.createElement('span');
+      pill.className = pillClass(bot.status);
+      var dot = document.createElement('span');
+      dot.setAttribute('aria-hidden', 'true');
+      dot.className = 'dot';
+      pill.appendChild(dot);
+      pill.appendChild(document.createTextNode(bot.label));
+      statusEl.appendChild(pill);
+
+      if (bot.status === 'trial') {
+        trialEl.classList.remove('hidden');
+      } else {
+        trialEl.classList.add('hidden');
+      }
+
+      actEl.innerHTML = '';
+      activityFor(bot).forEach(function (item) {
+        var li = document.createElement('li');
+        li.className = 'flex items-baseline justify-between gap-4 text-[14px]';
+        var t = document.createElement('span');
+        t.style.color = 'var(--muted)';
+        t.textContent = item.text;
+        var time = document.createElement('span');
+        time.className = 'mono text-[12px] flex-none';
+        time.style.color = 'var(--faint)';
+        time.textContent = item.time;
+        li.appendChild(t);
+        li.appendChild(time);
+        actEl.appendChild(li);
+      });
+    }
+
+    function renderTabs() {
+      var tabs = document.querySelectorAll('[data-tab]');
+      tabs.forEach(function (tab) {
+        tab.setAttribute('aria-pressed', tab.getAttribute('data-tab') === state.tab ? 'true' : 'false');
+      });
+    }
+
+    function render() {
+      renderTabs();
+      renderGrid();
+      renderDetail();
+    }
+
+    document.querySelectorAll('[data-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        state.tab = tab.getAttribute('data-tab');
+        render();
+      });
+    });
+
+    var search = document.getElementById('bot-search');
+    search.addEventListener('input', function () {
+      state.query = search.value;
+      renderGrid();
+      renderDetail();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.activeElement === search) {
+        search.value = '';
+        state.query = '';
+        renderGrid();
+        renderDetail();
+      }
+    });
+
+    document.getElementById('clear-search').addEventListener('click', function () {
+      search.value = '';
+      state.query = '';
+      state.tab = 'all';
+      render();
+      search.focus();
+    });
+
+    document.getElementById('composer').addEventListener('submit', function (e) {
+      e.preventDefault();
+    });
+
+    render();
+    lucide.createIcons();
+  </script>
+</body>
+</html>

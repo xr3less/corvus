@@ -1,0 +1,102 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: #000000;
+  color: #fafafa;
+  font-family:
+    'Geist',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  color-scheme: dark;
+}
+
+.skipLink {
+  position: absolute;
+  left: 16px;
+  top: -96px;
+  z-index: 10;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #0a0a0b;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.skipLink:focus-visible {
+  top: 16px;
+}
+
+/* Content column — home or detail lives here. */
+.content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #000000;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Ambient background lights (static, white-only, decorative). */
+.ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambientGlowTop {
+  position: absolute;
+  top: -200px;
+  left: -60px;
+  width: 640px;
+  height: 560px;
+  background: radial-gradient(ellipse, rgb(255 255 255 / 0.07), transparent 65%);
+  pointer-events: none;
+}
+
+.ambientGlowBottom {
+  position: absolute;
+  right: -180px;
+  bottom: -180px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgb(255 255 255 / 0.03), transparent 65%);
+  pointer-events: none;
+}
+
+.shell button:focus-visible,
+.shell input:focus-visible,
+.shell select:focus-visible,
+.shell a:focus-visible {
+  outline: 2px solid #2dd4bf;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell *,
+  .shell *::before {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce) {
+  .ambient {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell {
+    flex-direction: column;
+  }
+}

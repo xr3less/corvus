@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus templates steal preview: outcome lines under each starter card. Example data only.">
+  <style>
+    :root {
+      --stl-bg: #000000;
+      --stl-card: #0d0d10;
+      --stl-card2: #111114;
+      --stl-line: #1c1c20;
+      --stl-line-soft: #2a2a30;
+      --stl-fg: #ffffff;
+      --stl-body: #c9d1d9;
+      --stl-muted: #8a8a93;
+      --stl-focus: #3cc0ae;
+      --stl-pass: #22C55E;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--stl-bg); }
+    body {
+      margin: 0;
+      background: var(--stl-bg);
+      color: var(--stl-fg);
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color-scheme: dark;
+    }
+    .stl-strip {
+      margin: 0; text-align: center; font-size: 12px; line-height: 20px;
+      padding: 8px 16px; color: var(--stl-muted);
+      border-bottom: 1px solid var(--stl-line); background: var(--stl-card);
+      font-variant-numeric: tabular-nums;
+    }
+    .stl-shell { display: flex; min-height: 100vh; background: #000000; }
+    .stl-rail {
+      width: 240px; flex: none;
+      background: #000000;
+      border-right: 1px solid var(--stl-line);
+      padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .stl-workspace { display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-width: 0; }
+    .stl-avatar {
+      width: 28px; height: 28px; flex: none; border-radius: 50%;
+      background: #262626; color: #fafafa;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+    }
+    .stl-wsname {
+      font-size: 14px; font-weight: 500; color: #ffffff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stl-pro {
+      margin-left: auto; flex: none;
+      font-size: 12px; font-weight: 500;
+      padding: 2px 10px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft);
+      background: #111111; color: var(--stl-body);
+    }
+    .stl-navlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .stl-navitem {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 8px 12px; border: none; border-radius: 999px;
+      background: transparent; color: var(--stl-muted);
+      font: inherit; font-size: 14px; font-weight: 500; text-align: left; text-decoration: none; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-navitem:hover { background: #111111; color: #ffffff; }
+    .stl-navitem[aria-current="page"] { background: #262626; color: #fafafa; }
+    .stl-glyph {
+      width: 14px; height: 14px; flex: none; border-radius: 4px;
+      border: 1px solid var(--stl-line-soft); background: transparent;
+    }
+    .stl-navitem[aria-current="page"] .stl-glyph { background: #fafafa; border-color: #fafafa; }
+    .stl-railfoot {
+      margin-top: auto; display: flex; flex-direction: column; gap: 8px;
+      border-top: 1px solid var(--stl-line); padding: 16px 8px 0;
+    }
+    .stl-credits { margin: 0; color: var(--stl-body); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .stl-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .stl-meterfill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+    .stl-upgrade {
+      align-self: flex-start; padding: 6px 16px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft); background: #262626; color: #fafafa;
+      font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .stl-upgrade:hover { background: #111111; border-color: var(--stl-muted); }
+    .stl-main { flex: 1; min-width: 0; padding: 32px 32px 48px; max-width: 1600px; width: 100%; }
+    .stl-title { margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em; color: #ffffff; }
+    .stl-sub { margin: 6px 0 0; font-size: 14px; line-height: 20px; color: var(--stl-muted); }
+    .stl-search {
+      margin-top: 20px; max-width: 420px; height: 40px; width: 100%;
+      padding: 0 16px; border-radius: 999px;
+      border: 1px solid var(--stl-line); background: #111111; color: #ffffff;
+      font: inherit; font-size: 14px;
+      transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-search::placeholder { color: var(--stl-muted); }
+    .stl-search:hover { border-color: var(--stl-line-soft); }
+    .stl-grid {
+      margin-top: 20px;
+      display: grid; gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    .stl-card {
+      background: var(--stl-card);
+      border: 1px solid var(--stl-line);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .stl-cardtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .stl-pill {
+      display: inline-flex; align-items: center; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid var(--stl-line-soft);
+      background: transparent; color: var(--stl-body); white-space: nowrap;
+    }
+    .stl-pillcat { color: var(--stl-muted); }
+    .stl-tile {
+      width: 40px; height: 40px; border-radius: 12px; flex: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 600; color: #fafafa;
+      background: var(--stl-card2); border: 1px solid var(--stl-line);
+    }
+    .stl-cardtitle { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; color: #ffffff; }
+    .stl-desc { margin: 0; font-size: 14px; line-height: 20px; color: var(--stl-body); min-height: 40px; }
+    .stl-outcome { margin: 0; font-size: 14px; line-height: 20px; color: var(--stl-body); }
+    .stl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .stl-chip {
+      display: inline-flex; align-items: center; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid var(--stl-line);
+      background: var(--stl-card2); color: var(--stl-muted); white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .stl-use {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; margin-top: auto; padding: 8px 16px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft); background: transparent; color: #fafafa;
+      font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-use:hover { background: #111111; border-color: var(--stl-muted); }
+    .stl-empty {
+      margin-top: 20px; padding: 32px 24px;
+      background: var(--stl-card); border: 1px solid var(--stl-line); border-radius: 16px;
+      display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+    }
+    .stl-emptytext { margin: 0; font-size: 14px; color: var(--stl-muted); }
+    .stl-clear {
+      padding: 6px 16px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft); background: transparent; color: #fafafa;
+      font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .stl-clear:hover { background: #111111; border-color: var(--stl-muted); }
+    .stl-shell button:focus-visible, .stl-shell input:focus-visible, .stl-shell a:focus-visible {
+      outline: 2px solid var(--stl-focus); outline-offset: 2px;
+    }
+    @media (max-width: 900px) {
+      .stl-shell { flex-direction: column; }
+      .stl-rail { width: auto; border-right: none; border-bottom: 1px solid var(--stl-line); }
+      .stl-railfoot { margin-top: 0; }
+      .stl-main { padding: 24px 16px 40px; }
+      .stl-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <p class="stl-strip">Design preview - example data.</p>
+
+  <div class="stl-shell">
+
+    <nav aria-label="Primary" class="stl-rail">
+      <div class="stl-workspace">
+        <span aria-hidden="true" class="stl-avatar">M</span>
+        <span class="stl-wsname">My server</span>
+        <span class="stl-pro">Pro</span>
+      </div>
+
+      <ul class="stl-navlist">
+        <li>
+          <a class="stl-navitem" href="steal-detail.html">
+            <span aria-hidden="true" class="stl-glyph"></span>Bots
+          </a>
+        </li>
+        <li>
+          <a class="stl-navitem" href="steal-templates.html" aria-current="page">
+            <span aria-hidden="true" class="stl-glyph"></span>Templates
+          </a>
+        </li>
+        <li>
+          <a class="stl-navitem" href="#" data-stl-dead title="Preview only — stays on this page">
+            <span aria-hidden="true" class="stl-glyph"></span>Interview
+          </a>
+        </li>
+        <li>
+          <a class="stl-navitem" href="#" data-stl-dead title="Preview only — stays on this page">
+            <span aria-hidden="true" class="stl-glyph"></span>Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="stl-railfoot">
+        <p class="stl-credits">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="stl-meter">
+          <div class="stl-meterfill"></div>
+        </div>
+        <button type="button" class="stl-upgrade" data-stl-dead title="Preview only — upgrading does nothing">Upgrade</button>
+      </div>
+    </nav>
+
+    <main class="stl-main" id="stl-main">
+      <h1 class="stl-title">Templates</h1>
+      <p class="stl-sub">8 starters. Pick one, make it yours.</p>
+
+      <label for="stl-search" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">Search templates</label>
+      <input id="stl-search" type="search" class="stl-search" placeholder="Search templates…" autocomplete="off">
+
+      <div id="stl-grid" class="stl-grid" role="list" aria-label="Template gallery"></div>
+
+      <div id="stl-empty" class="stl-empty" hidden>
+        <p class="stl-emptytext">No templates match this search.</p>
+        <button type="button" id="stl-clear" class="stl-clear">Clear search</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var stlTemplates = [
+      { name: 'Welcome Wagon', category: 'welcome', desc: 'Post a friendly welcome message naming the new member within a minute of joining.', outcome: 'Members would see: a hello naming them within a minute of joining.', chips: ['welcome', 'naming the new member', 'within a minute'] },
+      { name: 'Mod Shield', category: 'moderation', desc: 'Delete messages with server-banned words and warn the author privately on first offense.', outcome: 'Members would see: banned-word messages removed, with a private warning on first offense.', chips: ['moderation', 'banned words', 'warn privately'] },
+      { name: 'Ticket Desk', category: 'tickets', desc: 'Post a support panel with a button so members open a private ticket with one click.', outcome: 'Members would see: a support panel opening a private ticket with one click.', chips: ['tickets', 'support panel', 'one click'] },
+      { name: 'Level Lounge', category: 'leveling', desc: 'Award experience for regular chat with a short cooldown so spam never farms levels.', outcome: 'Members would see: experience for regular chat, with spam kept from farming levels.', chips: ['leveling', 'regular chat', 'cooldown'] },
+      { name: 'Role Reactor', category: 'reaction-roles', desc: 'Post a role-picker message where reacting with an emoji grants the matching role.', outcome: 'Members would see: a role-picker where an emoji reaction grants the matching role.', chips: ['reaction-roles', 'role-picker', 'matching role'] },
+      { name: 'Mod Log', category: 'logging', desc: 'Record edited and deleted messages with author, channel, and content for review.', outcome: 'Members would see: their edited and deleted messages kept on record with author, channel, and content.', chips: ['logging', 'edited and deleted', 'author and channel'] },
+      { name: 'Giveaway Grove', category: 'giveaways', desc: 'Start giveaways with a prize, duration, and winner count, then draw fairly at the end.', outcome: 'Members would see: giveaways with a prize, duration, and winner count, drawn fairly at the end.', chips: ['giveaways', 'prize and duration', 'winner count'] },
+      { name: 'Coin Cellar', category: 'economy', desc: 'Grant coins for regular chat activity with a cooldown so idle spam never earns.', outcome: 'Members would see: coins for regular chat, with idle spam earning nothing.', chips: ['economy', 'regular chat', 'cooldown'] }
+    ];
+
+    var stlQuery = '';
+
+    function stlFiltered() {
+      var q = stlQuery.trim().toLowerCase();
+      if (q === '') return stlTemplates;
+      return stlTemplates.filter(function (t) {
+        return t.name.toLowerCase().indexOf(q) !== -1 ||
+          t.desc.toLowerCase().indexOf(q) !== -1 ||
+          t.category.toLowerCase().indexOf(q) !== -1;
+      });
+    }
+
+    function stlRender() {
+      var grid = document.getElementById('stl-grid');
+      var empty = document.getElementById('stl-empty');
+      var list = stlFiltered();
+      grid.innerHTML = '';
+      list.forEach(function (t) {
+        var card = document.createElement('div');
+        card.className = 'stl-card';
+        card.setAttribute('role', 'listitem');
+
+        var top = document.createElement('div');
+        top.className = 'stl-cardtop';
+        var kind = document.createElement('span');
+        kind.className = 'stl-pill';
+        kind.textContent = 'Template';
+        var cat = document.createElement('span');
+        cat.className = 'stl-pill stl-pillcat';
+        cat.textContent = t.category;
+        top.appendChild(kind);
+        top.appendChild(cat);
+        card.appendChild(top);
+
+        var tile = document.createElement('span');
+        tile.className = 'stl-tile';
+        tile.setAttribute('aria-hidden', 'true');
+        tile.textContent = t.name.charAt(0);
+        card.appendChild(tile);
+
+        var title = document.createElement('h2');
+        title.className = 'stl-cardtitle';
+        title.textContent = t.name;
+        card.appendChild(title);
+
+        var desc = document.createElement('p');
+        desc.className = 'stl-desc';
+        desc.textContent = t.desc;
+        card.appendChild(desc);
+
+        var outcome = document.createElement('p');
+        outcome.className = 'stl-outcome';
+        outcome.textContent = t.outcome;
+        card.appendChild(outcome);
+
+        var chips = document.createElement('div');
+        chips.className = 'stl-chips';
+        t.chips.forEach(function (c) {
+          var chip = document.createElement('span');
+          chip.className = 'stl-chip';
+          chip.textContent = c;
+          chips.appendChild(chip);
+        });
+        card.appendChild(chips);
+
+        var btn = document.createElement('a');
+        btn.href = '#';
+        btn.className = 'stl-use';
+        btn.setAttribute('data-stl-dead', '');
+        btn.setAttribute('title', 'Preview only — installs nothing');
+        btn.textContent = 'Use this template';
+        btn.addEventListener('click', function (e) { e.preventDefault(); });
+        card.appendChild(btn);
+
+        grid.appendChild(card);
+      });
+      if (list.length === 0) {
+        grid.style.display = 'none';
+        empty.hidden = false;
+      } else {
+        grid.style.display = '';
+        empty.hidden = true;
+      }
+    }
+
+    var stlSearch = document.getElementById('stl-search');
+    stlSearch.addEventListener('input', function () {
+      stlQuery = stlSearch.value;
+      stlRender();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.activeElement === stlSearch) {
+        stlSearch.value = '';
+        stlQuery = '';
+        stlRender();
+      }
+    });
+    document.getElementById('stl-clear').addEventListener('click', function () {
+      stlSearch.value = '';
+      stlQuery = '';
+      stlRender();
+      stlSearch.focus();
+    });
+
+    document.querySelectorAll('[data-stl-dead]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.preventDefault(); });
+    });
+
+    stlRender();
+  </script>
+</body>
+</html>

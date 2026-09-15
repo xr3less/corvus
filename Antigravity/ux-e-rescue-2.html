@@ -1,0 +1,251 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescue preview — trial rest and safe undo</title>
+<style>
+  body {
+    margin: 0;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    color-scheme: dark;
+    line-height: 1.5;
+  }
+  .uxe-strip {
+    padding: 10px 20px;
+    background: #0d0d10;
+    border-bottom: 1px solid #1c1c20;
+    color: #8a8a93;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .uxe-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .uxe-head {
+    padding: 16px;
+    border-radius: 16px;
+    background: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .uxe-title {
+    margin: 0;
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .uxe-sub {
+    margin: 0;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 500;
+    padding: 3px 12px 3px 10px;
+    border-radius: 999px;
+    border: 1px solid #2a2a30;
+    background: #111111;
+    color: #f59e0b;
+  }
+  .uxe-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+  }
+  .uxe-card {
+    background: #0d0d10;
+    border: 1px solid #1c1c20;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .uxe-card-title {
+    margin: 0;
+    font-size: 15px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .uxe-body {
+    margin: 0;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .uxe-item {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #1c1c20;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-item-last {
+    border-bottom: none;
+  }
+  .uxe-ver {
+    flex: none;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 1px solid #2a2a30;
+    background: #111111;
+    color: #fafafa;
+  }
+  .uxe-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .uxe-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid #ffffff;
+    color: #000000;
+    background: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .uxe-primary:hover {
+    background: #c9d1d9;
+    border-color: #c9d1d9;
+  }
+  .uxe-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid #2a2a30;
+    color: #fafafa;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .uxe-ghost:hover {
+    background: #111111;
+    border-color: #8a8a93;
+  }
+  .uxe-proof {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #111111;
+    border: 1px solid #2a2a30;
+    color: #22c55e;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-note {
+    margin: 0;
+    color: #8a8a93;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .uxe-primary:focus-visible,
+  .uxe-ghost:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="uxe-strip">Practice preview, mock only. Nothing here changes your live bot. Screen 2 of 2, rest easy and undo safely.</div>
+<main class="uxe-wrap">
+  <header class="uxe-head">
+    <span class="uxe-pill"><span class="uxe-dot" aria-hidden="true"></span><span>Trial ended</span></span>
+    <h1 class="uxe-title">Night Market mods is sleeping</h1>
+    <p class="uxe-sub">Trial, 3 days, full Pro, no card. Then pay or your bot sleeps. That day has come, and the sleep is gentle.</p>
+  </header>
+
+  <section class="uxe-card" aria-labelledby="uxe-sleep-title">
+    <h2 class="uxe-card-title" id="uxe-sleep-title">Nothing is gone, waking is one step</h2>
+    <p class="uxe-body">Your bot sleeps, nothing is deleted. Rooms, members, and settings wait exactly where you left them. Wake on upgrade, pick a plan and the bot wakes where it left off.</p>
+    <div class="uxe-actions">
+      <button type="button" class="uxe-primary" id="uxe-plans-btn" title="Preview only, plans do not open in the mock">See plans to wake the bot</button>
+      <button type="button" class="uxe-ghost" id="uxe-stay-btn" title="Preview only, this choice does nothing in the mock">Let it keep sleeping</button>
+    </div>
+  </section>
+
+  <section class="uxe-card" aria-labelledby="uxe-undo-title">
+    <h2 class="uxe-card-title" id="uxe-undo-title">Undo is safe, here is the before and after</h2>
+    <div class="uxe-list">
+      <div class="uxe-item"><span class="uxe-ver">v12</span><span>Before. Shared 2 hours ago, the hello note went to a room few could see.</span></div>
+      <div class="uxe-item uxe-item-last"><span class="uxe-ver">v11</span><span>After. Shared 3 days ago, the hello note reached everyone. Undo brings this one back.</span></div>
+    </div>
+    <p class="uxe-body" id="uxe-undo-cause">Undo only swaps which shared copy is live. Your rooms and settings stay the same either way, and v12 stays kept.</p>
+    <div class="uxe-actions">
+      <button type="button" class="uxe-primary" id="uxe-undo-btn">Go back to v11</button>
+      <button type="button" class="uxe-ghost" id="uxe-keep-btn" title="Preview only, this choice does nothing in the mock">Stay on v12</button>
+    </div>
+    <p class="uxe-proof" id="uxe-undo-proof" hidden>Checked just now. v11 is live again, with the same rooms and settings. v12 stays kept, so you can return to it.</p>
+    <p class="uxe-note">History this draws on. Published Night Market mods v12, 2 hours ago. Rolled back Night Market mods to v11, yesterday. Published Night Market mods v11, 3 days ago. <a class="uxe-note" href="./ux-e-rescue.html" id="uxe-back-link" title="Preview only, opens the first mock screen">Back to screen 1</a>.</p>
+  </section>
+</main>
+<script>
+(function () {
+  function prevent(id) {
+    var el = document.getElementById(id);
+    if (el === null) { return; }
+    el.addEventListener('click', function (ev) {
+      ev.preventDefault();
+    });
+  }
+  prevent('uxe-plans-btn');
+  prevent('uxe-stay-btn');
+  prevent('uxe-keep-btn');
+  var undoBtn = document.getElementById('uxe-undo-btn');
+  if (undoBtn === null) { return; }
+  undoBtn.addEventListener('click', function () {
+    var proof = document.getElementById('uxe-undo-proof');
+    if (proof === null) { return; }
+    proof.hidden = false;
+    undoBtn.textContent = 'Back on v11';
+    var cause = document.getElementById('uxe-undo-cause');
+    if (cause === null) { return; }
+    cause.textContent = 'Done. v11 is the live copy again, and v12 waits nearby in case you want it back.';
+  });
+})();
+</script>
+</body>
+</html>

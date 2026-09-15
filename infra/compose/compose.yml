@@ -1,0 +1,96 @@
+# Corvus infra (compose): Postgres + web (Next.js) + gateway.
+#
+# Images are PULLED from GHCR (ghcr.io/<GHCR_OWNER>/corvus-web | corvus-gateway); they are
+# built and pushed by .github/workflows/deploy.yml. This file never builds locally.
+#
+# Deploy order lives in infra/RUNBOOK.md ("Deploy"): snapshot -> migrate -> pull -> up.
+# Migrations are forward-only and applied as an explicit deploy STEP, never automatically.
+name: corvus
+
+# 10 MB x 3 files per container — logs can never fill the disk
+# (mirrors provision-contabo.sh step 7). Shared by both app services.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-corvus}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Nightly pg_dump sidecar (never auto-starts; run explicitly).
+  # Schedule once live (host cron, off-box copy afterwards):
+  #   0 2 * * * docker compose --profile backup run --rm pg-backup
+  pg-backup:
+    image: postgres:17-alpine
+    profiles: ['backup']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-corvus}
+    volumes:
+      - ./backups:/backups
+    command:
+      - sh
+      - -c
+      - pg_dump -Fc -h postgres -U $${POSTGRES_USER} $${POSTGRES_DB} > /backups/corvus.dump
+
+  # Next.js web app. Published on 3000; TLS/reverse-proxy is a documented follow-up
+  # (infra/RUNBOOK.md) — this compose file intentionally ships no proxy service yet.
+  web:
+    image: ghcr.io/${GHCR_OWNER:-corvus}/corvus-web:${TAG:-stable}
+    restart: unless-stopped
+    env_file:
+      - path: ../../.env
+        required: false
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Cheap static route — no auth, no DB. Node exists in the app image by contract.
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "require('http').get('http://127.0.0.1:3000/', (r) => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *default-logging
+
+  # Discord gateway. No published ports — it dials out only.
+  gateway:
+    image: ghcr.io/${GHCR_OWNER:-corvus}/corvus-gateway:${TAG:-stable}
+    restart: unless-stopped
+    command: ['npm', 'start']
+    env_file:
+      - path: ../../.env
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *default-logging
+
+volumes:
+  pgdata:

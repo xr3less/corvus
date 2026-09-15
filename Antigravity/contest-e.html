@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corvus — Studio Shelf</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink: '#0B0B0D',
+        bench: '#16161B',
+        shelf: '#141417',
+        panel: '#101014',
+        line: 'rgb(255 255 255 / 0.09)',
+        linestrong: 'rgb(255 255 255 / 0.15)',
+        paper: '#FAFAFA',
+        bodyc: '#D4D1D9',
+        muted: '#A1A1AA',
+        faint: '#71717A',
+        primary: '#FAFAFA',
+        primaryink: '#0A0A0B',
+        accent: '#2DD4BF',
+        success: '#22C55E',
+        warning: '#F59E0B',
+        offline: '#8a8a93'
+      },
+      fontFamily: {
+        display: ['Poppins', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial'],
+        body: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Inter', 'Arial'],
+        mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { background: #000000; color: #FAFAFA; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial; }
+  .display { font-family: Poppins, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
+  .tile-art { position: relative; overflow: hidden; height: 132px; background: #141417; }
+  .tile-art::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 -28px 36px -28px rgba(0,0,0,.65); pointer-events: none; }
+  .art-welcome { background-color: #141417; }
+  .art-welcome .sun { position: absolute; left: 50%; top: 56%; width: 64px; height: 64px; margin-left: -32px; margin-top: -32px; border-radius: 9999px; background: #D4D1D9; opacity: .9; }
+  .art-welcome .arc { position: absolute; left: 50%; top: 56%; width: 96px; height: 96px; margin-left: -48px; margin-top: -48px; border-radius: 9999px; border: 1px solid rgb(255 255 255 / 0.15); }
+  .art-mod { background-color: #141417; }
+  .art-mod .bar { position: absolute; left: 18px; right: 18px; top: 30px; height: 10px; background: #A1A1AA; border-radius: 2px; opacity: .85; }
+  .art-mod .bar.b2 { top: 50px; left: 34px; background: #71717A; opacity: 1; }
+  .art-mod .bar.b3 { top: 70px; left: 26px; right: 52px; background: #D4D1D9; opacity: .55; }
+  .art-mod .shield { position: absolute; right: 20px; bottom: 14px; width: 34px; height: 40px; background: #A1A1AA; clip-path: polygon(50% 0, 100% 22%, 100% 60%, 50% 100%, 0 60%, 0 22%); opacity: .92; }
+  .art-ticket { background-color: #141417; }
+  .art-ticket .stub { position: absolute; left: 22px; right: 22px; top: 38px; bottom: 38px; background: #D4D1D9; border-radius: 6px; opacity: .94; }
+  .art-ticket .stub::before { content: ""; position: absolute; top: 0; bottom: 0; left: 46px; border-left: 2px dashed #141417; opacity: .7; }
+  .art-ticket .hole { position: absolute; left: 38px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 9999px; background: #141417; border: 1px solid rgb(255 255 255 / 0.09); }
+  .art-level { background-color: #141417; }
+  .art-level .step { position: absolute; bottom: 18px; background: #71717A; border: 1px solid rgb(255 255 255 / 0.09); }
+  .art-level .s1 { left: 20px; width: 34px; height: 26px; }
+  .art-level .s2 { left: 60px; width: 34px; height: 46px; background: #A1A1AA; }
+  .art-level .s3 { left: 100px; width: 34px; height: 68px; background: #22C55E; border-color: #22C55E; opacity: .85; }
+  .art-level .moon { position: absolute; right: 22px; top: 18px; width: 26px; height: 26px; border-radius: 9999px; background: #D4D1D9; opacity: .9; }
+  .art-react { background-color: #141417; }
+  .art-react .ring { position: absolute; border-radius: 9999px; border: 1px solid #A1A1AA; }
+  .art-react .r1 { left: 50%; top: 50%; width: 88px; height: 88px; margin-left: -44px; margin-top: -44px; }
+  .art-react .r2 { left: 50%; top: 50%; width: 54px; height: 54px; margin-left: -27px; margin-top: -27px; border-color: #71717A; }
+  .art-react .core { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin-left: -10px; margin-top: -10px; border-radius: 9999px; background: #D4D1D9; }
+  .art-log { background-color: #141417; }
+  .art-log .row { position: absolute; left: 20px; right: 20px; height: 8px; background: #71717A; border-radius: 2px; }
+  .art-log .row.r1 { top: 26px; right: 64px; }
+  .art-log .row.r2 { top: 44px; left: 36px; background: #A1A1AA; }
+  .art-log .row.r3 { top: 62px; right: 44px; }
+  .art-log .row.r4 { top: 80px; left: 28px; right: 76px; background: #A1A1AA; opacity: .55; }
+  .art-give { background-color: #141417; }
+  .art-give .box { position: absolute; left: 50%; top: 50%; width: 56px; height: 48px; margin-left: -28px; margin-top: -18px; background: #A1A1AA; border-radius: 4px; }
+  .art-give .lid { position: absolute; left: 50%; top: 50%; width: 64px; height: 12px; margin-left: -32px; margin-top: -30px; background: #71717A; border-radius: 3px; }
+  .art-give .ribbon { position: absolute; left: 50%; top: 50%; width: 10px; height: 60px; margin-left: -5px; margin-top: -30px; background: #101014; opacity: .55; }
+  .art-give .dot { position: absolute; width: 6px; height: 6px; border-radius: 9999px; background: #71717A; }
+  .art-coin { background-color: #141417; }
+  .art-coin .vault { position: absolute; left: 50%; top: 34px; width: 92px; height: 64px; margin-left: -46px; background: #101014; border: 1px solid rgb(255 255 255 / 0.15); border-radius: 8px 8px 22px 22px; }
+  .art-coin .coin { position: absolute; left: 50%; width: 22px; height: 22px; margin-left: -11px; border-radius: 9999px; background: #D4D1D9; border: 2px solid #71717A; }
+  .shelf-board { background: #101014; border: 1px solid rgb(255 255 255 / 0.09); }
+  .bot-row-btn[aria-selected="true"] { border-color: rgb(255 255 255 / 0.15); background: #141417; }
+  .bot-row-btn[aria-selected="true"] .bot-name { color: #FAFAFA; }
+  .filter-btn[aria-pressed="true"] { background: #FAFAFA; color: #0A0A0B; border-color: #FAFAFA; }
+  :focus-visible { outline: 2px solid #2DD4BF; outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none; } }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+
+<div class="w-full bg-primary text-primaryink text-center font-mono text-[13px] font-medium tracking-wide py-2 px-4">
+  Design preview - example data.
+</div>
+
+<header class="border-b border-line">
+  <div class="max-w-6xl mx-auto px-5 pt-5 pb-4">
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-shelf border border-line flex items-center justify-center">
+          <i data-lucide="bird" class="w-5 h-5 text-paper"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <p class="font-semibold text-paper text-[15px] leading-tight">My server</p>
+            <span class="font-mono text-[11px] font-medium tracking-wide uppercase bg-shelf border border-line text-muted rounded-full px-2 py-0.5">Pro</span>
+          </div>
+          <p class="text-[13px] text-faint mt-0.5">Creator studio bench</p>
+        </div>
+      </div>
+      <div class="ml-auto flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 text-[13px] text-muted">
+          <i data-lucide="coins" class="w-4 h-4"></i>
+          <span class="font-mono">Credits 82/100</span>
+          <span class="w-20 h-1.5 rounded-full bg-shelf border border-line overflow-hidden inline-block" aria-hidden="true">
+            <span class="block h-full bg-primary" style="width:82%"></span>
+          </span>
+        </div>
+        <a href="#" data-dead class="inline-flex items-center gap-1.5 bg-primary text-primaryink text-[13px] font-medium rounded-lg px-3.5 h-10">
+          <i data-lucide="arrow-up-right" class="w-4 h-4"></i>Upgrade
+        </a>
+      </div>
+    </div>
+    <nav class="mt-4 flex items-center gap-1.5 overflow-x-auto" aria-label="Primary">
+      <a href="#" data-dead aria-current="page" class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-2 bg-shelf border border-line text-paper whitespace-nowrap"><i data-lucide="bot" class="w-4 h-4"></i>Bots</a>
+      <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-2 text-muted hover:text-paper hover:bg-shelf whitespace-nowrap"><i data-lucide="layout-template" class="w-4 h-4"></i>Templates</a>
+      <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-2 text-muted hover:text-paper hover:bg-shelf whitespace-nowrap"><i data-lucide="messages-square" class="w-4 h-4"></i>Interview</a>
+      <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-2 text-muted hover:text-paper hover:bg-shelf whitespace-nowrap"><i data-lucide="activity" class="w-4 h-4"></i>Activity</a>
+      <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-2 text-muted hover:text-paper hover:bg-shelf whitespace-nowrap"><i data-lucide="shield-check" class="w-4 h-4"></i>Pre-flight</a>
+      <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-2 text-muted hover:text-paper hover:bg-shelf whitespace-nowrap"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 py-7 space-y-8">
+
+  <section aria-labelledby="shelf-heading">
+    <div class="flex items-end justify-between gap-4 mb-1">
+      <div>
+        <p class="font-mono text-[12px] uppercase tracking-[0.14em] text-faint font-medium">Starter shelf</p>
+        <h1 id="shelf-heading" class="display text-[36px] lg:text-[48px] font-medium leading-[1.25] tracking-[-0.03em] text-paper mt-1">Start from a finished room</h1>
+        <p class="text-[14px] text-muted mt-1 max-w-xl">Pick a starter, make it yours. Each tile shows the shape of the setup.</p>
+      </div>
+    </div>
+    <div class="shelf-board rounded-xl p-4 sm:p-5">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5" id="template-grid">
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-welcome" aria-hidden="true"><div class="arc"></div><div class="sun"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Welcome Wagon</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">welcome</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-mod" aria-hidden="true"><div class="bar"></div><div class="bar b2"></div><div class="bar b3"></div><div class="shield"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Mod Shield</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">moderation</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-ticket" aria-hidden="true"><div class="stub"></div><div class="hole"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Ticket Desk</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">tickets</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-level" aria-hidden="true"><div class="moon"></div><div class="step s1"></div><div class="step s2"></div><div class="step s3"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Level Lounge</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">leveling</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-react" aria-hidden="true"><div class="ring r1"></div><div class="ring r2"></div><div class="core"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Role Reactor</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">reaction-roles</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-log" aria-hidden="true"><div class="row r1"></div><div class="row r2"></div><div class="row r3"></div><div class="row r4"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Mod Log</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">logging</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-give" aria-hidden="true"><div class="box"></div><div class="lid"></div><div class="ribbon"></div><div class="dot" style="left:34px;top:30px"></div><div class="dot" style="right:36px;top:52px"></div><div class="dot" style="left:52px;bottom:26px"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Giveaway Grove</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">giveaways</span>
+          </div>
+        </article>
+
+        <article class="rounded-xl overflow-hidden border border-line bg-bench">
+          <div class="tile-art art-coin" aria-hidden="true"><div class="vault"></div><div class="coin" style="top:22px"></div><div class="coin" style="top:44px;width:16px;height:16px;margin-left:-8px"></div></div>
+          <div class="p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0"><h2 class="text-[14px] font-semibold text-paper truncate">Coin Cellar</h2></div>
+            <span class="shrink-0 font-mono text-[11px] font-medium text-muted border border-line rounded-full px-2 py-0.5">economy</span>
+          </div>
+        </article>
+
+      </div>
+      <div class="mt-3 h-1.5 rounded-full bg-ink" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="bench-heading" class="grid gap-4 lg:grid-cols-[340px_1fr]">
+    <div class="rounded-xl border border-line bg-bench p-4">
+      <div class="flex items-center justify-between gap-3">
+        <h2 id="bench-heading" class="display text-[19px] font-medium text-paper">Your bots</h2>
+        <div class="flex gap-1.5" role="group" aria-label="Filter by status">
+          <button type="button" class="filter-btn font-mono text-[12px] font-medium rounded-full px-2.5 py-1 border border-line text-muted" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="filter-btn font-mono text-[12px] font-medium rounded-full px-2.5 py-1 border border-line text-muted" data-filter="Live" aria-pressed="false">Live</button>
+          <button type="button" class="filter-btn font-mono text-[12px] font-medium rounded-full px-2.5 py-1 border border-line text-muted" data-filter="Trial" aria-pressed="false">Trial</button>
+          <button type="button" class="filter-btn font-mono text-[12px] font-medium rounded-full px-2.5 py-1 border border-line text-muted" data-filter="Offline" aria-pressed="false">Offline</button>
+        </div>
+      </div>
+      <div class="relative mt-3">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"></i>
+        <input id="bot-search" type="search" placeholder="Search bots" autocomplete="off" aria-label="Search bots" class="w-full bg-ink border border-line rounded-lg pl-9 pr-3 py-2 text-[13px] text-paper placeholder:text-faint">
+      </div>
+      <div id="bot-list" role="listbox" aria-label="Bots" aria-orientation="vertical" class="mt-3 space-y-2"></div>
+      <div id="bot-empty" class="hidden mt-3 rounded-xl border border-dashed border-line p-5 text-center">
+        <i data-lucide="ghost" class="w-5 h-5 mx-auto text-faint"></i>
+        <p class="text-[13px] font-medium text-paper mt-2">No bots match this search</p>
+        <p class="text-[12px] text-muted mt-1">Try a different name or status filter</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-line bg-bench overflow-hidden">
+      <div class="p-5 border-b border-line">
+        <div class="flex flex-wrap items-start gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 id="detail-name" class="display text-[24px] font-medium text-paper leading-tight">Study Hall</h3>
+              <span id="detail-status" class="inline-flex items-center gap-1.5 font-mono text-[12px] font-medium rounded-full px-2.5 py-1 border border-line text-success"><span id="detail-dot" class="w-1.5 h-1.5 rounded-full bg-success inline-block" aria-hidden="true"></span>Live</span>
+            </div>
+            <p id="detail-meta" class="font-mono text-[13px] text-muted mt-1">1240 members · 3 servers</p>
+          </div>
+          <div class="ml-auto flex gap-2">
+            <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 h-10 bg-shelf border border-linestrong text-paper"><i data-lucide="external-link" class="w-4 h-4"></i>Open</a>
+            <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 h-10 bg-primary text-primaryink"><i data-lucide="upload" class="w-4 h-4"></i>Publish</a>
+            <a href="#" data-dead class="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 h-10 text-muted border border-linestrong"><i data-lucide="history" class="w-4 h-4"></i>Rollback</a>
+          </div>
+        </div>
+        <p id="trial-line" class="hidden mt-3 text-[13px] rounded-lg border border-warning/40 bg-warning/10 text-warning px-3 py-2">Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2">
+        <div class="p-5 border-b sm:border-b-0 sm:border-r border-line">
+          <div class="flex items-center gap-1.5 font-mono text-[12px] font-medium uppercase tracking-[0.12em] text-faint"><i data-lucide="activity" class="w-3.5 h-3.5"></i>Activity</div>
+          <ul id="activity-list" class="mt-3 space-y-2.5"></ul>
+        </div>
+        <div class="p-5">
+          <div class="flex items-center gap-1.5 font-mono text-[12px] font-medium uppercase tracking-[0.12em] text-faint"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i>Pre-flight</div>
+          <ul class="mt-3 space-y-2.5">
+            <li class="flex items-start gap-2 text-[13px] text-paper"><i data-lucide="check-circle-2" class="w-4 h-4 mt-0.5 shrink-0 text-success"></i>Token and permissions look right</li>
+            <li class="flex items-start gap-2 text-[13px] text-paper"><i data-lucide="check-circle-2" class="w-4 h-4 mt-0.5 shrink-0 text-success"></i>Rate limits within caps</li>
+            <li class="flex items-start gap-2 text-[13px] text-paper"><i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 shrink-0 text-warning"></i>Welcome reply targets a hidden channel</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-line bg-panel">
+        <form id="composer" class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <i data-lucide="pen-line" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"></i>
+            <input type="text" placeholder="Describe a change…" aria-label="Describe a change" class="w-full bg-ink border border-line rounded-xl pl-9 pr-3 py-2.5 text-[13px] text-paper placeholder:text-faint">
+          </div>
+          <button type="submit" class="inline-flex items-center gap-1.5 bg-primary text-primaryink text-[13px] font-medium rounded-lg px-4 h-10"><i data-lucide="send" class="w-4 h-4"></i>Send</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var bots = [
+    { name: 'Study Hall', status: 'Live', members: '1240 members', servers: '3 servers' },
+    { name: 'Draft Arena', status: 'Trial', members: '86 members', servers: '1 server' },
+    { name: 'Night Market mods', status: 'Offline', members: '2013 members', servers: '2 servers' }
+  ];
+  var activityBase = [
+    { text: 'Published {BOT} v12', time: '2h ago' },
+    { text: 'Simulated welcome flow', time: '5h ago' },
+    { text: 'Rolled back {BOT} to v11', time: 'yesterday' },
+    { text: 'Published {BOT} v11', time: '3d ago' }
+  ];
+  var selectedName = 'Study Hall';
+  var activeFilter = 'all';
+  var list = document.getElementById('bot-list');
+  var empty = document.getElementById('bot-empty');
+  var search = document.getElementById('bot-search');
+  var detailName = document.getElementById('detail-name');
+  var detailStatus = document.getElementById('detail-status');
+  var detailDot = document.getElementById('detail-dot');
+  var detailMeta = document.getElementById('detail-meta');
+  var trialLine = document.getElementById('trial-line');
+  var activityList = document.getElementById('activity-list');
+
+  function statusDot(status) {
+    if (status === 'Live') return 'bg-success';
+    if (status === 'Trial') return 'bg-warning';
+    return 'bg-offline';
+  }
+  function statusText(status) {
+    if (status === 'Live') return 'text-success';
+    if (status === 'Trial') return 'text-warning';
+    return 'text-offline';
+  }
+  function iconFor(status) {
+    if (status === 'Live') return 'radio';
+    if (status === 'Trial') return 'timer';
+    return 'moon';
+  }
+  function renderActivity(botName) {
+    activityList.innerHTML = '';
+    activityBase.forEach(function (a) {
+      var li = document.createElement('li');
+      li.className = 'flex items-start justify-between gap-3 text-[13px]';
+      var left = document.createElement('span');
+      left.className = 'text-paper';
+      left.textContent = a.text.replace('{BOT}', botName);
+      var right = document.createElement('span');
+      right.className = 'font-mono text-faint whitespace-nowrap text-[12px]';
+      right.textContent = a.time;
+      li.appendChild(left);
+      li.appendChild(right);
+      activityList.appendChild(li);
+    });
+  }
+  function renderDetail(bot) {
+    detailName.textContent = bot.name;
+    detailMeta.textContent = bot.members + ' · ' + bot.servers;
+    detailStatus.lastChild.textContent = bot.status;
+    detailStatus.className = 'inline-flex items-center gap-1.5 font-mono text-[12px] font-medium rounded-full px-2.5 py-1 border border-line ' + statusText(bot.status);
+    detailDot.className = 'w-1.5 h-1.5 rounded-full inline-block ' + statusDot(bot.status);
+    if (bot.status === 'Trial') {
+      trialLine.classList.remove('hidden');
+    } else {
+      trialLine.classList.add('hidden');
+    }
+    renderActivity(bot.name);
+  }
+  function renderList() {
+    var q = search.value.trim().toLowerCase();
+    list.innerHTML = '';
+    var visible = bots.filter(function (b) {
+      var okFilter = activeFilter === 'all' || b.status === activeFilter;
+      var okSearch = q === '' || b.name.toLowerCase().indexOf(q) !== -1;
+      return okFilter && okSearch;
+    });
+    visible.forEach(function (b) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('role', 'option');
+      btn.setAttribute('aria-selected', b.name === selectedName ? 'true' : 'false');
+      btn.className = 'bot-row-btn w-full text-left rounded-xl border border-line bg-ink px-3.5 py-3 flex items-center gap-3 transition-colors';
+      var icon = document.createElement('span');
+      icon.className = 'w-9 h-9 rounded-lg bg-shelf border border-line flex items-center justify-center shrink-0';
+      icon.innerHTML = '<i data-lucide="' + iconFor(b.status) + '" class="w-4 h-4 text-paper"></i>';
+      var mid = document.createElement('span');
+      mid.className = 'min-w-0 flex-1';
+      var nm = document.createElement('span');
+      nm.className = 'bot-name block text-[14px] font-semibold text-paper truncate';
+      nm.textContent = b.name;
+      var sub = document.createElement('span');
+      sub.className = 'block text-[12px] text-muted mt-0.5';
+      sub.textContent = b.members + ' · ' + b.servers;
+      mid.appendChild(nm);
+      mid.appendChild(sub);
+      var pill = document.createElement('span');
+      pill.className = 'shrink-0 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium border border-line rounded-full px-2 py-1 ' + statusText(b.status);
+      var dot = document.createElement('span');
+      dot.className = 'w-1.5 h-1.5 rounded-full inline-block ' + statusDot(b.status);
+      dot.setAttribute('aria-hidden', 'true');
+      pill.appendChild(dot);
+      pill.appendChild(document.createTextNode(b.status));
+      btn.appendChild(icon);
+      btn.appendChild(mid);
+      btn.appendChild(pill);
+      btn.addEventListener('click', function () {
+        selectedName = b.name;
+        var chosen = null;
+        for (var i = 0; i < bots.length; i++) {
+          if (bots[i].name === selectedName) chosen = bots[i];
+        }
+        if (chosen) renderDetail(chosen);
+        renderList();
+      });
+      list.appendChild(btn);
+    });
+    if (visible.length === 0) {
+      empty.classList.remove('hidden');
+    } else {
+      empty.classList.add('hidden');
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+  var filters = document.querySelectorAll('.filter-btn');
+  for (var i = 0; i < filters.length; i++) {
+    filters[i].addEventListener('click', function (e) {
+      activeFilter = e.currentTarget.getAttribute('data-filter');
+      for (var j = 0; j < filters.length; j++) {
+        filters[j].setAttribute('aria-pressed', filters[j].getAttribute('data-filter') === activeFilter ? 'true' : 'false');
+      }
+      renderList();
+    });
+  }
+  search.addEventListener('input', renderList);
+  var dead = document.querySelectorAll('[data-dead]');
+  for (var k = 0; k < dead.length; k++) {
+    dead[k].addEventListener('click', function (e) { e.preventDefault(); });
+  }
+  document.getElementById('composer').addEventListener('submit', function (e) { e.preventDefault(); });
+  var initial = bots[0];
+  renderDetail(initial);
+  renderList();
+  if (window.lucide) window.lucide.createIcons();
+})();
+</script>
+</body>
+</html>

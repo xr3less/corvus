@@ -1,0 +1,111 @@
+/* Assistant reply rows — moved verbatim from the dashboard sheet (D-118), which
+   no longer renders assistant rows itself. 04 tokens throughout. */
+
+.chatRow {
+  padding: 12px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.chatRow:last-child {
+  border-bottom: none;
+}
+
+.chatAnswer {
+  margin: 0;
+  color: #fafafa;
+  font-size: 15px;
+  line-height: 24px;
+  white-space: pre-wrap;
+  text-wrap: pretty;
+}
+
+.chatError {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: #fca5a5;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.chatRetry {
+  flex: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: #141417;
+  color: #fafafa;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.chatRetry:hover {
+  background: #26262b;
+  border-color: rgb(255 255 255 / 0.3);
+}
+
+.chatCost {
+  margin: 8px 0 0;
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shared composer primitives (both chat pages): suggestion chips that only
+   fill the composer, the honest cost line under it, and the streaming lock. */
+
+.suggestionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.suggestionChip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: #141417;
+  color: #d4d4d8;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.suggestionChip:hover {
+  background: #26262b;
+  border-color: rgb(255 255 255 / 0.3);
+  color: #fafafa;
+}
+
+.suggestionChip:active {
+  transform: scale(0.98);
+}
+
+.composerCost {
+  margin: 8px 0 0;
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 20px;
+  text-wrap: pretty;
+}
+
+.composerLocked {
+  opacity: 0.5;
+  pointer-events: none;
+}

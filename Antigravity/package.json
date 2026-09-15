@@ -1,0 +1,16 @@
+{
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  },
+  "name": "def55c3c-e823-4339-a625-84567c17477c",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

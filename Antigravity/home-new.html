@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus home design preview: setup checklist, bots at a glance, activity and templates. Example data only.">
+
+  <!-- Tailwind CSS CDN (sandbox only) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Fonts: Poppins (display), Geist Mono (numbers/labels) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (ISC license, free) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0b0b0d;
+      --surface2: #141417;
+      --card: #16161b;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-hard: #1c1c20;
+      --fg: #fafafa;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .display { font-family: 'Poppins', sans-serif; letter-spacing: -0.02em; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .navlink {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 8px 12px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      border: 1px solid transparent;
+      transition: color .2s ease, background .2s ease;
+      text-align: left;
+    }
+    .navlink:hover { color: var(--fg); background: rgba(255,255,255,.05); }
+    .navlink.active { color: var(--fg); background: var(--surface2); border-color: var(--line); }
+    .meter-track { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .meter-fill { height: 100%; width: 82%; border-radius: inherit; background: #34d399; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05); white-space: nowrap;
+    }
+    .pill-trial { color: #fbbf24; border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.08); }
+    .pill-live { color: #34d399; border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.08); }
+    .pill .dot { background: #8a8a93; }
+    .pill-live .dot { background: #34d399; }
+    .pill-trial .dot { background: #fbbf24; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #8a8a93; flex: none; }
+    .field {
+      height: 40px; padding: 0 16px; border-radius: 8px;
+      border: 1px solid var(--line); background: #0e0e11; color: var(--fg);
+      font-size: 14px; width: 100%; transition: border-color .2s ease;
+    }
+    .field::placeholder { color: var(--faint); }
+    .field:hover { border-color: rgba(255,255,255,.2); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 40px; padding: 0 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 500; white-space: nowrap;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .btn-primary { background: #fafafa; color: #0a0a0b; }
+    .btn-primary:hover { background: #ffffff; }
+    .btn-ghost { border: 1px solid rgba(255,255,255,.15); color: var(--fg); background: transparent; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+    .tabpill {
+      height: 32px; padding: 0 16px; border-radius: 999px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      border: 1px solid var(--line); background: transparent;
+      transition: background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    .tabpill:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    .tabpill[aria-pressed="true"] { background: #fafafa; color: #0a0a0b; border-color: #fafafa; }
+    .tabpill[aria-current="page"] { background: #fafafa; color: #0a0a0b; border-color: #fafafa; }
+    .botcard {
+      text-align: left; width: 100%;
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      padding: 18px; display: block; text-decoration: none; color: inherit;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .botcard:hover { border-color: rgba(255,255,255,.22); background: #18181d; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%; flex: none;
+      display: grid; place-items: center;
+      font-size: 16px; font-weight: 600;
+      background: var(--surface2); border: 1px solid var(--line); color: var(--fg);
+    }
+    .step-dot {
+      width: 24px; height: 24px; border-radius: 50%; flex: none;
+      display: grid; place-items: center;
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,.2); color: var(--muted);
+    }
+    .step[data-state="done"] .step-dot { background: #34d399; border-color: #34d399; color: #000; }
+    .step[data-state="active"] .step-dot { border-color: #34d399; color: #34d399; }
+    .step[data-state="todo"] { opacity: .55; }
+    .progress-track { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .progress-fill { height: 100%; width: 50%; border-radius: inherit; background: #34d399; }
+    :focus-visible { outline: 2px solid #2dd4bf; outline-offset: 3px; border-radius: 6px; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-black">
+
+  <!-- Preview strip -->
+  <p class="mono text-center text-[12px] px-4 py-2 border-b" style="color: var(--faint); border-color: var(--line-hard); background: var(--surface);">
+    Design preview - example data. Names and numbers below are placeholders.
+  </p>
+
+  <div class="flex min-h-screen">
+
+    <!-- Left rail -->
+    <nav aria-label="Primary" class="hidden md:flex flex-col flex-none p-4 border-r" style="width: 260px; border-color: var(--line-hard); background: var(--surface); min-height: calc(100vh - 33px);">
+      <div class="flex items-center gap-3 px-1 py-2">
+        <span aria-hidden="true" class="avatar" style="width:36px; height:36px; font-size:14px;">M</span>
+        <span class="text-[14px] font-medium">My server</span>
+        <span class="pill mono" style="font-size:11px;">Pro</span>
+      </div>
+
+      <ul class="mt-4 space-y-1">
+        <li>
+          <button type="button" class="navlink active" aria-current="page">
+            <i data-lucide="bot" class="w-4 h-4" aria-hidden="true"></i>Bots
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="layout-template" class="w-4 h-4" aria-hidden="true"></i>Templates
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="messages-square" class="w-4 h-4" aria-hidden="true"></i>Interview
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="activity" class="w-4 h-4" aria-hidden="true"></i>Activity
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="shield-check" class="w-4 h-4" aria-hidden="true"></i>Pre-flight
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="settings" class="w-4 h-4" aria-hidden="true"></i>Settings
+          </button>
+        </li>
+      </ul>
+
+      <div class="mt-auto pt-6">
+        <p class="mono text-[12px] mb-2" style="color: var(--muted);">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="meter-track">
+          <div class="meter-fill"></div>
+        </div>
+        <button type="button" class="btn btn-ghost w-full mt-3">Upgrade</button>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main id="main-content" class="flex-1 min-w-0 px-5 md:px-8 py-6 max-w-[1080px] mx-auto w-full">
+
+      <h1 class="display text-[28px] font-semibold">Home</h1>
+      <p class="text-[14px] mt-1" style="color: var(--muted);">Your bots at a glance.</p>
+
+      <!-- Shared tab bar -->
+      <nav aria-label="Sections" class="flex items-center gap-2 mt-5 flex-wrap">
+        <a href="home-new.html" class="tabpill inline-flex items-center" aria-current="page">Home</a>
+        <a href="bots-new.html" class="tabpill inline-flex items-center">Bots</a>
+        <a href="templates-new.html" class="tabpill inline-flex items-center">Templates</a>
+      </nav>
+
+      <!-- Setup checklist -->
+      <section aria-label="Get started" class="card p-5 mt-5">
+        <div class="flex items-baseline justify-between gap-4 flex-wrap">
+          <h2 class="text-[15px] font-semibold">Get started (2/4)</h2>
+          <span class="mono text-[12px]" style="color: var(--faint);">2 of 4 done</span>
+        </div>
+        <div role="progressbar" aria-label="Setup progress" aria-valuenow="2" aria-valuemin="0" aria-valuemax="4" class="progress-track mt-3">
+          <div class="progress-fill"></div>
+        </div>
+        <ol class="mt-4 space-y-3">
+          <li class="step flex items-center gap-3 text-[14px]" data-state="done">
+            <span aria-hidden="true" class="step-dot"><i data-lucide="check" class="w-3 h-3"></i></span>
+            <span>Connect your server</span>
+            <span class="mono text-[12px] ml-auto" style="color: var(--faint);">Done</span>
+          </li>
+          <li class="step flex items-center gap-3 text-[14px]" data-state="active">
+            <span aria-hidden="true" class="step-dot">2</span>
+            <span>Describe your bot</span>
+            <span class="mono text-[12px] ml-auto" style="color: #34d399;">You are here</span>
+          </li>
+          <li class="step flex items-center gap-3 text-[14px]" data-state="todo">
+            <span aria-hidden="true" class="step-dot">3</span>
+            <span>Test it</span>
+          </li>
+          <li class="step flex items-center gap-3 text-[14px]" data-state="todo">
+            <span aria-hidden="true" class="step-dot">4</span>
+            <span>Go live</span>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Stat mini-cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5" aria-label="Overview stats">
+        <div class="card p-4">
+          <p class="mono text-[12px]" style="color: var(--faint);">Bots live</p>
+          <p class="mono display text-[24px] font-semibold mt-1">1</p>
+        </div>
+        <div class="card p-4">
+          <p class="mono text-[12px]" style="color: var(--faint);">Trial</p>
+          <p class="mono display text-[24px] font-semibold mt-1">1</p>
+        </div>
+        <div class="card p-4">
+          <p class="mono text-[12px]" style="color: var(--faint);">Off</p>
+          <p class="mono display text-[24px] font-semibold mt-1">1</p>
+        </div>
+        <div class="card p-4">
+          <p class="mono text-[12px]" style="color: var(--faint);">Credits left</p>
+          <p class="mono display text-[24px] font-semibold mt-1">18</p>
+        </div>
+      </div>
+
+      <!-- Your bots -->
+      <section aria-label="Your bots" class="mt-8">
+        <h2 class="display text-[22px] font-semibold">Your bots</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" role="list">
+          <a href="bot-detail-new.html" class="botcard" role="listitem">
+            <div class="flex items-center gap-3">
+              <span aria-hidden="true" class="avatar">S</span>
+              <div class="min-w-0">
+                <div class="text-[15px] font-semibold truncate">Study Hall</div>
+                <div class="mono text-[12px] mt-0.5" style="color: var(--faint);">1,240 members · 3 servers</div>
+              </div>
+            </div>
+            <div class="mt-3"><span class="pill pill-live"><span aria-hidden="true" class="dot"></span>Live</span></div>
+          </a>
+          <a href="bot-detail-new.html" class="botcard" role="listitem">
+            <div class="flex items-center gap-3">
+              <span aria-hidden="true" class="avatar">D</span>
+              <div class="min-w-0">
+                <div class="text-[15px] font-semibold truncate">Draft Arena</div>
+                <div class="mono text-[12px] mt-0.5" style="color: var(--faint);">86 members · 1 server</div>
+              </div>
+            </div>
+            <div class="mt-3"><span class="pill pill-trial"><span aria-hidden="true" class="dot"></span>Trial</span></div>
+          </a>
+          <a href="bot-detail-new.html" class="botcard" role="listitem">
+            <div class="flex items-center gap-3">
+              <span aria-hidden="true" class="avatar">N</span>
+              <div class="min-w-0">
+                <div class="text-[15px] font-semibold truncate">Night Market mods</div>
+                <div class="mono text-[12px] mt-0.5" style="color: var(--faint);">2,013 members · 2 servers</div>
+              </div>
+            </div>
+            <div class="mt-3"><span class="pill"><span aria-hidden="true" class="dot"></span>Offline</span></div>
+          </a>
+        </div>
+      </section>
+
+      <!-- Up next + This week -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+        <section aria-label="Up next" class="card p-5">
+          <h3 class="text-[15px] font-semibold">Up next</h3>
+          <p class="text-[14px] mt-2" style="color: var(--muted);">Draft Arena is on trial</p>
+          <p class="text-[14px] mt-1" style="color: #fbbf24;">Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+          <a href="#" class="btn btn-ghost mt-4" data-dead>Browse templates</a>
+        </section>
+        <section aria-label="This week" class="card p-5">
+          <h3 class="text-[15px] font-semibold">This week</h3>
+          <ul class="mt-3 space-y-3">
+            <li class="flex items-baseline justify-between gap-4 text-[14px]">
+              <span style="color: var(--muted);">Published Study Hall v12</span>
+              <span class="mono text-[12px] flex-none" style="color: var(--faint);">2h ago</span>
+            </li>
+            <li class="flex items-baseline justify-between gap-4 text-[14px]">
+              <span style="color: var(--muted);">Simulated welcome flow</span>
+              <span class="mono text-[12px] flex-none" style="color: var(--faint);">5h ago</span>
+            </li>
+            <li class="flex items-baseline justify-between gap-4 text-[14px]">
+              <span style="color: var(--muted);">Rolled back Study Hall to v11</span>
+              <span class="mono text-[12px] flex-none" style="color: var(--faint);">yesterday</span>
+            </li>
+          </ul>
+          <a href="#" data-dead class="inline-block text-[14px] mt-4 underline underline-offset-4" style="color: var(--muted);">View all activity</a>
+        </section>
+      </div>
+
+      <!-- Templates link-card (gallery lives on the Templates tab) -->
+      <section aria-label="Templates" class="mt-8 mb-12">
+        <a href="templates-new.html" class="card p-5 flex items-center justify-between gap-4 flex-wrap" style="text-decoration: none; color: inherit;">
+          <div class="min-w-0">
+            <h2 class="display text-[18px] font-semibold">Templates</h2>
+            <p class="text-[14px] mt-1" style="color: var(--muted);">8 starters. Pick one, make it yours.</p>
+          </div>
+          <span class="btn btn-ghost flex-none">Browse the 8 starters <span aria-hidden="true">→</span></span>
+        </a>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-dead]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.preventDefault(); });
+    });
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>

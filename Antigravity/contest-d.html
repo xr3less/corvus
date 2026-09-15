@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corvus — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink: '#000000',
+        panel: '#101014',
+        panel2: '#141417',
+        edge: 'rgb(255 255 255 / 0.09)',
+        fog: '#A1A1AA',
+        mist: '#D4D1D9',
+        dim: '#71717A',
+        accent: '#22C55E'
+      },
+      fontFamily: {
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+      }
+    }
+  }
+}
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { background: #000000; }
+  h1, h2 { font-family: 'Poppins', '-apple-system', 'system-ui', sans-serif; color: #FAFAFA; }
+  .row-selected { border-left-color: #FAFAFA; background: #16161B; }
+  .meter-track { background: #26262B; }
+  .tab-active { color: #FAFAFA; border-color: rgb(255 255 255 / 0.15); }
+  input:focus { outline: none; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #2DD4BF; outline-offset: 3px; }
+  .flash { border-color: #2DD4BF; }
+  ::selection { background: rgb(45 212 191 / 0.3); }
+</style>
+</head>
+<body class="text-mist font-sans antialiased min-h-screen flex flex-col">
+
+<div class="text-center text-[11px] tracking-wide text-dim border-b border-edge py-1.5 select-none">Design preview - example data.</div>
+
+<header class="border-b border-edge bg-panel">
+  <div class="max-w-[1280px] mx-auto px-4 h-14 flex items-center gap-5">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <span class="w-6 h-6 rounded bg-[#141417] border border-edge flex items-center justify-center shrink-0">
+        <i data-lucide="radar" class="w-3.5 h-3.5 text-[#FAFAFA]"></i>
+      </span>
+      <span class="text-[13px] font-semibold truncate text-[#FAFAFA]">My server</span>
+      <span class="font-mono text-[10px] uppercase tracking-wider text-[#D4D1D9] border border-edge bg-ink rounded px-1.5 py-0.5">Pro</span>
+    </div>
+    <div class="hidden md:flex items-center gap-4 font-mono text-[11px] text-fog" id="fleet-summary" aria-label="Fleet status">
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#22C55E] inline-block"></span>1 Live</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B] inline-block"></span>1 Trial</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#8a8a93] inline-block"></span>1 Offline</span>
+    </div>
+    <div class="flex-1"></div>
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:block w-44">
+        <div class="flex items-baseline justify-between mb-1">
+          <span class="text-[11px] text-fog">Credits</span>
+          <span class="font-mono text-[11px] text-mist">82/100</span>
+        </div>
+        <div class="meter-track h-1.5 rounded-full overflow-hidden" role="meter" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" aria-label="Credits used">
+          <div class="h-full bg-[#22C55E] rounded-full" style="width:82%"></div>
+        </div>
+      </div>
+      <span class="sm:hidden font-mono text-[11px] text-mist">82/100</span>
+      <button data-dead class="h-10 inline-flex items-center text-[12px] font-medium text-[#0A0A0B] bg-[#FAFAFA] rounded-lg px-4 hover:brightness-110 transition">Upgrade</button>
+    </div>
+  </div>
+</header>
+
+<div class="max-w-[1280px] mx-auto px-4 py-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)_340px] gap-4 items-start">
+
+  <nav class="bg-panel border border-edge rounded-xl p-2" aria-label="Primary">
+    <button data-dead data-nav="Bots" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium bg-panel2 text-mist">
+      <i data-lucide="bot" class="w-4 h-4"></i>Bots
+    </button>
+    <button data-dead data-nav="Templates" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-fog hover:text-mist hover:bg-panel2 transition">
+      <i data-lucide="layout-template" class="w-4 h-4"></i>Templates
+    </button>
+    <button data-dead data-nav="Interview" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-fog hover:text-mist hover:bg-panel2 transition">
+      <i data-lucide="messages-square" class="w-4 h-4"></i>Interview
+    </button>
+    <button data-dead data-nav="Activity" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-fog hover:text-mist hover:bg-panel2 transition">
+      <i data-lucide="activity" class="w-4 h-4"></i>Activity
+    </button>
+    <button data-dead data-nav="Pre-flight" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-fog hover:text-mist hover:bg-panel2 transition">
+      <i data-lucide="shield-check" class="w-4 h-4"></i>Pre-flight
+    </button>
+    <button data-dead data-nav="Settings" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-fog hover:text-mist hover:bg-panel2 transition">
+      <i data-lucide="settings" class="w-4 h-4"></i>Settings
+    </button>
+    <div class="border-t border-edge mt-2 pt-2 px-2.5 pb-1">
+      <button data-dead class="flex items-center gap-1.5 text-[12px] text-fog hover:text-[#FAFAFA] transition">
+        Browse 8 starters<i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+      </button>
+      <p class="font-mono text-[10px] text-dim mt-3 leading-relaxed">Keys<br><span class="text-fog">/</span> search&ensp;<span class="text-fog">&uarr;&darr;</span> select</p>
+    </div>
+  </nav>
+
+  <section class="bg-panel border border-edge rounded-xl overflow-hidden" aria-label="Bots">
+    <div class="px-4 pt-3.5 pb-3 border-b border-edge">
+      <div class="flex items-center justify-between mb-3">
+        <h1 class="text-[14px] font-semibold">Bots <span class="font-mono text-[11px] font-normal text-dim ml-1" id="bot-count">3</span></h1>
+        <div class="flex gap-1 font-mono text-[11px]" role="tablist" aria-label="Status filter">
+          <button data-filter="all" class="tab-btn tab-active px-2.5 py-1 rounded border border-transparent text-fog hover:text-mist" role="tab" aria-selected="true">All</button>
+          <button data-filter="live" class="tab-btn px-2.5 py-1 rounded border border-transparent text-fog hover:text-mist" role="tab" aria-selected="false">Live</button>
+          <button data-filter="trial" class="tab-btn px-2.5 py-1 rounded border border-transparent text-fog hover:text-mist" role="tab" aria-selected="false">Trial</button>
+        </div>
+      </div>
+      <label class="flex items-center gap-2 bg-ink border border-edge rounded-lg px-2.5 py-2 focus-within:border-[#2DD4BF] transition">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-dim shrink-0"></i>
+        <input id="search" type="text" placeholder="Search bots" autocomplete="off" class="bg-transparent text-[13px] placeholder:text-dim w-full">
+      </label>
+    </div>
+    <ul id="bot-list" class="divide-y divide-edge"></ul>
+    <div id="empty-state" class="hidden px-4 py-10 text-center">
+      <i data-lucide="satellite-dish" class="w-5 h-5 text-dim mx-auto mb-2"></i>
+      <p class="text-[13px] text-fog">No bots match this search.</p>
+      <p class="text-[11px] text-dim mt-1">Clear the search to see the full fleet.</p>
+    </div>
+  </section>
+
+  <div class="flex flex-col gap-4">
+    <section class="bg-panel border border-edge rounded-xl overflow-hidden" aria-label="Activity">
+      <div class="px-4 py-2.5 border-b border-edge flex items-center gap-2">
+        <i data-lucide="activity" class="w-3.5 h-3.5 text-[#A1A1AA]"></i>
+        <h2 class="text-[12px] font-semibold uppercase tracking-wider">Activity</h2>
+        <span id="activity-bot" class="font-mono text-[10px] text-dim ml-auto">Study Hall</span>
+      </div>
+      <ul id="activity-list" class="divide-y divide-edge"></ul>
+    </section>
+
+    <section class="bg-panel border border-edge rounded-xl overflow-hidden" aria-label="Pre-flight">
+      <div class="px-4 py-2.5 border-b border-edge flex items-center gap-2">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#A1A1AA]"></i>
+        <h2 class="text-[12px] font-semibold uppercase tracking-wider">Pre-flight</h2>
+        <span class="font-mono text-[10px] text-dim ml-auto">2 pass · 1 watch</span>
+      </div>
+      <ul class="divide-y divide-edge">
+        <li class="px-4 py-2.5 flex items-center gap-2.5 text-[13px]">
+          <i data-lucide="check" class="w-4 h-4 text-[#22C55E] shrink-0"></i>Token and permissions look right
+        </li>
+        <li class="px-4 py-2.5 flex items-center gap-2.5 text-[13px]">
+          <i data-lucide="check" class="w-4 h-4 text-[#22C55E] shrink-0"></i>Rate limits within caps
+        </li>
+        <li class="px-4 py-2.5 flex items-center gap-2.5 text-[13px] text-fog">
+          <i data-lucide="eye" class="w-4 h-4 text-fog shrink-0"></i>Welcome reply targets a hidden channel
+        </li>
+      </ul>
+    </section>
+
+    <section class="bg-panel border border-edge rounded-xl overflow-hidden" aria-label="Composer">
+      <form id="composer" class="p-3">
+        <div class="flex items-center gap-2 bg-ink border border-edge rounded-lg px-3 py-2.5 focus-within:border-[#2DD4BF] transition" id="composer-box">
+          <input id="composer-input" type="text" placeholder="Describe a change…" autocomplete="off" class="bg-transparent text-[13px] placeholder:text-dim w-full">
+          <button type="submit" class="h-10 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#0A0A0B] bg-[#FAFAFA] rounded-lg px-4 hover:brightness-110 transition shrink-0">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>Send
+          </button>
+        </div>
+        <p id="composer-note" class="text-[10px] text-dim mt-2 h-4"></p>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  var bots = [
+    { id: 'bot-1', name: 'Study Hall', status: 'online', label: 'Live', members: 1240, servers: 3 },
+    { id: 'bot-2', name: 'Draft Arena', status: 'trial', label: 'Trial', members: 86, servers: 1 },
+    { id: 'bot-3', name: 'Night Market mods', status: 'offline', label: 'Offline', members: 2013, servers: 2 }
+  ];
+
+  var TRIAL_DEAL = 'Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.';
+  var selectedId = 'bot-1';
+  var filter = 'all';
+  var query = '';
+
+  var list = document.getElementById('bot-list');
+  var emptyState = document.getElementById('empty-state');
+  var botCount = document.getElementById('bot-count');
+  var search = document.getElementById('search');
+  var activityList = document.getElementById('activity-list');
+  var activityBot = document.getElementById('activity-bot');
+
+  function dotClass(status) {
+    if (status === 'online') return 'bg-[#22C55E]';
+    if (status === 'trial') return 'bg-[#F59E0B]';
+    return 'bg-[#8a8a93]';
+  }
+
+  function labelClass(status) {
+    if (status === 'online') return 'text-[#22C55E]';
+    if (status === 'trial') return 'text-[#F59E0B]';
+    return 'text-[#8a8a93]';
+  }
+
+  function countText(value, singular, plural) {
+    return value.toLocaleString('en-US') + ' ' + (value === 1 ? singular : plural);
+  }
+
+  function activityFor(bot) {
+    return [
+      { text: 'Published ' + bot.name + ' v12', time: '2h ago' },
+      { text: 'Simulated welcome flow', time: '5h ago' },
+      { text: 'Rolled back ' + bot.name + ' to v11', time: 'yesterday' },
+      { text: 'Published ' + bot.name + ' v11', time: '3d ago' }
+    ];
+  }
+
+  function matchesQuery(b) {
+    if (query === '') return true;
+    return b.name.toLowerCase().indexOf(query) > -1;
+  }
+
+  function visibleBots() {
+    return bots.filter(function (b) {
+      if (filter === 'live') return b.status === 'online' && matchesQuery(b);
+      if (filter === 'trial') return b.status === 'trial' && matchesQuery(b);
+      return matchesQuery(b);
+    });
+  }
+
+  function renderActivity() {
+    var bot = bots.filter(function (b) { return b.id === selectedId; })[0] || bots[0];
+    activityBot.textContent = bot.name;
+    activityList.innerHTML = activityFor(bot).map(function (a) {
+      return '<li class="px-4 py-2.5 flex items-baseline justify-between gap-3 text-[13px]">' +
+        '<span class="truncate">' + a.text + '</span>' +
+        '<span class="font-mono text-[11px] text-dim shrink-0">' + a.time + '</span></li>';
+    }).join('');
+  }
+
+  function render() {
+    var rows = visibleBots();
+    botCount.textContent = String(rows.length);
+    emptyState.classList.toggle('hidden', rows.length > 0);
+    list.innerHTML = rows.map(function (b) {
+      var sel = b.id === selectedId ? ' row-selected' : '';
+      var trial = b.status === 'trial'
+        ? '<p class="text-[12px] text-fog mt-1">' + TRIAL_DEAL + '</p>'
+        : '';
+      return '<li>' +
+        '<button data-select="' + b.id + '" class="w-full text-left px-4 py-3 border-l-2 border-transparent hover:bg-panel2 transition' + sel + '">' +
+          '<span class="flex items-center gap-2.5">' +
+            '<span class="w-2 h-2 rounded-full shrink-0 ' + dotClass(b.status) + '"></span>' +
+            '<span class="text-[13.5px] font-semibold text-[#FAFAFA]">' + b.name + '</span>' +
+            '<span class="font-mono text-[10px] uppercase tracking-wider ' + labelClass(b.status) + '">' + b.label + '</span>' +
+            '<span class="font-mono text-[11px] text-dim ml-auto shrink-0 hidden sm:block">' +
+              countText(b.members, 'member', 'members') + ' · ' + countText(b.servers, 'server', 'servers') +
+            '</span>' +
+          '</span>' +
+          '<span class="font-mono text-[11px] text-dim mt-1 block sm:hidden">' +
+            countText(b.members, 'member', 'members') + ' · ' + countText(b.servers, 'server', 'servers') +
+          '</span>' +
+          trial +
+          '<span class="flex gap-1.5 mt-2.5">' +
+            '<span data-dead class="text-[12px] font-medium border border-edge rounded-lg px-2.5 py-1 hover:border-dim hover:text-mist text-fog transition cursor-pointer">Open</span>' +
+            '<span data-dead class="text-[12px] font-medium border border-edge rounded-lg px-2.5 py-1 hover:border-dim hover:text-mist text-fog transition cursor-pointer">Publish</span>' +
+            '<span data-dead class="text-[12px] font-medium border border-edge rounded-lg px-2.5 py-1 hover:border-dim hover:text-mist text-fog transition cursor-pointer">Rollback</span>' +
+          '</span>' +
+        '</button></li>';
+    }).join('');
+    renderActivity();
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  list.addEventListener('click', function (e) {
+    var dead = e.target.closest('[data-dead]');
+    if (dead) { e.preventDefault(); e.stopPropagation(); return; }
+    var row = e.target.closest('[data-select]');
+    if (row) { selectedId = row.getAttribute('data-select'); render(); }
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filter = btn.getAttribute('data-filter');
+      document.querySelectorAll('.tab-btn').forEach(function (b) {
+        var on = b === btn;
+        b.classList.toggle('tab-active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      render();
+    });
+  });
+
+  search.addEventListener('input', function () {
+    query = search.value.trim().toLowerCase();
+    render();
+  });
+
+  function isTyping() {
+    return document.activeElement === search || document.activeElement === document.getElementById('composer-input');
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && isTyping() === false) {
+      e.preventDefault();
+      search.focus();
+    }
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && isTyping() === false) {
+      var rows = visibleBots();
+      if (rows.length === 0) return;
+      var i = 0;
+      for (var k = 0; k < rows.length; k++) { if (rows[k].id === selectedId) i = k; }
+      i = e.key === 'ArrowDown' ? (i + 1) % rows.length : (i - 1 + rows.length) % rows.length;
+      selectedId = rows[i].id;
+      render();
+    }
+  });
+
+  document.querySelectorAll('button[data-dead]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) { e.preventDefault(); });
+  });
+
+  var composer = document.getElementById('composer');
+  var composerInput = document.getElementById('composer-input');
+  var composerNote = document.getElementById('composer-note');
+  composer.addEventListener('submit', function (e) {
+    e.preventDefault();
+    composerNote.textContent = composerInput.value.trim()
+      ? 'Held in this preview, nothing was sent.'
+      : 'Type a change first, nothing was sent.';
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

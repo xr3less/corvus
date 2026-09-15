@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<!-- pryzm.design faithful study clone (single-file Tailwind v4).
+     Next.js App Router mapping — each section below is one component:
+     <Navbar /> <HeroCollage /> <StudioMock /> <Flow /> <RemixGrid />
+     <Embed /> <Pricing /> <Faq /> <Loop /> <Cta /> <Footer />            -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pryzm | Background &amp; Visual Studio for Designers</title>
+<meta name="description" content="Pryzm is a visual studio for designers. Create original backgrounds and textures for your websites, templates, and designs in seconds, right in your browser.">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+  :root{
+    --bg:#000000; --surface:#0b0b0d; --surface2:#141417; --line:rgba(255,255,255,.09);
+    --fg:#fafafa; --muted:#a1a1aa; --faint:#71717a;
+  }
+  html{scroll-behavior:auto}
+  html.lenis,html.lenis body{height:auto}
+  .lenis.lenis-smooth{scroll-behavior:auto !important}
+  body{background:var(--bg);color:var(--fg);font-family:Inter,"Inter Fallback",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .display{font-family:Poppins,Inter,system-ui,sans-serif;letter-spacing:-.02em}
+  .serif-logo{font-family:Georgia,"Times New Roman",serif;letter-spacing:-.01em}
+  .mono{font-family:"Geist Mono",ui-monospace,monospace}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px}
+  .btn-primary{background:#fafafa;color:#000;border-radius:999px;font-weight:600;transition:background .2s,transform .2s}
+  .btn-primary:hover{background:#fff;transform:translateY(-1px)}
+  .btn-dark{background:#1c1c1f;border:1px solid rgba(255,255,255,.12);border-radius:999px;color:var(--fg);transition:border-color .2s,background .2s}
+  .btn-dark:hover{border-color:rgba(255,255,255,.3);background:#26262b}
+  .btn-ghost{border:1px solid var(--line);border-radius:999px;color:var(--fg);transition:border-color .2s,background .2s}
+  .btn-ghost:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05)}
+  :focus-visible{outline:2px solid #c4b5fd;outline-offset:3px;border-radius:6px}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{transition:none;opacity:1;transform:none}html{scroll-behavior:auto}}
+  .faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}
+  .faq-item[data-open="true"] .faq-a{grid-template-rows:1fr}
+  .faq-item[data-open="true"] .faq-plus{transform:rotate(45deg)}
+  .faq-plus{transition:transform .25s ease}
+  .grain::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;border-radius:inherit;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E")}
+  .thumb{aspect-ratio:4/3;object-fit:cover;width:100%;border-radius:12px;display:block}
+  .collage-card{position:absolute;border-radius:14px;overflow:hidden;will-change:transform}
+  .collage-card img{display:block;width:100%;height:100%;object-fit:cover;border-radius:14px}
+  .collage-cap{margin-top:10px}
+  .collage-cap p:first-child{font-size:13px;color:#fff}
+  .collage-cap p:last-child{font-size:12px;color:#8e8e93;margin-top:2px}
+  .dotbg{background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:22px 22px}
+  .node-card{background:#131316;border:1px solid rgba(255,255,255,.1);border-radius:12px}
+  input[type=email]{background:#0e0e11;border:1px solid var(--line);border-radius:999px;color:var(--fg)}
+  input[type=email]::placeholder{color:var(--faint)}
+  #footForm input{border-radius:8px}
+  input[type=range]{accent-color:#fafafa}
+  .slider-row{display:flex;align-items:center;gap:10px}
+  .slider-row .val{margin-left:auto;font-size:11px;color:#d4d4d8;background:#1e1e22;border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:2px 8px;min-width:52px;text-align:center}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- NAV — progressive-blur stack, orijinal header'dan birebir tarif -->
+<header data-od-id="site-nav" id="siteNav" class="fixed inset-x-0 top-0 z-50">
+  <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-0 h-28 sm:h-32">
+    <div class="absolute inset-0" style="backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);mask-image:linear-gradient(to bottom, black 0%, black 50%, transparent 100%);-webkit-mask-image:linear-gradient(to bottom, black 0%, black 50%, transparent 100%)"></div>
+    <div class="absolute inset-0" style="backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);mask-image:linear-gradient(to bottom, black 0%, black 30%, transparent 80%);-webkit-mask-image:linear-gradient(to bottom, black 0%, black 30%, transparent 80%)"></div>
+    <div class="absolute inset-0" style="backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);mask-image:linear-gradient(to bottom, black 0%, black 15%, transparent 60%);-webkit-mask-image:linear-gradient(to bottom, black 0%, black 15%, transparent 60%)"></div>
+    <div class="absolute inset-0" style="backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);mask-image:linear-gradient(to bottom, black 0%, transparent 45%);-webkit-mask-image:linear-gradient(to bottom, black 0%, transparent 45%)"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-transparent"></div>
+  </div>
+  <nav class="relative z-10 mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6" aria-label="Primary">
+    <div class="flex items-center gap-8">
+      <a data-od-id="nav-logo" href="#top" class="flex items-center gap-2 text-white"><img src="assets/images/pryzm.design/logo-e5d3c83e28.png" alt="Pryzm" class="h-8 w-auto shrink-0 object-contain"></a>
+      <div class="hidden md:flex items-center gap-7 text-[14px] text-zinc-200">
+        <a data-od-id="nav-inspiration" href="#remix" class="hover:text-white transition-colors">Inspiration</a>
+        <a data-od-id="nav-lab" href="#flow" class="hover:text-white transition-colors">Lab <span class="ml-1 text-[10px] mono border border-white/25 rounded-full px-2 py-0.5 text-zinc-300">BETA</span></a>
+        <a data-od-id="nav-pricing" href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+      </div>
+    </div>
+    <div class="flex items-center gap-2.5">
+      <a data-od-id="nav-open-studio" href="#studio" class="btn-dark text-[13.5px] px-4 py-2">Open studio</a>
+      <a data-od-id="nav-signin" href="#cta" class="btn-dark text-[13.5px] px-4 py-2 hidden sm:block">Sign in</a>
+      <button data-od-id="nav-menu-btn" id="menuBtn" class="md:hidden btn-dark w-11 h-11 grid place-items-center" aria-label="Open menu" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 5h14M2 9h14M2 13h14"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div id="mobileMenu" class="relative z-20 md:hidden hidden border-t border-white/10 px-5 py-4 flex flex-col gap-4 text-[15px] bg-black/95">
+    <a href="#remix">Inspiration</a><a href="#flow">Lab BETA</a><a href="#pricing">Pricing</a><a href="#cta">Sign in</a>
+  </div>
+</header>
+
+<main id="top" class="relative z-10 bg-black">
+<!-- HERO / HeroCollage -->
+<section data-od-id="hero" class="relative overflow-hidden" style="min-height:1080px">
+  <div id="collage" class="absolute inset-0" aria-hidden="false">
+    <!-- top row, clipped + mid cards -->
+    <div class="collage-card hidden md:block" data-speed="-0.06" style="left:-4%;top:2%;width:11%"><img src="assets/images/pryzm.design/1-8a802146d6.webp" alt=""></div>
+    <div class="collage-card" data-speed="0.05" style="left:16%;top:5%;width:11%"><img src="assets/images/pryzm.design/15-5123652a60.webp" alt="Pearl Grid, Iridescent"><div class="collage-cap mono"><p>Pearl Grid, Iridescent</p><p>Halftone</p></div></div>
+    <div class="collage-card" data-speed="-0.03" style="left:31%;top:11%;width:15%"><img style="aspect-ratio:4/5" src="assets/images/pryzm.design/6-3f21c0f6c1.webp" alt="Green Mist, Moss"><div class="collage-cap mono"><p>Green Mist, Moss</p><p>Photo &amp; Grain</p></div></div>
+    <div class="collage-card" data-speed="0.07" style="left:52%;top:24%;width:13%"><img style="aspect-ratio:4/3" src="assets/images/pryzm.design/3-2a02a828a1.webp" alt="Fluted Ember, Rust"><div class="collage-cap mono"><p>Fluted Ember, Rust</p><p>Fluted Glass</p></div></div>
+    <div class="collage-card" data-speed="-0.05" style="left:70%;top:4%;width:13%"><img style="aspect-ratio:4/5" src="assets/images/pryzm.design/18-6e6d3ed328.webp" alt="Scanline, Moss"><div class="collage-cap mono"><p>Scanline, Moss</p><p>Photo &amp; Scanlines</p></div></div>
+    <div class="collage-card hidden md:block" data-speed="0.04" style="right:-3%;top:2%;width:9%"><img style="aspect-ratio:3/4" src="assets/images/pryzm.design/19-7bfbba5e18.webp" alt="Green Mist, Mint"><div class="collage-cap mono"><p>Green Mist, Mint</p><p>Photo &amp; Grain</p></div></div>
+    <!-- mid row -->
+    <div class="collage-card" data-speed="0.06" style="left:15.5%;top:38%;width:10%"><img style="aspect-ratio:1/1" src="assets/images/pryzm.design/10-78a1bd812a.webp" alt="Dot Fade, Violet"><div class="collage-cap mono"><p>Dot Fade, Violet</p><p>Halftone</p></div></div>
+    <div class="collage-card hidden md:block" data-speed="-0.04" style="right:2%;top:30%;width:9%"><img style="aspect-ratio:4/5" src="assets/images/pryzm.design/16-249988f9bf.webp" alt="Nebula, Cobalt"><div class="collage-cap mono"><p>Nebula, Cobalt</p><p>Aberration &amp; Grain</p></div></div>
+    <div class="collage-card hidden md:block" data-speed="0.03" style="left:-2%;top:52%;width:10%"><img style="aspect-ratio:4/5" src="assets/images/pryzm.design/14-df6e8fca09.webp" alt=""></div>
+    <!-- bottom faded row -->
+    <div class="collage-card" data-speed="-0.07" style="left:38%;top:66%;width:13%;opacity:.55"><img style="aspect-ratio:16/10" src="assets/images/pryzm.design/4-7bfa1dcaf8.webp" alt=""></div>
+    <div class="collage-card hidden md:block" data-speed="0.05" style="right:6%;top:62%;width:11%;opacity:.7"><img style="aspect-ratio:4/5" src="assets/images/pryzm.design/5-1b4a2eb530.webp" alt=""></div>
+    <div class="collage-card hidden md:block" data-speed="-0.03" style="right:-2%;top:68%;width:8%;opacity:.5"><img style="aspect-ratio:3/4" src="assets/images/pryzm.design/11-0b4424149a.webp" alt=""></div>
+  </div>
+  <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/60 to-transparent" style="height:340px" aria-hidden="true"></div>
+  <div class="relative max-w-[1400px] mx-auto px-5 md:px-8 flex flex-col justify-end pb-10" style="min-height:inherit">
+    <div class="flex flex-col md:flex-row md:items-end gap-6">
+      <div class="flex-1">
+        <p data-od-id="hero-pill" class="inline-flex items-center gap-2 text-[13px] text-zinc-200 border border-white/15 rounded-full px-4 py-1.5 bg-black/50"><span aria-hidden="true">✳</span> New: share a look, remix a link</p>
+        <h1 data-od-id="hero-title" class="display font-semibold text-[44px] leading-[1.03] md:text-[84px] mt-5 max-w-4xl">Backgrounds nobody<br>else has, in seconds</h1>
+      </div>
+      <div class="md:w-[320px] md:pb-2">
+        <p data-od-id="hero-sub" class="text-zinc-300 text-[15px] md:text-[16px] leading-relaxed">Blend gradients, glass, and grain into unique backgrounds and animated loops.</p>
+        <a data-od-id="hero-cta" href="#studio" class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[14px] mt-5">Open studio <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STUDIO / StudioMock -->
+<section data-od-id="studio-section" id="studio" class="max-w-[1400px] mx-auto px-5 md:px-8 pt-6 pb-10">
+  <div class="reveal rounded-2xl overflow-hidden border border-white/10 bg-[#0c0c0e]">
+    <div class="flex items-center gap-1.5 px-4 py-3 border-b border-white/10">
+      <span class="w-2.5 h-2.5 rounded-full bg-white/15"></span><span class="w-2.5 h-2.5 rounded-full bg-white/15"></span><span class="w-2.5 h-2.5 rounded-full bg-white/15"></span>
+    </div>
+    <div class="grid md:grid-cols-[52px_250px_1fr_270px] min-h-[560px]">
+      <!-- icon rail -->
+      <div class="hidden md:flex flex-col items-center gap-5 py-5 border-r border-white/10 text-zinc-500 text-[15px]" aria-hidden="true">
+        <span class="text-white">✳</span><span>◐</span><span>◫</span><span>🗑</span><span>❐</span><span>🗀</span>
+      </div>
+      <!-- effects -->
+      <div class="hidden md:block border-r border-white/10 p-4 overflow-hidden">
+        <p class="text-[13px] font-semibold">Effects</p>
+        <p class="text-[12px] text-zinc-400 mt-4 mb-2">Blobs <span class="text-zinc-600">ⓘ</span></p>
+        <div class="grid grid-cols-4 gap-1.5" aria-hidden="true">
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_40%_35%,#fda4af,#881337_70%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_60%_60%,#fecdd3,#4c0519_75%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle,#fda4af_18%,transparent_19%),radial-gradient(circle,#fda4af_14%,transparent_15%)] bg-[#2a1215]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_30%_70%,#fdba74,#7c2d12_70%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(#fbcfe8_1px,transparent_1px)] bg-[#241016]" style="background-size:6px 6px"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_50%_50%,#fda4af,#7f1d1d_65%,#1c0a0a)]"></span>
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_40deg,#312e81,#818cf8,#1e1b4b,#312e81)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle,#fdba74_16%,transparent_17%)] bg-[#2a1a10]" style="background-size:8px 8px"></span>
+        </div>
+        <p class="text-[12px] text-zinc-400 mt-4 mb-2">Waves</p>
+        <div class="grid grid-cols-4 gap-1.5" aria-hidden="true">
+          <span class="aspect-square rounded-lg bg-[repeating-radial-gradient(circle_at_50%_120%,#fb7185,#7c2d12_12%,#111_22%)]"></span>
+          <span class="aspect-square rounded-lg bg-[repeating-radial-gradient(circle_at_50%_50%,#fbbf24,#78350a_14%,#111_24%)]"></span>
+          <span class="aspect-square rounded-lg bg-[repeating-radial-gradient(circle_at_20%_20%,#f472b6,#500f28_16%,#111_26%)]"></span>
+          <span class="aspect-square rounded-lg bg-[repeating-radial-gradient(circle_at_80%_30%,#f97316,#431407_15%,#111_25%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_50%_120%,#fbbf24,#111_70%)]"></span>
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_200deg_at_60%_40%,#f59e0b,#111_40%,#f59e0b)]"></span>
+        </div>
+        <p class="text-[12px] text-zinc-400 mt-4 mb-2">Pixelate</p>
+        <div class="grid grid-cols-4 gap-1.5" aria-hidden="true">
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_45deg_at_50%_50%,#e9d5ff,#701a75,#e9d5ff)]"></span>
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_45deg_at_50%_50%,#fecdd3,#881337,#fecdd3)]"></span>
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_45deg_at_50%_50%,#fbcfe8,#500f28,#fbcfe8)]"></span>
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_45deg_at_50%_50%,#ddd6fe,#4c1d95,#ddd6fe)]"></span>
+          <span class="aspect-square rounded-lg bg-[conic-gradient(from_45deg_at_50%_50%,#f9a8d4,#831843,#f9a8d4)]"></span>
+        </div>
+        <p class="text-[12px] text-zinc-400 mt-4 mb-2">Dither</p>
+        <div class="grid grid-cols-4 gap-1.5" aria-hidden="true">
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_30%_30%,#60a5fa,#172554_70%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_70%_60%,#38bdf8,#0c4a6e_70%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_50%_50%,#818cf8,#1e1b4b_70%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_40%_60%,#a5b4fc,#020617_72%)]"></span>
+          <span class="aspect-square rounded-lg bg-[radial-gradient(circle_at_60%_30%,#93c5fd,#1e3a8a_70%)]"></span>
+        </div>
+        <p class="text-[12px] text-zinc-400 mt-4">Halftone</p>
+      </div>
+      <!-- canvas -->
+      <div class="relative bg-black min-h-[320px] md:min-h-[560px]">
+        <div class="hidden md:flex items-center gap-2 px-3 py-2.5 text-[11px] text-zinc-300 border-b border-white/10 overflow-x-auto whitespace-nowrap">
+          <span class="border border-white/10 rounded-md px-2 py-1">✦ Randomize</span><span class="border border-white/10 rounded-md px-2 py-1">⟳ Reset</span>
+          <span class="border border-white/10 rounded-md px-2 py-1">▷ Animate</span><span class="text-zinc-500">1.0×</span>
+          <span class="border border-white/10 rounded-md px-2 py-1 ml-2">⛶ ⊞ ⊟</span>
+          <span class="border border-white/10 rounded-md px-2 py-1 ml-auto">⧉ Copy Look</span><span class="border border-white/10 rounded-md px-2 py-1">💾 Save</span>
+          <span class="bg-white text-black rounded-md px-2 py-1">⤓ Export</span>
+        </div>
+        <img src="assets/images/pryzm.design/12-495e56b3ce.webp" alt="Studio canvas preview of a dotted halftone look" class="w-full h-[320px] md:h-[calc(100%-41px)] object-cover">
+      </div>
+      <!-- props -->
+      <div class="hidden md:block border-l border-white/10 p-4 text-[12px]">
+        <div class="flex items-center justify-between"><p class="font-semibold text-[13px]">Props</p><p class="text-zinc-500">↩ ↪</p></div>
+        <p class="font-semibold mt-4">Gradient</p>
+        <div class="h-5 rounded-md mt-2 bg-gradient-to-r from-black via-zinc-500 to-white"></div>
+        <div class="flex gap-1.5 mt-2" aria-hidden="true">
+          <span class="w-5 h-5 rounded-md border-2 border-orange-500 bg-black"></span><span class="w-5 h-5 rounded-md bg-zinc-800"></span>
+          <span class="w-5 h-5 rounded-md bg-zinc-600"></span><span class="w-5 h-5 rounded-md bg-zinc-400"></span><span class="w-5 h-5 rounded-md bg-zinc-200"></span>
+        </div>
+        <div class="flex items-center gap-2 mt-3 text-zinc-400"><span>Color</span><span class="w-5 h-5 rounded bg-black border border-white/20"></span><span class="mono text-[11px] bg-[#1e1e22] rounded px-1.5 py-0.5">#0A0A0A</span></div>
+        <p class="text-zinc-500 text-[11px] mt-2 leading-snug">Drag stops to reposition. Click the bar to add a stop (max 8).</p>
+        <div class="mt-3 space-y-2.5 text-zinc-400">
+          <div class="slider-row"><span>Opacity</span><span class="val">65%</span></div><input type="range" value="65" class="w-full h-1" aria-label="Opacity" tabindex="-1">
+          <div class="slider-row"><span>Shape</span><span class="val">Linear ⌄</span></div>
+          <div class="slider-row"><span>Angle</span><span class="val">220</span></div><input type="range" value="60" class="w-full h-1" aria-label="Angle" tabindex="-1">
+          <div class="slider-row"><span>Warp</span><span class="val">0.30</span></div><input type="range" value="30" class="w-full h-1" aria-label="Warp" tabindex="-1">
+          <div class="slider-row"><span>Flow</span><span class="val">0.00</span></div><input type="range" value="0" class="w-full h-1" aria-label="Flow" tabindex="-1">
+          <div class="slider-row"><span>Scale</span><span class="val">1.30</span></div><input type="range" value="65" class="w-full h-1" aria-label="Scale" tabindex="-1">
+          <div class="slider-row"><span>Detail</span><span class="val">1</span></div><input type="range" value="20" class="w-full h-1" aria-label="Detail" tabindex="-1">
+          <div class="slider-row"><span>Contrast</span><span class="val">1.10</span></div><input type="range" value="55" class="w-full h-1" aria-label="Contrast" tabindex="-1">
+        </div>
+        <div class="flex items-center justify-between mt-4 font-semibold text-[13px]"><span>Optics</span><span class="text-zinc-500">⌄</span></div>
+        <div class="flex items-center justify-between mt-3 font-semibold text-[13px]"><span>Light</span><span class="text-zinc-500">⌄</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="text-center mt-6"><a data-od-id="studio-try" href="#cta" class="text-[14px] text-zinc-300 hover:text-white transition-colors">Try the Studio <span aria-hidden="true">→</span></a></p>
+</section>
+
+<!-- FLOW / Flow -->
+<section data-od-id="flow-section" id="flow" class="max-w-[1400px] mx-auto px-5 md:px-8 pt-24 pb-8">
+  <div class="reveal">
+    <p class="eyebrow mb-4">Flow</p>
+    <div class="flex flex-col md:flex-row md:items-end gap-5">
+      <div class="flex-1">
+        <h2 class="display font-semibold text-[34px] md:text-[56px] leading-[1.05]">Wire it up as a graph</h2>
+        <p class="text-zinc-400 mt-4 text-[16px] md:text-[19px] max-w-xl leading-relaxed">Feed a gradient and effects into a base and watch it resolve live.</p>
+      </div>
+      <a data-od-id="flow-cta" href="#cta" class="btn-dark px-5 py-2.5 text-[14px] shrink-0">Open Flow <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+  <div data-od-id="flow-graph" class="reveal relative mt-10 rounded-2xl border border-white/10 dotbg overflow-hidden" style="min-height:480px">
+    <div class="node-card absolute p-3.5 w-[240px]" style="left:6%;top:12%">
+      <div class="flex justify-between text-[12px]"><span class="font-semibold">Gradient</span><span class="mono text-[10px] text-zinc-500 tracking-widest">SOURCE</span></div>
+      <div class="h-9 rounded-md mt-2.5 bg-gradient-to-r from-black to-zinc-200"></div>
+      <p class="text-[11px] text-zinc-400 mt-2.5">Angle</p>
+      <input type="range" value="40" class="w-full h-1 mt-1" aria-label="Gradient angle" tabindex="-1">
+    </div>
+    <div class="absolute flex flex-col gap-2 w-[130px]" style="left:6%;top:52%" aria-hidden="true">
+      <div class="node-card h-9"></div><div class="node-card h-9"></div><div class="node-card h-9"></div>
+    </div>
+    <svg class="absolute" style="left:23%;top:20%;width:22%;height:60%" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+      <circle cx="8" cy="60" r="7" stroke="#71717a" stroke-width="2" fill="#000"/><circle cx="8" cy="60" r="2.5" fill="#71717a"/>
+      <path d="M15 60 C 80 60, 60 150, 190 150" stroke="#52525b" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <circle cx="8" cy="110" r="7" stroke="#71717a" stroke-width="2" fill="#000"/><circle cx="8" cy="110" r="2.5" fill="#71717a"/>
+      <path d="M15 110 C 70 110, 70 155, 190 155" stroke="#52525b" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <circle cx="8" cy="160" r="7" stroke="#71717a" stroke-width="2" fill="#000"/><circle cx="8" cy="160" r="2.5" fill="#71717a"/>
+      <path d="M15 160 C 60 160, 80 160, 190 160" stroke="#52525b" stroke-width="1.5" stroke-dasharray="5 5"/>
+    </svg>
+    <div class="node-card absolute p-3.5 w-[300px]" style="left:46%;top:30%">
+      <div class="flex justify-between text-[12px]"><span class="font-semibold">Base</span><span class="mono text-[10px] text-zinc-500 tracking-widest">PREVIEW</span></div>
+      <div class="h-28 rounded-md mt-2.5 bg-[repeating-linear-gradient(90deg,#3f3f46_0_3px,#18181b_3px_6px)]"></div>
+    </div>
+  </div>
+</section>
+
+<!-- REMIX / RemixGrid -->
+<section data-od-id="remix-section" id="remix" class="max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24">
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-10 reveal">
+    <div>
+      <p class="eyebrow mb-4">Remix</p>
+      <h2 class="display font-semibold text-[30px] md:text-[44px] leading-tight">Never start from a blank canvas</h2>
+      <p class="text-zinc-400 mt-3">Click any look to remix it in the studio and make it your own.</p>
+    </div>
+    <a data-od-id="remix-browse" href="#remix" class="btn-ghost px-5 py-2.5 text-[14px]">Browse inspiration</a>
+  </div>
+  <div data-od-id="remix-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <article data-od-id="look-card-ink-facet" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp" alt="Ink Facet — magenta beam behind fluted glass" loading="lazy"></div>
+      <div class="px-4 pb-4"><p class="text-[10px] mono text-zinc-500 uppercase tracking-widest">ProLab</p><h3 class="font-semibold mt-1">Ink Facet</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A magenta beam blooming behind fluted glass, sliced into fine vertical bars against near black.</p><p class="mono text-[11px] text-zinc-500 mt-2">gradient · beam · glass</p></div>
+    </article>
+    <article data-od-id="look-card-undergrowth" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp" alt="Undergrowth — figure blurred among dark leaves" loading="lazy"></div>
+      <div class="px-4 pb-4"><p class="text-[10px] mono text-zinc-500 uppercase tracking-widest">Pro</p><h3 class="font-semibold mt-1">Undergrowth</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A figure blurred among dark leaves, soft and nearly out of focus.</p><p class="mono text-[11px] text-zinc-500 mt-2">grain</p></div>
+    </article>
+    <article data-od-id="look-card-pewter-fade" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp" alt="Pewter Fade — cool blue wash with warm bloom" loading="lazy"></div>
+      <div class="px-4 pb-4"><h3 class="font-semibold mt-1">Pewter Fade</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A wash of cool blue lit by a warm bloom, blurred into a dreamlike square.</p><p class="mono text-[11px] text-zinc-500 mt-2">grain</p></div>
+    </article>
+    <article data-od-id="look-card-pewter-stock" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp" alt="Pewter Stock — lone figure in grainy green haze" loading="lazy"></div>
+      <div class="px-4 pb-4"><p class="text-[10px] mono text-zinc-500 uppercase tracking-widest">Pro</p><h3 class="font-semibold mt-1">Pewter Stock</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A lone figure adrift in a grainy green haze — moody and quietly cinematic.</p><p class="mono text-[11px] text-zinc-500 mt-2">grain</p></div>
+    </article>
+    <article data-od-id="look-card-violets" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp" alt="Violets — flowers blurred behind frosted glass" loading="lazy"></div>
+      <div class="px-4 pb-4"><p class="text-[10px] mono text-zinc-500 uppercase tracking-widest">Pro</p><h3 class="font-semibold mt-1">Violets</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A cluster of violets blurred behind frosted glass, bleeding color through a soft chromatic edge and grain.</p><p class="mono text-[11px] text-zinc-500 mt-2">glass · grain · aberration</p></div>
+    </article>
+    <article data-od-id="look-card-bright-spark" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png" alt="Bright Spark — hot magenta burst under frosted glass" loading="lazy"></div>
+      <div class="px-4 pb-4"><h3 class="font-semibold mt-1">Bright Spark</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A hot magenta burst under frosted glass, softened with grain.</p><p class="mono text-[11px] text-zinc-500 mt-2">glass · grain</p></div>
+    </article>
+    <article data-od-id="look-card-soft-blend" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png" alt="Soft Blend — quiet indigo to blue blend" loading="lazy"></div>
+      <div class="px-4 pb-4"><h3 class="font-semibold mt-1">Soft Blend</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A quiet indigo-to-blue blend with just a whisper of grain.</p><p class="mono text-[11px] text-zinc-500 mt-2">grain</p></div>
+    </article>
+    <article data-od-id="look-card-purple-haze" class="card overflow-hidden group reveal">
+      <div class="p-2"><img class="thumb group-hover:scale-[1.02] transition-transform duration-300" src="assets/images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png" alt="Purple Haze — soft violet glow behind frosted glass" loading="lazy"></div>
+      <div class="px-4 pb-4"><p class="text-[10px] mono text-zinc-500 uppercase tracking-widest">Pro</p><h3 class="font-semibold mt-1">Purple Haze</h3><p class="text-[13px] text-zinc-400 mt-1 leading-relaxed">A soft violet glow behind frosted glass, finished with a fine film grain.</p><p class="mono text-[11px] text-zinc-500 mt-2">glass · grain</p></div>
+    </article>
+  </div>
+</section>
+
+<!-- EMBED / Embed -->
+<section data-od-id="embed-section" class="max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24">
+  <div class="reveal max-w-2xl">
+    <p class="eyebrow mb-4">Embed</p>
+    <h2 class="display font-semibold text-[30px] md:text-[44px] leading-tight">Ship it as code, not a video</h2>
+    <p class="text-zinc-400 mt-4 leading-relaxed">Export any look as a live background for Framer, React or plain HTML. It stays sharp at any size, fills any shape, animates without a video file, and nothing about it depends on us.</p>
+    <a href="#studio" class="btn-ghost inline-block mt-6 px-5 py-2.5 text-[14px]">Try it in the studio</a>
+  </div>
+  <div class="reveal grid md:grid-cols-2 gap-4 mt-10">
+    <div class="card p-5">
+      <p class="mono text-[11px] text-zinc-500 mb-3">PryzmBackground.jsx</p>
+<pre class="mono text-[12.5px] leading-relaxed text-zinc-200 overflow-x-auto"><code><span class="text-fuchsia-300">import</span> { PryzmBackground } <span class="text-fuchsia-300">from</span> <span class="text-emerald-300">"./PryzmBackground"</span>
+
+&lt;<span class="text-sky-300">PryzmBackground</span>
+  style={{ width: <span class="text-amber-300">500</span>, height: <span class="text-amber-300">400</span> }} /&gt;</code></pre>
+      <p class="text-[13px] text-zinc-500 mt-4">The exported component runs live in the browser, at any size, instead of a multi-megabyte video.</p>
+    </div>
+    <div class="card overflow-hidden relative grain min-h-[260px]">
+      <img src="assets/images/pryzm.design/signin-f20ce09ebb.webp" alt="Live exported background running in a browser frame" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+      <span class="mono absolute bottom-3 left-3 text-[11px] bg-black/70 border border-white/15 rounded-md px-2 py-1">live · 500 × 400 · 12 KB</span>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING / Pricing -->
+<section data-od-id="pricing-section" id="pricing" class="max-w-[1400px] mx-auto px-5 md:px-8 py-16 md:py-24 text-center">
+  <div class="reveal">
+    <p class="eyebrow mb-4">Pricing</p>
+    <h2 class="display font-semibold text-[30px] md:text-[44px] leading-tight">Free to create. Pro to export without limits.</h2>
+    <p class="text-zinc-400 mt-4 max-w-xl mx-auto">Go Pro to drop the watermark and unlock Small, HD, Full HD, 2K, and 4K, longer loops, and higher frame rates.</p>
+    <div data-od-id="pricing-toggle" class="inline-flex items-center gap-1 mt-7 p-1 rounded-full border border-white/10 text-[13px]" role="group" aria-label="Billing period">
+      <button data-period="month" class="px-4 py-1.5 rounded-full bg-white text-black font-semibold" aria-pressed="true">Monthly</button>
+      <button data-period="year" class="px-4 py-1.5 rounded-full text-zinc-300" aria-pressed="false">Yearly <span class="text-emerald-300 font-medium">3 months free</span></button>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 gap-4 mt-10 text-left max-w-4xl mx-auto">
+    <div data-od-id="pricing-free" class="card p-7 reveal">
+      <h3 class="font-semibold">Free</h3>
+      <p class="mt-2"><span class="display text-4xl font-semibold">$0</span> <span class="text-zinc-500 text-sm">forever</span></p>
+      <p class="text-[14px] text-zinc-400 mt-2">Everything you need to design.</p>
+      <ul class="text-[14px] text-zinc-300 mt-6 space-y-2.5">
+        <li>— The full studio and every effect</li>
+        <li>— PNG export at Preview size, no watermark</li>
+        <li>— Watermarked video export, at Preview size</li>
+        <li>— Shareable links &amp; gallery</li>
+        <li>— Save up to 9 looks</li>
+      </ul>
+      <a href="#studio" class="btn-ghost block text-center mt-7 px-5 py-3 text-[14px]">Open studio</a>
+    </div>
+    <div data-od-id="pricing-pro" class="card p-7 reveal relative" style="border-color:rgba(196,181,253,.35)">
+      <span class="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-semibold bg-white text-black rounded-full px-3 py-1">Popular</span>
+      <h3 class="font-semibold">Pryzm Pro</h3>
+      <p class="mt-2"><span class="display text-4xl font-semibold" id="proPrice">$9</span> <span class="text-zinc-500 text-sm" id="proPer">per month</span></p>
+      <p class="text-[14px] text-zinc-400 mt-2">Everything unlocked. Cancel anytime.</p>
+      <ul class="text-[14px] text-zinc-300 mt-6 space-y-2.5">
+        <li>— Everything in Free</li>
+        <li>— Embed a look as live code — Framer, React, HTML</li>
+        <li>— Watermark-free video</li>
+        <li>— Small, HD, Full HD, 2K &amp; 4K PNG and video export</li>
+        <li>— Longer loops at higher frame rates</li>
+        <li>— Unlimited saved looks</li>
+        <li>— Save layer stacks from the Lab</li>
+        <li>— Pro gallery assets</li>
+        <li>— All future Pro updates</li>
+      </ul>
+      <a href="#cta" class="btn-primary block text-center mt-7 px-5 py-3 text-[14px]">Get Pryzm Pro</a>
+      <p class="text-[12px] text-zinc-500 mt-4 text-center">Secure payments via Polar</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ / Faq -->
+<section data-od-id="faq-section" id="faq" class="max-w-3xl mx-auto px-5 py-16 md:py-24">
+  <h2 class="display font-semibold text-[30px] md:text-[44px] leading-tight text-center reveal">Good questions, answered.</h2>
+  <div class="mt-10 space-y-3" id="faqList">
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">What&apos;s free, and what needs Pro?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">The whole studio is open to explore with no account needed to start. Exporting needs a free account: free export goes up to Preview size — clean (no watermark) for PNG, watermarked for video. Pryzm Pro unlocks Small, HD, Full HD, 2K, and 4K output, removes the video watermark, and adds longer loops and higher frame rates.</p></div></div></div>
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">Can I use what I make commercially?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">Absolutely. Backgrounds and loops you export are yours for personal and commercial projects. You just can&apos;t resell them as standalone stock.</p></div></div></div>
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">Where do my images go?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">Rendering happens entirely in your browser, so nothing leaves your device while you design. When you save a look, that look is stored privately in your account so you can reopen and keep editing it. Only you can see your saved looks, unless you choose to share one.</p></div></div></div>
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">Can I share a look with a teammate?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">Yes. Save it, press Share and turn on Allow remixing: you get a link that opens the look in their editor as a copy of their own. Your original is never touched, and turning the switch off stops the link at once.</p></div></div></div>
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">What video formats can I export?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">MP4 (H.264), WebM (VP9), and AV1, all as seamless loops. Free video exports are watermarked and at Preview size; Pro removes the watermark and unlocks Small, HD, Full HD, 2K, and 4K.</p></div></div></div>
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">Do I need to install anything?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">No. Pryzm runs in the browser with real-time WebGL. Just open the studio and start.</p></div></div></div>
+    <div class="faq-item card px-5 reveal" data-open="false"><button class="faq-q w-full flex items-center justify-between gap-4 py-4 text-left font-medium text-[15px] min-h-[44px]">How does Pryzm Pro billing work?<span class="faq-plus text-xl leading-none text-zinc-400">+</span></button><div class="faq-a"><div class="overflow-hidden"><p class="pb-5 text-[14px] text-zinc-400 leading-relaxed">Pryzm Pro is a subscription billed through Polar, monthly or yearly with three months free. Sign in, subscribe, and Pro unlocks on your account across devices. Cancel anytime, and you keep access through the end of the period you&apos;ve paid for.</p></div></div></div>
+  </div>
+</section>
+
+<!-- LOOP / Loop -->
+<section data-od-id="loop-section" class="max-w-[1400px] mx-auto px-5 md:px-8 pb-16">
+  <div class="reveal card overflow-hidden relative grain text-center px-6 py-16">
+    <img src="assets/images/pryzm.design/footer3-1087a09b15.webp" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover opacity-60" loading="lazy">
+    <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+    <div class="relative max-w-xl mx-auto">
+      <h2 class="display font-semibold text-[28px] md:text-[38px]">Stay in the loop</h2>
+      <p class="text-zinc-300 mt-3 text-[15px]">Hear when we ship a new effect or add a look worth stealing.</p>
+      <form data-od-id="loop-form" id="loopForm" class="flex flex-col sm:flex-row gap-2.5 mt-7 max-w-md mx-auto">
+        <label class="sr-only" for="loopEmail">Email address</label>
+        <input id="loopEmail" type="email" required placeholder="Email address" class="flex-1 px-5 py-3 text-[14px] min-h-[44px]">
+        <button type="submit" class="btn-primary px-6 py-3 text-[14px] min-h-[44px]">Subscribe</button>
+      </form>
+      <p id="loopMsg" class="text-[13px] text-emerald-300 mt-3 h-5" role="status"></p>
+      <p class="text-[12px] text-zinc-400 mt-1">Occasional product emails. Unsubscribe in one click, anytime.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA / Cta -->
+<section data-od-id="cta-section" id="cta" class="text-center px-5 py-16 md:py-20">
+  <h2 class="display font-semibold text-[32px] md:text-[52px] leading-tight reveal">Your next background<br>is a minute away.</h2>
+  <p class="text-zinc-400 mt-4 reveal">Open the studio and make something no one else has.</p>
+  <div class="flex items-center justify-center gap-3 mt-8 reveal">
+    <a data-od-id="cta-open-studio" href="#studio" class="btn-primary px-6 py-3 text-[15px]">Open studio</a>
+    <a data-od-id="cta-pricing" href="#pricing" class="btn-ghost px-6 py-3 text-[15px]">See pricing</a>
+  </div>
+  <p class="text-[12px] text-zinc-500 mt-6 reveal">Built for design work, personal or commercial.</p>
+</section>
+</main>
+
+<!-- FOOTER / Sticky bottom-0 footer emerging from underneath main content -->
+<footer data-od-id="site-footer" class="sticky bottom-0 z-0 overflow-hidden bg-black">
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div class="absolute -inset-[4%]"><img src="assets/images/pryzm.design/footer3-1087a09b15.webp" alt="" class="size-full object-cover opacity-50 blur-[10px]"></div>
+    <div class="absolute inset-0 bg-black/45"></div>
+  </div>
+  <div class="relative">
+    <div class="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 pt-32 pb-28 sm:px-6 lg:flex-row lg:justify-between lg:gap-16">
+      <div class="flex flex-col gap-3">
+        <a href="#top" class="flex items-center gap-2 w-fit" data-od-id="footer-logo"><img src="assets/images/pryzm.design/logo-e5d3c83e28.png" alt="Pryzm" class="h-8 w-auto shrink-0 object-contain"></a>
+        <p class="max-w-xs text-sm text-pretty text-zinc-400">Original backgrounds and animated loops, made in your browser.</p>
+        <div class="mt-2 max-w-xs">
+          <p class="text-xs font-medium text-zinc-400">New features &amp; gallery drops</p>
+          <form data-od-id="footer-form" id="footForm" class="flex w-full max-w-md items-center gap-1.5 mt-2">
+            <label class="sr-only" for="footEmail">Email address</label>
+            <input id="footEmail" type="email" required placeholder="you@example.com" class="h-8 min-w-0 flex-1 rounded-md border border-white/10 bg-black px-3 text-xs min-h-0">
+            <button class="shrink-0 inline-flex items-center justify-center rounded-md bg-white text-black font-medium h-8 gap-1 px-2.5 text-xs hover:bg-zinc-200 transition-colors min-h-0" type="submit">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 sm:gap-14 lg:gap-20">
+        <nav aria-label="Product" class="flex flex-col gap-2.5"><p class="mb-4 text-xs font-medium text-zinc-500">Product</p><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#studio">Studio</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#remix">Inspiration</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#flow">Flow</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#top">Blog</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#pricing">Pricing</a></nav>
+        <nav aria-label="Help" class="flex flex-col gap-2.5"><p class="mb-4 text-xs font-medium text-zinc-500">Help</p><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#faq">About</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#faq">Docs</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#faq">Support</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#faq">Privacy</a><a class="text-sm text-zinc-400 transition-colors hover:text-white" href="#faq">Terms</a></nav>
+        <nav aria-label="Elsewhere" class="flex flex-col gap-2.5"><p class="mb-4 text-xs font-medium text-zinc-500">Elsewhere</p><a href="#top" class="text-sm text-zinc-400 transition-colors hover:text-white">Framer templates</a><a href="#top" class="text-sm text-zinc-400 transition-colors hover:text-white">X / Twitter</a></nav>
+      </div>
+    </div>
+    <div class="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-zinc-500 sm:flex-row sm:px-6">
+      <p>© 2026 Pryzm · by <a href="#top" class="transition-colors hover:text-white">Ava Thiery</a> · study clone</p>
+      <p>Runs in your browser</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script>
+<script>
+// Lenis smooth scroll
+let lenis = null;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!reducedMotion && typeof Lenis !== 'undefined') {
+  lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+  function raf(t){ lenis.raf(t); requestAnimationFrame(raf); }
+  requestAnimationFrame(raf);
+}
+// Smooth anchor clicks with offset via Lenis
+document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+  const id = a.getAttribute('href');
+  if (id.length < 2) return;
+  const el = document.querySelector(id);
+  if (!el) return;
+  e.preventDefault();
+  if (lenis) lenis.scrollTo(el, { offset: -64 });
+  else el.scrollIntoView();
+}));
+// Mobile menu
+const menuBtn = document.getElementById('menuBtn'), mobileMenu = document.getElementById('mobileMenu');
+menuBtn.addEventListener('click', () => {
+  const open = mobileMenu.classList.toggle('hidden');
+  menuBtn.setAttribute('aria-expanded', String(!open));
+});
+mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.add('hidden')));
+// Reveal on scroll (subtle, fast — matches original's quiet entrances)
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target);} }), {threshold:.08});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+// Hero collage parallax — native scroll + per-card drift speeds.
+// This layered drift is what gives the original its scroll feel
+// (the site itself uses no smooth-scroll library: native scroll + parallax).
+(function(){
+  const cards = [...document.querySelectorAll('.collage-card')];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced || !cards.length) return;
+  let ticking = false;
+  function update(){
+    ticking = false;
+    const y = scrollY;
+    for (const el of cards) {
+      const s = parseFloat(el.dataset.speed || '0');
+      el.style.transform = 'translate3d(0,' + (y * s).toFixed(1) + 'px,0)';
+    }
+  }
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, {passive:true});
+  update();
+})();
+// FAQ accordion (single-open)
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.querySelector('.faq-q').addEventListener('click', () => {
+    const open = item.dataset.open === 'true';
+    document.querySelectorAll('.faq-item').forEach(i => i.dataset.open = 'false');
+    item.dataset.open = String(!open);
+  });
+});
+// Pricing toggle
+const proPrice = document.getElementById('proPrice'), proPer = document.getElementById('proPer');
+document.querySelectorAll('[data-period]').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('[data-period]').forEach(b => {
+    const active = b === btn;
+    b.setAttribute('aria-pressed', String(active));
+    b.className = 'px-4 py-1.5 rounded-full ' + (active ? 'bg-white text-black font-semibold' : 'text-zinc-300');
+  });
+  const yearly = btn.dataset.period === 'year';
+  proPrice.textContent = yearly ? '$81' : '$9';
+  proPer.textContent = yearly ? 'per year' : 'per month';
+}));
+// Newsletter (demo)
+function wireForm(id, msgId, okText) {
+  const f = document.getElementById(id);
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    document.getElementById(msgId).textContent = okText;
+    f.reset();
+  });
+}
+wireForm('loopForm', 'loopMsg', 'You are on the list — talk soon.');
+document.getElementById('footForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); });
+</script>
+</body>
+</html>

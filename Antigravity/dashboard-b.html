@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corvus - Sentinel dashboard (design preview)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000;
+    --surface:#0B0B0D;
+    --surface-2:#141417;
+    --card:#16161B;
+    --panel:#101014;
+    --text:#FAFAFA;
+    --body:#D4D4D8;
+    --muted:#A1A1AA;
+    --faint:#71717A;
+    --border:rgb(255 255 255 / 0.08);
+    --border-strong:rgb(255 255 255 / 0.15);
+    --accent:#2DD4BF;
+    --success:#22C55E;
+    --warning:#F59E0B;
+    --error:#FF7B72;
+    --radius-card:12px;
+    --radius-btn:8px;
+    --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    --font-display:"Poppins",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --font-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--body);font-family:var(--font-ui);font-size:15px;line-height:1.625;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{color:var(--text);font-family:var(--font-display);font-weight:600;line-height:1.25;letter-spacing:-0.02em;text-wrap:balance}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+  .skip{position:absolute;left:-9999px;top:0;background:var(--text);color:#0A0A0B;padding:10px 16px;z-index:200;font-weight:500;border-radius:0 0 8px 0}
+  .skip:focus{left:0}
+
+  /* ---- top bar ---- */
+  .topbar{position:sticky;top:0;z-index:100;background:#000;border-bottom:1px solid var(--border)}
+  .topbar-in{max-width:1120px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;gap:20px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font-display);font-weight:600;font-size:15px;letter-spacing:0.14em;color:var(--text)}
+  .brand svg{width:22px;height:22px}
+  .nav{display:flex;gap:4px;margin-left:12px}
+  .nav a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:500;padding:8px 12px;border-radius:8px;transition:color .15s ease,background .15s ease}
+  .nav a:hover{color:var(--text);background:var(--surface-2)}
+  .topbar-sp{flex:1}
+  .credits-pill{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-family:var(--font-mono);font-size:12px;color:var(--text);border:1px solid var(--border-strong);border-radius:999px;padding:7px 14px;transition:border-color .15s ease,background .15s ease;white-space:nowrap}
+  .credits-pill:hover{border-color:rgb(255 255 255 / 0.3);background:var(--surface)}
+  .credits-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+  .credits-pill .short{display:none}
+  .avatar-wrap{position:relative}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s ease}
+  .avatar:hover{border-color:rgb(255 255 255 / 0.3)}
+  .menu{position:absolute;right:0;top:44px;width:264px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-card);padding:8px;box-shadow:0 20px 25px -5px rgb(0 0 0 / 0.5)}
+  .menu[hidden]{display:none}
+  .menu .who{padding:10px 12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+  .menu .who p{font-size:13px;color:var(--text);font-weight:500}
+  .menu .who span{font-size:12px;color:var(--faint)}
+  .menu a{display:flex;align-items:center;gap:10px;text-decoration:none;font-size:14px;color:var(--body);padding:10px 12px;border-radius:8px}
+  .menu a:hover{background:var(--surface-2);color:var(--text)}
+  .menu svg{width:16px;height:16px;color:var(--muted)}
+  .hamburger{display:none;background:none;border:1px solid var(--border-strong);border-radius:8px;color:var(--text);width:40px;height:40px;cursor:pointer;align-items:center;justify-content:center}
+  .hamburger svg{width:20px;height:20px}
+  .mobile-nav{display:none;border-bottom:1px solid var(--border);background:#000;padding:8px 24px 16px}
+  .mobile-nav[hidden]{display:none}
+  .mobile-nav.open{display:block}
+  .mobile-nav a{display:block;text-decoration:none;color:var(--body);font-size:15px;font-weight:500;padding:12px 4px;border-bottom:1px solid var(--border)}
+  .mobile-nav a:last-child{border-bottom:none}
+
+  /* ---- page column ---- */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  .preview-strip{display:flex;align-items:center;gap:10px;margin:32px 0 0;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted)}
+  .preview-strip .dot{width:7px;height:7px;border-radius:50%;background:var(--warning);flex:none}
+  .pagehead{padding:40px 0 8px}
+  .pagehead h1{font-size:clamp(30px,4vw,40px)}
+  .pagehead .sub{margin-top:10px;font-size:16px;color:var(--muted);max-width:640px}
+  .pagehead .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--body);border:1px solid var(--border);border-radius:999px;padding:6px 13px;background:var(--surface)}
+  .pill .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .dot-green{background:var(--success)}
+  .dot-amber{background:var(--warning)}
+  .dot-teal{background:var(--accent)}
+
+  /* ---- AI action bar ---- */
+  .aibar{margin:28px 0 8px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:24px}
+  .aibar label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px}
+  .aibar .hint{font-size:13px;color:var(--faint);margin-bottom:14px}
+  .aibar-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:0 8px 0 14px;transition:border-color .15s ease}
+  .aibar-row:focus-within{border-color:var(--accent)}
+  .aibar-row>svg{width:18px;height:18px;color:var(--faint);flex:none}
+  .aibar-row input{flex:1;background:none;border:none;color:var(--text);font-size:15px;font-family:var(--font-ui);height:52px;min-width:0}
+  .aibar-row input::placeholder{color:var(--faint)}
+  .aibar-row input:focus{outline:none}
+  .clear-btn{display:none;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--body);font-size:13px;font-weight:500;border-radius:8px;height:36px;padding:0 12px;cursor:pointer;white-space:nowrap}
+  .clear-btn.show{display:inline-flex}
+  .clear-btn:hover{color:var(--text);border-color:rgb(255 255 255 / 0.3)}
+  .clear-btn svg{width:14px;height:14px}
+  .aibar-count{margin-top:12px;font-family:var(--font-mono);font-size:12px;color:var(--faint)}
+
+  /* ---- sections ---- */
+  section.block{padding:40px 0;scroll-margin-top:80px}
+  .sec-title{font-size:clamp(22px,3vw,28px);margin-bottom:6px}
+  .sec-sub{color:var(--muted);font-size:15px;margin-bottom:24px;max-width:640px}
+
+  /* ---- ideas grid ---- */
+  .ideas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .idea{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px;transition:border-color .15s ease}
+  .idea:hover{border-color:var(--border-strong)}
+  .idea[hidden]{display:none}
+  .idea h3{font-size:15px;font-weight:500;font-family:var(--font-ui);letter-spacing:0;color:var(--text)}
+  .idea .tag{display:inline-block;font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-top:6px}
+  .idea .detail{font-size:13px;color:var(--muted);margin-top:10px}
+  .idea .detail[hidden]{display:none}
+  .idea-toggle{margin-top:12px;background:none;border:none;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 0;font-family:var(--font-ui)}
+  .idea-toggle:hover{color:var(--text)}
+  .idea-toggle svg{width:14px;height:14px;transition:transform .2s ease}
+  .idea-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+  .empty-state{border:1px dashed var(--border-strong);border-radius:var(--radius-card);padding:36px 24px;text-align:center;color:var(--muted);font-size:15px}
+  .empty-state[hidden]{display:none}
+  .empty-state strong{color:var(--text);font-weight:500}
+
+  /* ---- stats ---- */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:20px}
+  .stat .num{font-family:var(--font-mono);font-size:30px;color:var(--text);line-height:1.1}
+  .stat .lbl{font-size:13px;color:var(--muted);margin-top:6px}
+
+  /* ---- cards ---- */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);padding:28px}
+  .card-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px}
+  .card-head .icon-box{width:42px;height:42px;flex:none;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+  .card-head .icon-box svg{width:20px;height:20px;color:var(--text)}
+  .card-head h3{font-size:19px}
+  .card-head p{font-size:14px;color:var(--muted)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border-radius:var(--radius-btn);font-size:14px;font-weight:500;font-family:var(--font-ui);cursor:pointer;text-decoration:none;border:1px solid transparent;transition:background .15s ease,border-color .15s ease;white-space:nowrap}
+  .btn svg{width:16px;height:16px}
+  .btn-primary{background:var(--text);color:#0A0A0B;border-color:var(--text)}
+  .btn-primary:hover{background:#fff}
+  .btn-ghost{background:transparent;color:var(--text);border-color:var(--border-strong)}
+  .btn-ghost:hover{border-color:rgb(255 255 255 / 0.3);background:var(--surface-2)}
+  .btn-dark{background:#1C1C1F;color:var(--text);border-color:rgb(255 255 255 / 0.12)}
+  .btn-dark:hover{border-color:rgb(255 255 255 / 0.3);background:#26262B}
+  .card-actions{margin-top:20px;display:flex;flex-wrap:wrap;gap:10px}
+
+  /* ---- checklist ---- */
+  .steps{list-style:none;margin-top:20px;display:flex;flex-direction:column}
+  .step{display:flex;gap:16px;padding:18px 4px;border-top:1px solid var(--border)}
+  .step:last-child{border-bottom:1px solid var(--border)}
+  .step-marker{width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--muted)}
+  .step-marker svg{width:15px;height:15px}
+  .step.done .step-marker{background:var(--success);border-color:var(--success);color:#04120a}
+  .step.active .step-marker{border-color:var(--accent)}
+  .step.active .step-marker .pulse{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .step-body{flex:1;min-width:0}
+  .step-body h4{font-size:15px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .step-body p{font-size:14px;color:var(--muted);margin-top:4px}
+  .status{font-family:var(--font-mono);font-size:11px;border-radius:999px;padding:3px 10px;border:1px solid var(--border-strong);color:var(--muted)}
+  .status.done{color:var(--success);border-color:rgb(34 197 94 / 0.4)}
+  .status.now{color:var(--accent);border-color:rgb(45 212 191 / 0.4)}
+  .step-cta{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
+  .link-arrow{color:var(--text);font-size:14px;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .link-arrow:hover{text-decoration:underline}
+  .link-arrow svg{width:15px;height:15px}
+  .text-btn{background:none;border:none;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 0;font-family:var(--font-ui)}
+  .text-btn:hover{text-decoration:underline}
+  .text-btn svg{width:15px;height:15px}
+
+  /* ---- bot card tabs ---- */
+  .tabs{display:flex;gap:4px;margin:22px 0 4px;border-bottom:1px solid var(--border)}
+  .tab{background:none;border:none;color:var(--muted);font-size:14px;font-weight:500;font-family:var(--font-ui);padding:12px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--text)}
+  .tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+  .tabpanel{padding:18px 2px 4px}
+  .tabpanel[hidden]{display:none}
+  .bullets{list-style:none;display:flex;flex-direction:column;gap:12px}
+  .bullets li{display:flex;gap:12px;font-size:15px;align-items:flex-start}
+  .bullets svg{width:17px;height:17px;color:var(--accent);flex:none;margin-top:4px}
+  .check-row{display:flex;align-items:center;gap:12px;padding:13px 4px;border-top:1px solid var(--border);font-size:14px}
+  .check-row:last-child{border-bottom:1px solid var(--border)}
+  .check-row .cdot{width:8px;height:8px;border-radius:50%;background:var(--success);flex:none}
+  .check-row .pass{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--success);border:1px solid rgb(34 197 94 / 0.4);border-radius:999px;padding:3px 10px;flex:none}
+  .act-row{display:flex;gap:14px;padding:14px 4px;border-top:1px solid var(--border);font-size:14px;align-items:flex-start}
+  .act-row:last-child{border-bottom:1px solid var(--border)}
+  .act-row .avatar-dot{width:32px;height:32px;flex:none;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+  .act-row .avatar-dot svg{width:15px;height:15px;color:var(--muted)}
+  .act-row p{color:var(--body)}
+  .act-row time{display:block;font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-top:2px}
+
+  /* ---- capabilities ---- */
+  .caps-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .cap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:22px;display:flex;flex-direction:column;gap:12px}
+  .cap-top{display:flex;align-items:center;gap:12px}
+  .cap-top .icon-box{width:38px;height:38px;flex:none;border-radius:9px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+  .cap-top .icon-box svg{width:18px;height:18px;color:var(--text)}
+  .cap-top h3{font-size:16px;font-weight:500;font-family:var(--font-ui);letter-spacing:0}
+  .cap>p{font-size:14px;color:var(--muted)}
+  .mock{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .mock .m-line{display:flex;gap:10px;align-items:flex-start}
+  .mock .m-face{width:26px;height:26px;flex:none;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+  .mock .m-bubble{background:var(--surface-2);border:1px solid var(--border);border-radius:2px 10px 10px 10px;padding:8px 12px;font-size:13px;color:var(--body);max-width:100%}
+  .mock .m-bar{height:8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border)}
+  .mock .m-bar.short{width:55%}
+  .mock .m-bar.mid{width:78%}
+  .mock .m-img{height:54px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px}
+  .mock .m-img svg{width:18px;height:18px;color:var(--faint)}
+  .mock .m-meta{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--faint)}
+  .mock .m-meta .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .mock .m-track{height:6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);position:relative}
+  .mock .m-track i{position:absolute;left:0;top:0;bottom:0;width:64%;border-radius:999px;background:#3f3f46}
+  .mock .m-track b{position:absolute;left:64%;top:50%;width:12px;height:12px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%)}
+  .cap .text-btn{margin-top:auto}
+
+  /* ---- help ---- */
+  .help-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .help-card{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:22px;text-decoration:none;transition:border-color .15s ease}
+  .help-card:hover{border-color:var(--border-strong)}
+  .help-card svg.lead{width:20px;height:20px;color:var(--accent)}
+  .help-card h3{font-size:16px;font-weight:500;font-family:var(--font-ui);letter-spacing:0}
+  .help-card p{font-size:14px;color:var(--muted)}
+  .help-card .go{margin-top:6px;font-size:14px;font-weight:500;color:var(--text);display:inline-flex;align-items:center;gap:6px}
+  .help-card .go svg{width:15px;height:15px}
+
+  footer{border-top:1px solid var(--border);margin-top:24px}
+  .foot{max-width:1120px;margin:0 auto;padding:28px 24px 44px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  .foot p{font-size:13px;color:var(--faint)}
+  .foot .brand{font-size:13px}
+
+  @media (max-width:860px){
+    .nav{display:none}
+    .hamburger{display:inline-flex}
+    .ideas-grid{grid-template-columns:1fr 1fr}
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .caps-grid{grid-template-columns:1fr}
+    .help-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    .ideas-grid{grid-template-columns:1fr}
+    .aibar{padding:18px}
+    .card{padding:20px}
+    .credits-pill .long{display:none}
+    .credits-pill .short{display:inline}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation:none !important;transition:none !important}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#top" aria-label="Corvus home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5l7 7-7 7"/><path d="M11 5l7 7-7 7"/></svg>
+      CORVUS
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#overview">Overview</a>
+      <a href="#my-bot">My bot</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#ideas">Ideas</a>
+      <a href="#help">Help</a>
+    </nav>
+    <div class="topbar-sp"></div>
+    <a class="credits-pill" href="index.html#pricing"><span class="dot" aria-hidden="true"></span><span class="long">96 credits left</span><span class="short">96</span></a>
+    <div class="avatar-wrap">
+      <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu" title="Account">S</button>
+      <div class="menu" id="userMenu" role="menu" hidden>
+        <div class="who">
+          <p>Sam (example)</p>
+          <span>Trial: 2 days left, 96 of 100 credits</span>
+        </div>
+        <a href="#my-bot" role="menuitem"><i data-lucide="bot"></i>My bot</a>
+        <a href="index.html#pricing" role="menuitem"><i data-lucide="credit-card"></i>See plans</a>
+      </div>
+    </div>
+    <button class="hamburger" id="navToggle" aria-expanded="false" aria-controls="mobileNav" aria-label="Open menu">
+      <i data-lucide="menu"></i>
+    </button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav" aria-label="Sections mobile">
+    <a href="#overview">Overview</a>
+    <a href="#my-bot">My bot</a>
+    <a href="#capabilities">Capabilities</a>
+    <a href="#ideas">Ideas</a>
+    <a href="#help">Help</a>
+  </nav>
+</header>
+
+<main class="wrap" id="main">
+  <div id="top"></div>
+
+  <div class="preview-strip" role="note">
+    <span class="dot" aria-hidden="true"></span>
+    <span><strong style="color:var(--text);font-weight:500">Design preview - example data.</strong> Names, numbers and activity below are placeholders to show the layout.</span>
+  </div>
+
+  <div class="pagehead">
+    <h1>Sentinel</h1>
+    <p class="sub">Your helper for the Pixel Cafe server. 100-credit trial, 96 left, 2 days to go. Tell it what to do in plain words.</p>
+    <div class="meta-row">
+      <span class="pill"><span class="dot dot-teal" aria-hidden="true"></span>Pixel Cafe</span>
+      <span class="pill"><span class="dot dot-amber" aria-hidden="true"></span>In trial</span>
+      <span class="pill"><span class="dot dot-green" aria-hidden="true"></span>Connected</span>
+    </div>
+  </div>
+
+  <div class="aibar" aria-label="Describe a change">
+    <label for="ideaFilter">Describe a change to your bot...</label>
+    <p class="hint">Typing here filters the example ideas on this page. Nothing is sent anywhere.</p>
+    <div class="aibar-row">
+      <i data-lucide="search"></i>
+      <input type="text" id="ideaFilter" autocomplete="off" placeholder="Try &quot;welcome&quot;, &quot;poll&quot; or &quot;levels&quot;">
+      <button class="clear-btn" id="clearFilter" type="button"><i data-lucide="x"></i>Clear</button>
+    </div>
+    <p class="aibar-count" id="filterCount" aria-live="polite">Showing 12 of 12 ideas</p>
+  </div>
+
+  <section class="block" id="ideas" aria-labelledby="ideas-h">
+    <h2 class="sec-title" id="ideas-h">Example ideas</h2>
+    <p class="sec-sub">Short starting points other owners liked. Pick one to read what members would see.</p>
+    <div class="ideas-grid" id="ideasGrid">
+      <article class="idea" data-search="welcome image for newcomers greeting picture">
+        <h3>Welcome image for newcomers</h3>
+        <span class="tag">welcome</span>
+        <p class="detail" hidden>Members would see: a picture with their name in #general when they join.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="game-night polls vote game night">
+        <h3>Game-night polls</h3>
+        <span class="tag">poll</span>
+        <p class="detail" hidden>Members would see: a Friday poll asking which game to play, with one-tap votes.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="levels and xp for chatters ranks">
+        <h3>Levels and XP for chatters</h3>
+        <span class="tag">levels</span>
+        <p class="detail" hidden>Members would see: points for chatting and a new rank every few levels.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="replies drafted from your help channel questions answers">
+        <h3>Replies drafted from your help channel</h3>
+        <span class="tag">help</span>
+        <p class="detail" hidden>Members would see: a quick draft answer when they ask a repeat question.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="birthday shout-outs celebrate">
+        <h3>Birthday shout-outs</h3>
+        <span class="tag">fun</span>
+        <p class="detail" hidden>Members would see: a birthday note in #general on their day.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="keep spam out on busy nights moderation">
+        <h3>Keep spam out on busy nights</h3>
+        <span class="tag">keep</span>
+        <p class="detail" hidden>Members would see: fewer floods of repeat notes during busy hours.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="keep links safe for new members moderation">
+        <h3>Keep links safe for new members</h3>
+        <span class="tag">keep</span>
+        <p class="detail" hidden>Members would see: risky links held back until a helper takes a look.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="movie-night vote polls film">
+        <h3>Movie-night vote</h3>
+        <span class="tag">poll</span>
+        <p class="detail" hidden>Members would see: three film picks and a vote that closes at 8pm.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="welcome note in dms with the rules greeting">
+        <h3>Welcome note in DMs with the rules</h3>
+        <span class="tag">welcome</span>
+        <p class="detail" hidden>Members would see: a short hello and the three house rules in their inbox.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="level-up roles for regulars ranks perks">
+        <h3>Level-up roles for regulars</h3>
+        <span class="tag">level</span>
+        <p class="detail" hidden>Members would see: a new color and name tag once they reach level 5.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="homework help thread study school">
+        <h3>Homework help thread</h3>
+        <span class="tag">help</span>
+        <p class="detail" hidden>Members would see: one tidy thread per question instead of a busy channel.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+      <article class="idea" data-search="keep raids calm with slow chat moderation">
+        <h3>Keep raids calm with slow chat</h3>
+        <span class="tag">keep</span>
+        <p class="detail" hidden>Members would see: a short pause between notes while a raid passes.</p>
+        <button class="idea-toggle" type="button" aria-expanded="false">What members see <i data-lucide="chevron-down"></i></button>
+      </article>
+    </div>
+    <div class="empty-state" id="emptyState" hidden style="margin-top:14px">
+      <strong>No ideas match - try another word.</strong><br>
+      Nothing on this page fits that search yet.
+    </div>
+  </section>
+
+  <section class="block" id="overview" aria-labelledby="overview-h">
+    <h2 class="sec-title" id="overview-h">Overview</h2>
+    <p class="sec-sub">Where your trial stands, and the four steps to launch.</p>
+    <div class="stats-grid">
+      <div class="stat"><div class="num">1</div><div class="lbl">bot live</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">server</div></div>
+      <div class="stat"><div class="num">96</div><div class="lbl">credits left</div></div>
+      <div class="stat"><div class="num">2</div><div class="lbl">trial days left</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="icon-box"><i data-lucide="list-checks"></i></div>
+        <div>
+          <h3>Setup checklist</h3>
+          <p>Two of four steps done. Next: describe your bot.</p>
+        </div>
+      </div>
+      <ol class="steps">
+        <li class="step done">
+          <span class="step-marker"><i data-lucide="check"></i></span>
+          <div class="step-body">
+            <h4>Connect your server <span class="status done">Done</span></h4>
+            <p>Pixel Cafe is linked. Sentinel can read and write where you allowed it.</p>
+          </div>
+        </li>
+        <li class="step active">
+          <span class="step-marker"><span class="pulse" aria-hidden="true"></span></span>
+          <div class="step-body">
+            <h4>Describe your bot <span class="status now">You are here</span></h4>
+            <p>Tell Sentinel what kind of helper it should be, in your own words.</p>
+            <div class="step-cta">
+              <button class="text-btn" type="button" data-focus-filter>Describe it above <i data-lucide="arrow-right"></i></button>
+            </div>
+          </div>
+        </li>
+        <li class="step">
+          <span class="step-marker"><span style="font-family:var(--font-mono);font-size:12px">3</span></span>
+          <div class="step-body">
+            <h4>Test it</h4>
+            <p>Try a few notes with Sentinel and check the replies read right.</p>
+          </div>
+        </li>
+        <li class="step">
+          <span class="step-marker"><span style="font-family:var(--font-mono);font-size:12px">4</span></span>
+          <div class="step-body">
+            <h4>Go live</h4>
+            <p>Open Sentinel to the whole server when you like how it talks.</p>
+            <div class="step-cta">
+              <a class="link-arrow" href="index.html#pricing">See plans <i data-lucide="arrow-up-right"></i></a>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block" id="my-bot" aria-labelledby="mybot-h">
+    <h2 class="sec-title" id="mybot-h">Your bot</h2>
+    <p class="sec-sub">What Sentinel does today, the checks it passed, and what it did lately.</p>
+    <div class="card">
+      <div class="card-head">
+        <div class="icon-box"><i data-lucide="bot"></i></div>
+        <div>
+          <h3>Sentinel on Pixel Cafe</h3>
+          <p>Friendly helper for a gaming and study server. In trial, not yet open to everyone.</p>
+        </div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Bot detail">
+        <button class="tab" role="tab" id="tab-overview" aria-selected="true" aria-controls="panel-overview" type="button">What it does</button>
+        <button class="tab" role="tab" id="tab-checks" aria-selected="false" aria-controls="panel-checks" type="button" tabindex="-1">Checks</button>
+        <button class="tab" role="tab" id="tab-activity" aria-selected="false" aria-controls="panel-activity" type="button" tabindex="-1">Recent activity</button>
+      </div>
+      <div class="tabpanel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <ul class="bullets">
+          <li><i data-lucide="check"></i><span>Greets new members in #general with a picture and the house rules.</span></li>
+          <li><i data-lucide="check"></i><span>Keeps chat friendly on busy nights by slowing floods of repeat notes.</span></li>
+          <li><i data-lucide="check"></i><span>Answers repeat questions using notes from your help channel.</span></li>
+        </ul>
+      </div>
+      <div class="tabpanel" id="panel-checks" role="tabpanel" aria-labelledby="tab-checks" hidden>
+        <div class="check-row"><span class="cdot" aria-hidden="true"></span><span>Name, picture and tone are set.</span><span class="pass">Pass</span></div>
+        <div class="check-row"><span class="cdot" aria-hidden="true"></span><span>Can read the welcome channel and write replies.</span><span class="pass">Pass</span></div>
+        <div class="check-row"><span class="cdot" aria-hidden="true"></span><span>Replies use plain words, no code and no links.</span><span class="pass">Pass</span></div>
+      </div>
+      <div class="tabpanel" id="panel-activity" role="tabpanel" aria-labelledby="tab-activity" hidden>
+        <div class="act-row">
+          <span class="avatar-dot"><i data-lucide="users"></i></span>
+          <p>Welcomed 3 new members in #general (example)<time>Today, 6:12 pm</time></p>
+        </div>
+        <div class="act-row">
+          <span class="avatar-dot"><i data-lucide="star"></i></span>
+          <p>Gave points to 5 chatters toward level 2 (example)<time>Today, 4:47 pm</time></p>
+        </div>
+        <div class="act-row">
+          <span class="avatar-dot"><i data-lucide="messages-square"></i></span>
+          <p>Answered a repeat question in #help (example)<time>Yesterday, 9:03 pm</time></p>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" type="button" data-focus-filter>Describe a change <i data-lucide="arrow-right"></i></button>
+        <a class="btn btn-ghost" href="index.html#templates">Browse templates</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="capabilities" aria-labelledby="caps-h">
+    <h2 class="sec-title" id="caps-h">What Sentinel can do</h2>
+    <p class="sec-sub">Four starting skills. Each button below filters the example ideas to match.</p>
+    <div class="caps-grid">
+      <div class="cap">
+        <div class="cap-top">
+          <span class="icon-box"><i data-lucide="users"></i></span>
+          <h3>Welcome members</h3>
+        </div>
+        <p>Says hello to each newcomer so nobody joins to silence.</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-line"><span class="m-face">S</span><span class="m-bubble">Welcome to Pixel Cafe, Maya. Start with #rules.</span></div>
+          <div class="m-img"><i data-lucide="image"></i></div>
+        </div>
+        <button class="text-btn" type="button" data-filter-q="welcome">See matching ideas <i data-lucide="arrow-right"></i></button>
+      </div>
+      <div class="cap">
+        <div class="cap-top">
+          <span class="icon-box"><i data-lucide="shield-check"></i></span>
+          <h3>Moderation</h3>
+        </div>
+        <p>Calms busy hours and holds risky notes for a helper to review.</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-meta"><span class="dot" style="background:var(--warning)"></span>1 note held for review</div>
+          <div class="m-line"><span class="m-face">S</span><span class="m-bubble">Slowed #general to one note per minute.</span></div>
+        </div>
+        <button class="text-btn" type="button" data-filter-q="keep">See matching ideas <i data-lucide="arrow-right"></i></button>
+      </div>
+      <div class="cap">
+        <div class="cap-top">
+          <span class="icon-box"><i data-lucide="star"></i></span>
+          <h3>XP and levels</h3>
+        </div>
+        <p>Thanks regulars with points, ranks and small perks.</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-meta"><span class="dot" style="background:var(--accent)"></span>Maya - level 2, 140 of 220 points</div>
+          <div class="m-track"><i></i><b></b></div>
+        </div>
+        <button class="text-btn" type="button" data-filter-q="level">See matching ideas <i data-lucide="arrow-right"></i></button>
+      </div>
+      <div class="cap">
+        <div class="cap-top">
+          <span class="icon-box"><i data-lucide="messages-square"></i></span>
+          <h3>Q and A replies</h3>
+        </div>
+        <p>Drafts answers to repeat questions from your help channel.</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-line"><span class="m-face">Q</span><span class="m-bubble">How do I join game night?</span></div>
+          <div class="m-line"><span class="m-face">S</span><span class="m-bubble">Vote in Friday's poll, then join voice at 8pm.</span></div>
+        </div>
+        <button class="text-btn" type="button" data-filter-q="help">See matching ideas <i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="help" aria-labelledby="help-h">
+    <h2 class="sec-title" id="help-h">Help</h2>
+    <p class="sec-sub">Short reads on the main site. Each card opens the matching section.</p>
+    <div class="help-grid">
+      <a class="help-card" href="index.html#how-it-works">
+        <i data-lucide="book-open" class="lead"></i>
+        <h3>How it works</h3>
+        <p>Connect, describe, test and go live in four steps.</p>
+        <span class="go">Read how it works <i data-lucide="arrow-up-right"></i></span>
+      </a>
+      <a class="help-card" href="index.html#templates">
+        <i data-lucide="layout-template" class="lead"></i>
+        <h3>Templates</h3>
+        <p>Ready-made starting points for gaming and study servers.</p>
+        <span class="go">Browse templates <i data-lucide="arrow-up-right"></i></span>
+      </a>
+      <a class="help-card" href="index.html#pricing">
+        <i data-lucide="credit-card" class="lead"></i>
+        <h3>Pricing</h3>
+        <p>What the trial holds and what a plan adds. See plans.</p>
+        <span class="go">See plans <i data-lucide="arrow-up-right"></i></span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot">
+    <span class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:18px;height:18px;vertical-align:-3px"><path d="M4 5l7 7-7 7"/><path d="M11 5l7 7-7 7"/></svg>
+      CORVUS
+    </span>
+    <p>Design preview with example data. Nothing here is sent or billed.</p>
+    <a class="link-arrow" href="index.html#pricing">See plans</a>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+(function(){
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons();
+  }
+
+  /* ---- live filter for the ideas grid ---- */
+  var input = document.getElementById("ideaFilter");
+  var clearBtn = document.getElementById("clearFilter");
+  var count = document.getElementById("filterCount");
+  var cards = Array.prototype.slice.call(document.querySelectorAll("#ideasGrid .idea"));
+  var empty = document.getElementById("emptyState");
+  var total = cards.length;
+
+  function applyFilter(){
+    var q = input.value.trim().toLowerCase();
+    var shown = 0;
+    cards.forEach(function(card){
+      var hay = (card.getAttribute("data-search") + " " + card.querySelector("h3").textContent).toLowerCase();
+      var hit = q === "" || hay.indexOf(q) !== -1;
+      card.hidden = !hit;
+      if (hit) shown++;
+    });
+    empty.hidden = shown !== 0;
+    clearBtn.classList.toggle("show", q !== "");
+    count.textContent = q === ""
+      ? ("Showing " + total + " of " + total + " ideas")
+      : ("Showing " + shown + " of " + total + " ideas for \u201C" + input.value.trim() + "\u201D");
+  }
+  input.addEventListener("input", applyFilter);
+  clearBtn.addEventListener("click", function(){
+    input.value = "";
+    applyFilter();
+    input.focus();
+  });
+
+  /* capability + checklist buttons that set the filter */
+  document.querySelectorAll("[data-filter-q]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      input.value = btn.getAttribute("data-filter-q");
+      applyFilter();
+      document.getElementById("ideas").scrollIntoView({ behavior: "smooth", block: "start" });
+      input.focus({ preventScroll: true });
+    });
+  });
+  document.querySelectorAll("[data-focus-filter]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      input.focus({ preventScroll: true });
+    });
+  });
+
+  /* ---- idea detail toggles ---- */
+  document.querySelectorAll(".idea-toggle").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var detail = btn.parentElement.querySelector(".detail");
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!open));
+      detail.hidden = open;
+    });
+  });
+
+  /* ---- bot card tabs ---- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  function selectTab(next){
+    tabs.forEach(function(t){
+      var on = t === next;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  tabs.forEach(function(t, i){
+    t.addEventListener("click", function(){ selectTab(t); });
+    t.addEventListener("keydown", function(e){
+      var j = null;
+      if (e.key === "ArrowRight") j = (i + 1) % tabs.length;
+      if (e.key === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length;
+      if (j !== null) { e.preventDefault(); selectTab(tabs[j]); tabs[j].focus(); }
+    });
+  });
+
+  /* ---- avatar menu ---- */
+  var avatarBtn = document.getElementById("avatarBtn");
+  var menu = document.getElementById("userMenu");
+  function setMenu(open){
+    menu.hidden = !open;
+    avatarBtn.setAttribute("aria-expanded", String(open));
+  }
+  avatarBtn.addEventListener("click", function(e){
+    e.stopPropagation();
+    setMenu(menu.hidden);
+  });
+  document.addEventListener("click", function(e){
+    if (!menu.hidden && !menu.contains(e.target)) setMenu(false);
+  });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") {
+      setMenu(false);
+      var mnav = document.getElementById("mobileNav");
+      mnav.classList.remove("open");
+      document.getElementById("navToggle").setAttribute("aria-expanded", "false");
+    }
+  });
+
+  /* ---- mobile nav ---- */
+  var navToggle = document.getElementById("navToggle");
+  var mobileNav = document.getElementById("mobileNav");
+  navToggle.addEventListener("click", function(){
+    var open = !mobileNav.classList.contains("open");
+    mobileNav.classList.toggle("open", open);
+    navToggle.setAttribute("aria-expanded", String(open));
+  });
+  mobileNav.querySelectorAll("a").forEach(function(a){
+    a.addEventListener("click", function(){
+      mobileNav.classList.remove("open");
+      navToggle.setAttribute("aria-expanded", "false");
+    });
+  });
+})();
+</script>
+</body>
+</html>

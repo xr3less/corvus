@@ -1,0 +1,436 @@
+/* pick — scoped Tailwind v4 import: theme + utilities ONLY, NO preflight.
+ * Pattern per tailwindcss.com/docs/preflight ("Disabling Preflight"): omit the
+ * preflight.css import so no global reset is ever emitted for other routes.
+ * Route-level global CSS is permitted in App Router
+ * (nextjs.org/docs/app/getting-started/css), but stylesheets persist across
+ * client-side navigations — so this file emits only class-scoped rules and
+ * custom properties, never bare element selectors and never a bare `*`.
+ *
+ * DEV-ONLY local component picker. Never linked from prod nav, never shipped.
+ * All input styles are ORIGINAL hand-written implementations. The
+ * "shadcn-style" label names a visual rhythm (bordered input + focus ring)
+ * popularized by shadcn/ui (MIT); zero bytes were copied from it or any other
+ * project — only the idea of the rhythm crosses over (D-049/D-051). */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+.pick-root {
+  --pick-bg: #000000;
+  --pick-surface: #0b0b0d;
+  --pick-surface-2: #141417;
+  --pick-card: #16161b;
+  --pick-panel: #101014;
+  --pick-text: #fafafa;
+  --pick-body: #d4d4d8;
+  --pick-muted: #a1a1aa;
+  --pick-faint: #71717a;
+  --pick-border: rgb(255 255 255 / 0.09);
+  --pick-border-strong: rgb(255 255 255 / 0.15);
+  --pick-accent: #2dd4bf;
+  --pick-error: #ff7b72;
+
+  min-height: 100vh;
+  background-color: var(--pick-bg);
+  color: var(--pick-text);
+  color-scheme: dark;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+.pick-shell {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 3rem 1.25rem 5rem;
+}
+
+.pick-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--pick-border);
+  padding-bottom: 1.25rem;
+}
+
+.pick-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--pick-text);
+}
+
+.pick-sub {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--pick-muted);
+}
+
+.pick-results-link {
+  color: var(--pick-body);
+  font-size: 0.875rem;
+  text-decoration: none;
+  border-bottom: 1px solid var(--pick-border-strong);
+  padding-bottom: 2px;
+}
+
+.pick-results-link:hover {
+  color: var(--pick-text);
+  border-bottom-color: var(--pick-accent);
+}
+
+.pick-root .pick-focus:focus-visible,
+.pick-input:focus-visible {
+  outline: 2px solid var(--pick-accent);
+  outline-offset: 2px;
+}
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .pick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pick-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  background-color: var(--pick-card);
+  border: 1px solid var(--pick-border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.pick-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pick-card-name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--pick-text);
+}
+
+.pick-origin {
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Geist Mono', monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  padding: 0.175rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--pick-border-strong);
+  color: var(--pick-muted);
+  white-space: nowrap;
+}
+
+.pick-origin-ours {
+  color: #0a0a0b;
+  background-color: var(--pick-text);
+  border-color: var(--pick-text);
+}
+
+.pick-sample {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- Base input primitive (class-scoped, no element selectors) ---- */
+.pick-input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--pick-border);
+  border-radius: 8px;
+  background-color: var(--pick-surface);
+  color: var(--pick-text);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.pick-input::placeholder {
+  color: var(--pick-faint);
+}
+
+.pick-input:focus-visible {
+  border-color: rgb(45 212 191 / 0.6);
+  box-shadow: 0 0 0 3px rgb(45 212 191 / 0.18);
+}
+
+/* (a) shadcn-style default: bordered + focus ring */
+.pick-v-shadcn {
+  border-radius: 8px;
+}
+
+/* (b) underline only */
+.pick-v-underline {
+  border: none;
+  border-bottom: 1px solid var(--pick-border-strong);
+  border-radius: 8px;
+  background-color: transparent;
+  padding-inline: 0;
+}
+
+.pick-v-underline:focus-visible {
+  border-bottom-color: var(--pick-accent);
+  box-shadow: none;
+}
+
+/* (c) filled, no border */
+.pick-v-filled {
+  border-color: transparent;
+  background-color: var(--pick-surface-2);
+}
+
+.pick-v-filled:focus-visible {
+  background-color: #1b1b20;
+  border-color: rgb(45 212 191 / 0.4);
+  box-shadow: none;
+}
+
+/* (d) pill */
+.pick-v-pill {
+  border-radius: 8px;
+  padding-inline: 1.1rem;
+}
+
+/* (g) large comfortable */
+.pick-v-large {
+  height: 52px;
+  font-size: 1.0625rem;
+  border-radius: 8px;
+  padding-inline: 1rem;
+}
+
+/* (h) mono code-style */
+.pick-v-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Geist Mono', monospace;
+  letter-spacing: 0.01em;
+  background-color: var(--pick-panel);
+}
+
+/* (j) faint borderless */
+.pick-v-faint {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--pick-body);
+}
+
+.pick-v-faint:focus-visible {
+  border-color: var(--pick-border-strong);
+  box-shadow: none;
+}
+
+/* (i) Corvus panel: shadow + ring + top-light (04 §4) — the house candidate */
+.pick-v-corvus {
+  border-radius: 8px;
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: var(--pick-card);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent 42%);
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
+.pick-v-corvus:focus-visible {
+  border-color: rgb(45 212 191 / 0.5);
+}
+
+/* (e) floating label: label always visible above the field (04 §5) */
+.pick-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+}
+
+.pick-float-label {
+  font-size: 0.75rem;
+  color: var(--pick-muted);
+  letter-spacing: 0.02em;
+}
+
+/* (f) icon-left */
+.pick-icon-row {
+  position: relative;
+  width: 100%;
+}
+
+.pick-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--pick-faint);
+  pointer-events: none;
+}
+
+.pick-v-icon {
+  padding-left: 2.4rem;
+}
+
+/* ---- Vote toggle ---- */
+.pick-vote {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 34px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--pick-border-strong);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--pick-body);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.pick-vote:hover {
+  border-color: rgb(255 255 255 / 0.3);
+  color: var(--pick-text);
+}
+
+.pick-vote-on {
+  background-color: var(--pick-text);
+  border-color: var(--pick-text);
+  color: #0a0a0b;
+}
+
+.pick-vote-on:hover {
+  background-color: var(--pick-text);
+  color: #0a0a0b;
+}
+
+/* CSS-only check mark (no emoji, no dingbat glyph) */
+.pick-check {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.45rem;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg) translateY(-1px);
+  opacity: 0;
+}
+
+.pick-check-on {
+  opacity: 1;
+}
+
+/* ---- Results page ---- */
+.pick-empty {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid var(--pick-border);
+  border-radius: 12px;
+  background-color: var(--pick-surface);
+  padding: 1.25rem 1.5rem;
+}
+
+.pick-empty-line {
+  margin: 0;
+  color: var(--pick-body);
+  font-size: 0.9375rem;
+}
+
+.pick-table-wrap {
+  margin-top: 1.75rem;
+  border: 1px solid var(--pick-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pick-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.pick-table-head {
+  background-color: var(--pick-panel);
+}
+
+.pick-th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--pick-muted);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--pick-border);
+}
+
+.pick-th-votes {
+  text-align: right;
+}
+
+.pick-td {
+  padding: 0.7rem 1rem;
+  color: var(--pick-body);
+  border-bottom: 1px solid var(--pick-border);
+}
+
+.pick-td-name {
+  color: var(--pick-text);
+}
+
+.pick-td-votes {
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Geist Mono', monospace;
+  color: var(--pick-text);
+}
+
+.pick-row-winner .pick-td {
+  background-color: rgb(45 212 191 / 0.06);
+}
+
+.pick-total {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--pick-muted);
+}
+
+.pick-actions {
+  margin-top: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick-root .pick-input,
+  .pick-root .pick-vote,
+  .pick-root .pick-results-link {
+    animation: none;
+    transition: none;
+  }
+}

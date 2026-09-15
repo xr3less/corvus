@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily loop, status first, sandbox preview</title>
+<style>
+  .uxb-root { box-sizing: border-box; }
+  .uxb-root, .uxb-root body { margin: 0; padding: 0; }
+  .uxb-body {
+    margin: 0;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    color-scheme: dark;
+    line-height: 20px;
+    font-size: 14px;
+  }
+  .uxb-preview {
+    background: #111111;
+    border-bottom: 1px solid #1c1c20;
+    color: #c9d1d9;
+    font-size: 13px;
+    line-height: 20px;
+    padding: 8px 20px;
+    text-align: center;
+  }
+  .uxb-page { max-width: 880px; margin: 0 auto; padding: 20px 20px 64px; display: flex; flex-direction: column; gap: 16px; }
+  .uxb-topbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 16px; border: 1px solid #1c1c20; border-radius: 16px; background: #000000;
+  }
+  .uxb-avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: #262626; color: #fafafa;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none;
+  }
+  .uxb-workname { font-size: 14px; font-weight: 500; color: #ffffff; }
+  .uxb-prop {
+    font-size: 12px; line-height: 16px; font-weight: 500; padding: 2px 10px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #111111; color: #c9d1d9;
+  }
+  .uxb-nav { display: flex; gap: 4px; flex-wrap: wrap; margin-left: 4px; }
+  .uxb-navbtn {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid transparent; background: transparent;
+    color: #8a8a93; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .uxb-navbtn:hover { background: #111111; color: #ffffff; }
+  .uxb-navbtn[aria-current="page"] { background: #262626; color: #fafafa; }
+  .uxb-credits {
+    margin-left: auto; color: #c9d1d9; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .uxb-meter { width: 96px; height: 4px; border-radius: 999px; background: #262626; overflow: hidden; display: inline-block; }
+  .uxb-meterfill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+  .uxb-health {
+    padding: 20px; border-radius: 16px; background: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .uxb-healthtitle { margin: 0; font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; color: #ffffff; }
+  .uxb-healthsub { margin: 0; color: #8a8a93; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .uxb-healthanswer { margin: 8px 0 0; color: #c9d1d9; font-size: 14px; }
+  .uxb-sectiontitle { margin: 0; color: #ffffff; font-size: 15px; line-height: 24px; font-weight: 600; }
+  .uxb-sectionsub { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; }
+  .uxb-card {
+    background: #0d0d10; border: 1px solid #1c1c20; border-radius: 16px;
+    padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .uxb-tabs { display: flex; gap: 4px; }
+  .uxb-tab {
+    padding: 6px 14px; border-radius: 999px; border: 1px solid transparent; background: transparent;
+    color: #8a8a93; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .uxb-tab:hover { background: #111111; color: #ffffff; }
+  .uxb-tab[aria-pressed="true"] { background: #262626; border-color: #2a2a30; color: #fafafa; }
+  .uxb-searchlabel { color: #8a8a93; font-size: 13px; font-weight: 500; }
+  .uxb-search {
+    height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid #1c1c20;
+    background: #111111; color: #ffffff; font: inherit; font-size: 14px; width: 100%; box-sizing: border-box;
+  }
+  .uxb-search::placeholder { color: #8a8a93; }
+  .uxb-needs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .uxb-need {
+    display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box;
+    padding: 12px; border-radius: 12px; border: 1px solid transparent; background: transparent;
+    font: inherit; text-align: left; cursor: pointer; color: #ffffff;
+  }
+  .uxb-need:hover { background: #111111; }
+  .uxb-need[aria-current="true"] { background: #111111; border-color: #2a2a30; }
+  .uxb-needmain { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .uxb-needname { font-weight: 500; font-size: 15px; line-height: 24px; color: #ffffff; }
+  .uxb-needmeta { color: #8a8a93; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums; }
+  .uxb-needreason { color: #c9d1d9; font-size: 13px; line-height: 20px; }
+  .uxb-pill {
+    display: inline-flex; align-items: center; gap: 8px; flex: none;
+    font-size: 13px; line-height: 20px; font-weight: 500; padding: 3px 12px 3px 10px;
+    border-radius: 999px; border: 1px solid #2a2a30; background: #111111; white-space: nowrap;
+  }
+  .uxb-dot { width: 8px; height: 8px; border-radius: 50%; background: #8a8a93; flex: none; }
+  .uxb-pillonline { color: #22c55e; }
+  .uxb-pillonline .uxb-dot { background: #3cc0ae; }
+  .uxb-pilltrial { color: #f59e0b; }
+  .uxb-pilltrial .uxb-dot { background: #f59e0b; }
+  .uxb-pilloffline { color: #8a8a93; }
+  .uxb-pilloffline .uxb-dot { background: #8a8a93; }
+  .uxb-detailhead { display: flex; flex-direction: column; gap: 8px; }
+  .uxb-detailtitlerow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .uxb-detailtitle { font-size: 24px; line-height: 28px; font-weight: 600; margin: 0; color: #ffffff; }
+  .uxb-trial { margin: 0; color: #c9d1d9; font-size: 14px; line-height: 20px; }
+  .uxb-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .uxb-open {
+    display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #2a2a30; color: #fafafa; background: transparent; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .uxb-open:hover { background: #111111; border-color: #8a8a93; }
+  .uxb-publish {
+    display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #ffffff; color: #000000; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .uxb-publish:hover { background: #c9d1d9; border-color: #c9d1d9; }
+  .uxb-rollback {
+    padding: 8px 4px; border: none; background: transparent; color: #8a8a93; font: inherit; font-size: 14px; font-weight: 500;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .uxb-rollback:hover { color: #ffffff; }
+  .uxb-costline { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums; }
+  .uxb-pipeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+  .uxb-step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1c1c20; align-items: flex-start; }
+  .uxb-step:last-child { border-bottom: none; }
+  .uxb-stepnum {
+    width: 24px; height: 24px; border-radius: 50%; border: 1px solid #2a2a30; background: #111111; color: #8a8a93;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none;
+  }
+  .uxb-step[data-uxb-state="current"] .uxb-stepnum { background: #ffffff; border-color: #ffffff; color: #000000; }
+  .uxb-step[data-uxb-state="done"] .uxb-stepnum { background: #262626; border-color: #2a2a30; color: #fafafa; }
+  .uxb-steplabel { color: #ffffff; font-size: 14px; font-weight: 600; }
+  .uxb-stepsub { color: #8a8a93; font-size: 13px; }
+  .uxb-pipelineactions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .uxb-simulate {
+    display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #2a2a30; color: #fafafa; background: transparent; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .uxb-simulate:hover { background: #111111; border-color: #8a8a93; }
+  .uxb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .uxb-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .uxb-row { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1c1c20; font-variant-numeric: tabular-nums; }
+  .uxb-row:last-child { border-bottom: none; }
+  .uxb-rowtext { color: #c9d1d9; font-size: 14px; flex: 1; min-width: 0; }
+  .uxb-rowtime { color: #8a8a93; font-size: 13px; white-space: nowrap; }
+  .uxb-prerow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1c1c20; color: #c9d1d9; font-size: 14px; }
+  .uxb-prerow:last-child { border-bottom: none; }
+  .uxb-predot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .uxb-prepass { background: #22c55e; }
+  .uxb-prewarn { background: #f59e0b; }
+  .uxb-composerrow { display: flex; align-items: center; gap: 8px; }
+  .uxb-input {
+    flex: 1; min-width: 0; height: 44px; padding: 0 20px; border-radius: 999px;
+    border: 1px solid #1c1c20; background: #111111; color: #ffffff; font: inherit; font-size: 14px;
+  }
+  .uxb-input::placeholder { color: #8a8a93; }
+  .uxb-send {
+    flex: none; height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid #ffffff;
+    background: #ffffff; color: #000000; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .uxb-send:hover { background: #c9d1d9; border-color: #c9d1d9; }
+  .uxb-note { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; }
+  .uxb-draftbox { border: 1px dashed #2a2a30; border-radius: 12px; padding: 12px; color: #c9d1d9; font-size: 14px; }
+  .uxb-empty { margin: 0; padding: 16px; background: #0d0d10; border: 1px solid #2a2a30; border-radius: 12px; color: #ffffff; font-size: 14px; }
+  .uxb-body button:focus-visible, .uxb-body input:focus-visible { outline: 2px solid #3cc0ae; outline-offset: 2px; }
+  @media (max-width: 720px) { .uxb-grid { grid-template-columns: 1fr; } .uxb-healthtitle { font-size: 24px; line-height: 28px; } }
+</style>
+</head>
+<body class="uxb-body">
+<div class="uxb-root">
+  <div class="uxb-preview">Sandbox preview, static file, no backend, strings match the dashboard page</div>
+  <div class="uxb-page">
+    <div class="uxb-topbar">
+      <span class="uxb-avatar" aria-hidden="true">M</span>
+      <span class="uxb-workname">My server</span>
+      <span class="uxb-prop">Pro</span>
+      <div class="uxb-nav" aria-label="Primary">
+        <button type="button" class="uxb-navbtn" aria-current="page">Bots</button>
+        <button type="button" class="uxb-navbtn">Templates</button>
+        <button type="button" class="uxb-navbtn">Interview</button>
+        <button type="button" class="uxb-navbtn">Activity</button>
+        <button type="button" class="uxb-navbtn">Pre-flight</button>
+        <button type="button" class="uxb-navbtn">Settings</button>
+      </div>
+      <span class="uxb-credits">Credits 82/100 <span class="uxb-meter" role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><span class="uxb-meterfill"></span></span></span>
+    </div>
+
+    <div class="uxb-health">
+      <h1 class="uxb-healthtitle">Today</h1>
+      <p class="uxb-healthsub">Live 1 / Trial 1 / Off 1</p>
+      <p class="uxb-healthanswer" id="uxb-healthanswer">Night Market mods is offline and needs me first. Draft Arena is on trial. Study Hall is live.</p>
+    </div>
+
+    <section class="uxb-card" aria-label="Needs me first">
+      <h2 class="uxb-sectiontitle">Needs me first</h2>
+      <p class="uxb-sectionsub">Ordered by urgency, alive at the bottom, needs me at the top</p>
+      <div class="uxb-tabs" role="group" aria-label="Filter bots by status">
+        <button type="button" class="uxb-tab" id="uxb-tab-all" aria-pressed="true">All</button>
+        <button type="button" class="uxb-tab" id="uxb-tab-live" aria-pressed="false">Live</button>
+        <button type="button" class="uxb-tab" id="uxb-tab-trial" aria-pressed="false">Trial</button>
+      </div>
+      <label class="uxb-searchlabel" for="uxb-searchinput">Search bots</label>
+      <input class="uxb-search" id="uxb-searchinput" type="search" placeholder="Search bots..." autocomplete="off">
+      <ul class="uxb-needs" id="uxb-needs"></ul>
+      <p class="uxb-note" id="uxb-emptynote" hidden>No bots match this filter.</p>
+    </section>
+
+    <section class="uxb-card" aria-label="Selected bot and publish">
+      <div class="uxb-detailhead">
+        <div class="uxb-detailtitlerow">
+          <span class="uxb-avatar" id="uxb-detailavatar" aria-hidden="true">S</span>
+          <h2 class="uxb-detailtitle" id="uxb-detailname">Study Hall</h2>
+          <span class="uxb-pill uxb-pillonline" id="uxb-detailpill"><span class="uxb-dot" aria-hidden="true"></span><span id="uxb-detailstatus">Live</span></span>
+        </div>
+        <p class="uxb-sectionsub" id="uxb-detailmeta">1,240 members · 3 servers</p>
+        <p class="uxb-trial" id="uxb-trialline" hidden>Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+        <div class="uxb-actions">
+          <button type="button" class="uxb-open" id="uxb-openbtn">Open live bot</button>
+          <button type="button" class="uxb-publish" id="uxb-pubbtn">Publish draft</button>
+          <button type="button" class="uxb-rollback" id="uxb-rollbackbtn">Rollback to v11, safe, one click</button>
+        </div>
+        <p class="uxb-costline" id="uxb-costline">Credits 82/100, publishing spends credits</p>
+      </div>
+    </section>
+
+    <section class="uxb-card" aria-label="Change to live pipeline">
+      <h2 class="uxb-sectiontitle">Change to live, one pipeline</h2>
+      <p class="uxb-sectionsub">Describe, simulate, then publish. Rollback stays safe and one click.</p>
+      <ol class="uxb-pipeline" id="uxb-pipeline">
+        <li class="uxb-step" id="uxb-step-draft" data-uxb-state="todo">
+          <span class="uxb-stepnum" aria-hidden="true">1</span>
+          <div><div class="uxb-steplabel">Draft</div><div class="uxb-stepsub" id="uxb-draftsub">No draft yet, describe a change below</div></div>
+        </li>
+        <li class="uxb-step" id="uxb-step-sim" data-uxb-state="todo">
+          <span class="uxb-stepnum" aria-hidden="true">2</span>
+          <div><div class="uxb-steplabel">Simulated</div><div class="uxb-stepsub">Checks run in preview, live bot untouched</div></div>
+        </li>
+        <li class="uxb-step" id="uxb-step-pub" data-uxb-state="current">
+          <span class="uxb-stepnum" aria-hidden="true">3</span>
+          <div><div class="uxb-steplabel">Published v12</div><div class="uxb-stepsub">Live bot, rollback to v11 stays available</div></div>
+        </li>
+      </ol>
+      <div class="uxb-pipelineactions">
+        <button type="button" class="uxb-simulate" id="uxb-simbtn">Simulate draft</button>
+        <button type="button" class="uxb-publish" id="uxb-pubbtn2">Publish draft</button>
+      </div>
+      <p class="uxb-costline">Credits 82/100, simulating is free, publishing spends credits</p>
+      <p class="uxb-note" id="uxb-pipelinenote">Pipeline state: Published v12, nothing pending</p>
+    </section>
+
+    <div class="uxb-grid">
+      <section class="uxb-card" aria-label="Recent activity">
+        <h2 class="uxb-sectiontitle">Recent activity</h2>
+        <ul class="uxb-list" id="uxb-activity"></ul>
+      </section>
+      <section class="uxb-card" aria-label="Pre-flight">
+        <h2 class="uxb-sectiontitle">Pre-flight</h2>
+        <ul class="uxb-list" id="uxb-preflight"></ul>
+        <p class="uxb-note">Warn row blocks confident publish until the hidden channel is fixed</p>
+      </section>
+    </div>
+
+    <section class="uxb-card" aria-label="Describe a change">
+      <h2 class="uxb-sectiontitle">Describe a change</h2>
+      <div class="uxb-composerrow">
+        <input class="uxb-input" id="uxb-composerinput" type="text" placeholder="Describe a change…" aria-label="Describe a change">
+        <button type="button" class="uxb-send" id="uxb-sendbtn">Send</button>
+      </div>
+      <div class="uxb-draftbox" id="uxb-draftbox" hidden></div>
+      <p class="uxb-note">Preview only, your text becomes a local draft, no AI run, nothing published</p>
+    </section>
+  </div>
+</div>
+<script>
+(function () {
+  var bots = [
+    { id: "bot-1", name: "Study Hall", status: "online", label: "Live", members: "1,240 members", servers: "3 servers", rank: 2 },
+    { id: "bot-2", name: "Draft Arena", status: "trial", label: "Trial", members: "86 members", servers: "1 server", rank: 1 },
+    { id: "bot-3", name: "Night Market mods", status: "offline", label: "Offline", members: "2,013 members", servers: "2 servers", rank: 0 }
+  ];
+  var preflight = [
+    { tone: "pass", text: "Token and permissions look right" },
+    { tone: "pass", text: "Rate limits within caps" },
+    { tone: "warn", text: "Welcome reply targets a hidden channel" }
+  ];
+  var selectedId = "bot-3";
+  var tab = "all";
+  var query = "";
+  var stage = "published";
+  var draftText = "";
+
+  function byId(id) { return document.getElementById(id); }
+  function getBot(id) {
+    var i;
+    for (i = 0; i < bots.length; i = i + 1) {
+      if (bots[i].id === id) { return bots[i]; }
+    }
+    return bots[0];
+  }
+  function activityFor(bot) {
+    return [
+      { text: "Published " + bot.name + " v12", time: "2h ago" },
+      { text: "Simulated welcome flow", time: "5h ago" },
+      { text: "Rolled back " + bot.name + " to v11", time: "yesterday" },
+      { text: "Published " + bot.name + " v11", time: "3d ago" }
+    ];
+  }
+  function reasonFor(bot) {
+    if (bot.status === "offline") { return "Offline, needs me first"; }
+    if (bot.status === "trial") { return "On trial, trial burn is silent without this row"; }
+    return "Live, nothing needs me";
+  }
+  function pillClass(status) {
+    if (status === "online") { return "uxb-pill uxb-pillonline"; }
+    if (status === "trial") { return "uxb-pill uxb-pilltrial"; }
+    return "uxb-pill uxb-pilloffline";
+  }
+  function filtered() {
+    var out = [];
+    var q = query.toLowerCase();
+    var i, bot, matchTab, matchQuery;
+    var sorted = bots.slice().sort(function (a, b) { return a.rank - b.rank; });
+    for (i = 0; i < sorted.length; i = i + 1) {
+      bot = sorted[i];
+      matchTab = true;
+      if (tab === "live") { matchTab = (bot.status === "online"); }
+      if (tab === "trial") { matchTab = (bot.status === "trial"); }
+      matchQuery = true;
+      if (q.length > 0) { matchQuery = (bot.name.toLowerCase().indexOf(q) > -1); }
+      if (matchTab === true) {
+        if (matchQuery === true) { out.push(bot); }
+      }
+    }
+    return out;
+  }
+  function renderNeeds() {
+    var list = byId("uxb-needs");
+    var rows = filtered();
+    while (list.firstChild) { list.removeChild(list.firstChild); }
+    var i, bot, li, btn, main, nm, meta, rs, pill, dot, lbl;
+    for (i = 0; i < rows.length; i = i + 1) {
+      (function (b) {
+        li = document.createElement("li");
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "uxb-need";
+        if (b.id === selectedId) { btn.setAttribute("aria-current", "true"); }
+        btn.addEventListener("click", function () {
+          selectedId = b.id;
+          stage = "published";
+          draftText = "";
+          renderAll();
+        });
+        main = document.createElement("span");
+        main.className = "uxb-needmain";
+        nm = document.createElement("span");
+        nm.className = "uxb-needname";
+        nm.textContent = b.name;
+        meta = document.createElement("span");
+        meta.className = "uxb-needmeta";
+        meta.textContent = b.members + " · " + b.servers;
+        rs = document.createElement("span");
+        rs.className = "uxb-needreason";
+        rs.textContent = reasonFor(b);
+        main.appendChild(nm);
+        main.appendChild(meta);
+        main.appendChild(rs);
+        pill = document.createElement("span");
+        pill.className = pillClass(b.status);
+        dot = document.createElement("span");
+        dot.className = "uxb-dot";
+        dot.setAttribute("aria-hidden", "true");
+        lbl = document.createElement("span");
+        lbl.textContent = b.label;
+        pill.appendChild(dot);
+        pill.appendChild(lbl);
+        btn.appendChild(main);
+        btn.appendChild(pill);
+        li.appendChild(btn);
+        list.appendChild(li);
+      })(rows[i]);
+    }
+    byId("uxb-emptynote").hidden = (rows.length > 0);
+  }
+  function renderDetail() {
+    var bot = getBot(selectedId);
+    byId("uxb-detailavatar").textContent = bot.name.charAt(0);
+    byId("uxb-detailname").textContent = bot.name;
+    byId("uxb-detailpill").className = pillClass(bot.status);
+    byId("uxb-detailstatus").textContent = bot.label;
+    byId("uxb-detailmeta").textContent = bot.members + " · " + bot.servers;
+    byId("uxb-trialline").hidden = (bot.status === "trial") === false;
+    if (bot.status === "trial") {
+      byId("uxb-costline").textContent = "Credits 82/100, publishing spends credits. Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.";
+    } else {
+      byId("uxb-costline").textContent = "Credits 82/100, publishing spends credits";
+    }
+    byId("uxb-healthanswer").textContent = "Night Market mods is offline and needs me first. Draft Arena is on trial. Study Hall is live.";
+  }
+  function renderPipeline() {
+    var d = byId("uxb-step-draft");
+    var s = byId("uxb-step-sim");
+    var p = byId("uxb-step-pub");
+    var note = byId("uxb-pipelinenote");
+    var bot = getBot(selectedId);
+    d.setAttribute("data-uxb-state", "todo");
+    s.setAttribute("data-uxb-state", "todo");
+    p.setAttribute("data-uxb-state", "todo");
+    if (stage === "published") {
+      p.setAttribute("data-uxb-state", "current");
+      note.textContent = "Pipeline state: Published v12, nothing pending";
+      byId("uxb-draftsub").textContent = "No draft yet, describe a change below";
+    }
+    if (stage === "draft") {
+      d.setAttribute("data-uxb-state", "current");
+      p.setAttribute("data-uxb-state", "done");
+      note.textContent = "Pipeline state: Draft for " + bot.name + ", simulate before publish";
+      if (draftText.length > 0) {
+        byId("uxb-draftsub").textContent = "Draft: " + draftText;
+      } else {
+        byId("uxb-draftsub").textContent = "Draft open, simulate before publish";
+      }
+    }
+    if (stage === "simulated") {
+      d.setAttribute("data-uxb-state", "done");
+      s.setAttribute("data-uxb-state", "current");
+      p.setAttribute("data-uxb-state", "done");
+      note.textContent = "Pipeline state: Simulated for " + bot.name + ", ready to publish, live bot untouched";
+      if (draftText.length > 0) {
+        byId("uxb-draftsub").textContent = "Draft: " + draftText;
+      }
+    }
+  }
+  function renderActivity() {
+    var bot = getBot(selectedId);
+    var rows = activityFor(bot);
+    var list = byId("uxb-activity");
+    while (list.firstChild) { list.removeChild(list.firstChild); }
+    var i, li, t, tm;
+    for (i = 0; i < rows.length; i = i + 1) {
+      li = document.createElement("li");
+      li.className = "uxb-row";
+      t = document.createElement("span");
+      t.className = "uxb-rowtext";
+      t.textContent = rows[i].text;
+      tm = document.createElement("span");
+      tm.className = "uxb-rowtime";
+      tm.textContent = rows[i].time;
+      li.appendChild(t);
+      li.appendChild(tm);
+      list.appendChild(li);
+    }
+  }
+  function renderPreflight() {
+    var list = byId("uxb-preflight");
+    while (list.firstChild) { list.removeChild(list.firstChild); }
+    var i, li, dot;
+    for (i = 0; i < preflight.length; i = i + 1) {
+      li = document.createElement("li");
+      li.className = "uxb-prerow";
+      dot = document.createElement("span");
+      dot.className = "uxb-predot " + (preflight[i].tone === "pass" ? "uxb-prepass" : "uxb-prewarn");
+      dot.setAttribute("aria-hidden", "true");
+      li.appendChild(dot);
+      li.appendChild(document.createTextNode(preflight[i].text));
+      list.appendChild(li);
+    }
+  }
+  function renderAll() {
+    renderNeeds();
+    renderDetail();
+    renderPipeline();
+    renderActivity();
+    renderPreflight();
+  }
+  function setTab(next) {
+    tab = next;
+    byId("uxb-tab-all").setAttribute("aria-pressed", (tab === "all").toString());
+    byId("uxb-tab-live").setAttribute("aria-pressed", (tab === "live").toString());
+    byId("uxb-tab-trial").setAttribute("aria-pressed", (tab === "trial").toString());
+    renderNeeds();
+  }
+  byId("uxb-tab-all").addEventListener("click", function () { setTab("all"); });
+  byId("uxb-tab-live").addEventListener("click", function () { setTab("live"); });
+  byId("uxb-tab-trial").addEventListener("click", function () { setTab("trial"); });
+  byId("uxb-searchinput").addEventListener("input", function (e) {
+    query = e.target.value.trim();
+    renderNeeds();
+  });
+  byId("uxb-sendbtn").addEventListener("click", function () {
+    var v = byId("uxb-composerinput").value.trim();
+    var box = byId("uxb-draftbox");
+    if (v.length === 0) {
+      box.hidden = true;
+      return;
+    }
+    draftText = v;
+    stage = "draft";
+    box.hidden = false;
+    box.textContent = "Draft, preview only: " + v;
+    byId("uxb-composerinput").value = "";
+    renderPipeline();
+  });
+  byId("uxb-simbtn").addEventListener("click", function () {
+    if (stage === "draft") {
+      stage = "simulated";
+      renderPipeline();
+    } else {
+      byId("uxb-pipelinenote").textContent = "Pipeline state: describe a change first, then simulate";
+    }
+  });
+  function doPublish() {
+    if (stage === "simulated") {
+      stage = "published";
+      draftText = "";
+      byId("uxb-draftbox").hidden = true;
+      renderPipeline();
+    } else {
+      if (stage === "draft") {
+        byId("uxb-pipelinenote").textContent = "Pipeline state: Draft, simulate before publish";
+      } else {
+        byId("uxb-pipelinenote").textContent = "Pipeline state: Published v12, nothing pending";
+      }
+    }
+  }
+  byId("uxb-pubbtn").addEventListener("click", doPublish);
+  byId("uxb-pubbtn2").addEventListener("click", doPublish);
+  byId("uxb-rollbackbtn").addEventListener("click", function () {
+    stage = "published";
+    draftText = "";
+    byId("uxb-draftbox").hidden = true;
+    renderPipeline();
+    byId("uxb-pipelinenote").textContent = "Rolled back to v11, safe, one click, pipeline back to Published";
+  });
+  byId("uxb-openbtn").addEventListener("click", function () {
+    var bot = getBot(selectedId);
+    byId("uxb-pipelinenote").textContent = "Open shows the live " + bot.name + ", nothing here changes the live bot";
+  });
+  renderAll();
+})();
+</script>
+</body>
+</html>

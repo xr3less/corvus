@@ -1,0 +1,493 @@
+/* Shell lives in layout.module.css; the rail lives in components/ui/dashboard-rail.module.css. */
+
+.upgrade {
+  align-self: flex-start;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: #1c1c1f;
+  color: #fafafa;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.upgrade:hover {
+  background: #26262b;
+  border-color: rgb(255 255 255 / 0.3);
+}
+
+.upgrade:active {
+  transform: scale(0.98);
+}
+
+/* Content column + ambient live in layout.module.css. */
+
+/* HOME — left-aligned full-width workspace grid (no centered column). */
+.homeScroll {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.homeInner {
+  width: 100%;
+  padding: 24px 32px 104px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pageTitle {
+  margin: 0;
+  color: #fafafa;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pageSub {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 20px;
+  text-wrap: pretty;
+}
+
+/* Title block — replaces the old top bar; the search moved into the bots toolbar. */
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Get-started card head + setup rhythm. */
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardSub {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 15px;
+  line-height: 22px;
+  text-wrap: pretty;
+}
+
+.setupTrack {
+  height: 10px;
+  border-radius: 999px;
+  background: #141417;
+  overflow: hidden;
+}
+
+.setupFill {
+  height: 100%;
+  width: 50%;
+  border-radius: inherit;
+  background: #fafafa;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.step {
+  background: #0b0b0d;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stepCurrent {
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+.stepNum {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 600;
+  background: #141417;
+  color: #fafafa;
+  border: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.stepDone .stepNum {
+  background: #fafafa;
+  color: #000000;
+  border-color: #fafafa;
+}
+
+.stepName {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #fafafa;
+}
+
+.stepState {
+  font-size: 13px;
+  line-height: 20px;
+  color: #a1a1aa;
+}
+
+.stepHere {
+  color: #d4d4d8;
+}
+
+/* Workspace strip lines. */
+.wsLine {
+  margin: 0;
+  color: #fafafa;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.trialLine {
+  margin: 0;
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 24px;
+  text-wrap: pretty;
+}
+
+/* Row 1 — four stat cards. */
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statCard {
+  position: relative;
+  background-color: #16161b;
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(255 255 255 / 0.06),
+    transparent 70%
+  );
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.1);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: #71717a;
+}
+
+.statNumber {
+  color: #fafafa;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.statSub {
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+/* Row 2 — Today + Pre-flight side by side. */
+.dualRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.panel {
+  background-color: #16161b;
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(255 255 255 / 0.06),
+    transparent 70%
+  );
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelTitle {
+  margin: 0;
+  color: #fafafa;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.panelIcon {
+  color: #71717a;
+  flex: none;
+}
+
+/* Creation + detail surfaces moved out (app/dashboard/new/,
+   app/dashboard/bots/[id]/) — the bots list lives at
+   app/dashboard/bots/ with its own sheet. */
+
+/* Template strip section wrapper. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: #fafafa;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Detail header avatar, kept separate from the home media placeholder. */
+.rowAvatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  background: #141417;
+  color: #fafafa;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+/* Template strip — three starter cards plus a quiet link. */
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.templateCard {
+  min-height: 96px;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: #0b0b0d;
+  color: #fafafa;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.templateCard:hover {
+  background: #141417;
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+.templateCard:active {
+  transform: scale(0.99);
+}
+
+.templateName {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  text-wrap: pretty;
+}
+
+.templateLink {
+  color: #d4d4d8;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.templateLink:hover {
+  color: #fafafa;
+}
+
+/* Detail surfaces moved to app/dashboard/bots/[id]/ — the bots list lives
+   at app/dashboard/bots/ with its own sheet. */
+
+.todaySentence {
+  margin: 0;
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 22px;
+  text-wrap: pretty;
+}
+
+.activityList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.activityRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  font-variant-numeric: tabular-nums;
+}
+
+.activityRow:last-child {
+  border-bottom: none;
+}
+
+.activityText {
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 22px;
+  flex: 1;
+  min-width: 0;
+}
+
+.activityTime {
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.preflightRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.preflightRow:last-child {
+  border-bottom: none;
+}
+
+.preDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.prePass {
+  background: #22c55e;
+}
+
+.preWarn {
+  background: #f59e0b;
+}
+
+/* Assistant reply rows + composer primitives live in
+   components/ui/chat-thread.* — this sheet keeps only list/section rows. */
+
+/* Focus ring + shell motion guards live in layout.module.css (the shell wraps this content). */
+
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce) {
+  .templateCard {
+    background: #0b0b0d;
+  }
+}
+
+@media (max-width: 1100px) {
+  .statRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .homeInner {
+    padding: 20px 20px 72px;
+  }
+
+  .dualRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .templateGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .statRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/* Design tokens — byte-exact from Docs/04_design_language.md §2–§4. */
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-primary: #1e40af;
+  --color-primary-hover: #1d4ed8;
+  --color-accent: #0ea5e9;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  --radius-card: 10px;
+  --radius-button: 8px;
+  --radius-input: 8px;
+
+  --shadow-raised: 0 1px 2px rgb(15 23 42 / 0.06);
+
+  --font-sans:
+    'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+h3 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+p {
+  margin: 0 0 12px;
+}
+
+small {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* Accessibility baseline (04 §7): visible focus ring on everything interactive. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Showcase page layout (mock-data spec page only). */
+.showcase {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.showcase section {
+  margin-bottom: 48px;
+}
+
+.showcase-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.showcase-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+}
+
+.showcase-muted {
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Tailwind v4 theme tokens for the AI chat input (dark dashboard lane).
+   These ONLY feed utilities (bg-card, text-muted-foreground, ...) — no existing selector above is restyled. */
+@theme inline {
+  --color-background: #000000;
+  --color-foreground: #FAFAFA;
+  --color-card: #16161B;
+  --color-card-foreground: #FAFAFA;
+  --color-muted: #111114;
+  --color-muted-foreground: #A1A1AA;
+  --color-accent: #1C1C21;
+  --color-accent-foreground: #FAFAFA;
+  --color-primary: #FAFAFA;
+  --color-primary-foreground: #000000;
+  --color-border: rgb(255 255 255 / 0.1);
+  --color-input: rgb(255 255 255 / 0.12);
+  --color-ring: #2DD4BF;
+}
+
+/* Entrance utilities (replaces tw-animate-css, unresolvable under Turbopack — see task fix-animate-css-002).
+   Only the classes ai-chat-input.tsx uses. duration-<number> transition timing comes from Tailwind core. */
+@keyframes ai-enter {
+  from {
+    opacity: var(--ai-enter-opacity, 1);
+    transform: translate3d(0, var(--ai-enter-translate-y, 0), 0) scale(var(--ai-enter-scale, 1));
+  }
+}
+.animate-in {
+  animation-name: ai-enter;
+  animation-duration: var(--ai-duration, 150ms);
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+.fade-in { --ai-enter-opacity: 0; }
+.zoom-in-95 { --ai-enter-scale: 0.95; }
+.zoom-in-90 { --ai-enter-scale: 0.9; }
+.slide-in-from-top-3 { --ai-enter-translate-y: -0.75rem; }
+.duration-400 { --ai-duration: 400ms; transition-duration: 400ms; }

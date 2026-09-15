@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Money clarity — trial to upgrade preview</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  }
+  .uxd-preview {
+    padding: 10px 24px;
+    background: #0d0d10;
+    border-bottom: 1px solid #1c1c20;
+    color: #8a8a93;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .uxd-preview strong { color: #c9d1d9; font-weight: 600; }
+  .uxd-wrap { max-width: 720px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .uxd-kicker { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; font-weight: 500; }
+  .uxd-title { margin: 0; font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; }
+  .uxd-sub { margin: 0; color: #c9d1d9; font-size: 14px; line-height: 20px; }
+  .uxd-card {
+    background: #0d0d10;
+    border: 1px solid #1c1c20;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .uxd-card-title { margin: 0; font-size: 15px; line-height: 24px; font-weight: 600; }
+  .uxd-body { margin: 0; color: #c9d1d9; font-size: 14px; line-height: 20px; }
+  .uxd-countline { margin: 0; color: #c9d1d9; font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .uxd-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+  .uxd-meter-fill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+  .uxd-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; line-height: 20px; font-weight: 500;
+    padding: 3px 12px 3px 10px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #111111; color: #f59e0b;
+    align-self: flex-start;
+  }
+  .uxd-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+  .uxd-table { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .uxd-row {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 8px 0; border-bottom: 1px solid #1c1c20;
+    font-variant-numeric: tabular-nums;
+  }
+  .uxd-row:last-child { border-bottom: none; }
+  .uxd-row-text { color: #c9d1d9; font-size: 14px; line-height: 20px; flex: 1; min-width: 0; }
+  .uxd-row-cost { color: #8a8a93; font-size: 13px; line-height: 20px; white-space: nowrap; }
+  .uxd-row-cost-paid { color: #fafafa; font-size: 13px; line-height: 20px; white-space: nowrap; }
+  .uxd-row-cost-free { color: #22c55e; font-size: 13px; line-height: 20px; white-space: nowrap; }
+  .uxd-plans { display: flex; flex-direction: column; gap: 8px; }
+  .uxd-plan {
+    background: #0d0d10; border: 1px solid #1c1c20; border-radius: 16px;
+    padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .uxd-plan-current { border-color: #2a2a30; }
+  .uxd-plan-name { margin: 0; font-size: 15px; line-height: 24px; font-weight: 600; }
+  .uxd-plan-price { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums; }
+  .uxd-plan-list { margin: 0; padding-left: 18px; color: #c9d1d9; font-size: 14px; line-height: 22px; font-variant-numeric: tabular-nums; }
+  .uxd-btn {
+    align-self: flex-start; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #262626; color: #fafafa;
+    font: inherit; font-size: 14px; line-height: 20px; font-weight: 500;
+    cursor: not-allowed; opacity: 0.65;
+  }
+  .uxd-link { color: #c9d1d9; font-size: 14px; line-height: 20px; text-underline-offset: 3px; }
+  .uxd-foot { margin: 0; color: #8a8a93; font-size: 13px; line-height: 20px; padding-bottom: 24px; }
+  .uxd-findings { counter-reset: uxd-f; }
+  .uxd-finding { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1c1c20; }
+  .uxd-finding:last-child { border-bottom: none; }
+  .uxd-sev {
+    flex: none; align-self: flex-start;
+    font-size: 12px; line-height: 16px; font-weight: 600;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid #2a2a30; background: #111111; color: #c9d1d9;
+  }
+  .uxd-finding-text { margin: 0; color: #c9d1d9; font-size: 14px; line-height: 20px; }
+  @media (max-width: 900px) { .uxd-title { font-size: 24px; line-height: 28px; } }
+</style>
+</head>
+<body>
+  <div class="uxd-preview"><strong>Preview.</strong> Sandbox only, nothing here charges or changes your account. Every number matches Docs 02_strategy.md or dashboard page.tsx. Buttons are dead on purpose.</div>
+
+  <main class="uxd-wrap">
+    <p class="uxd-kicker">Money clarity, step 1 of 2</p>
+    <h1 class="uxd-title">Know your trial, spend knowingly, upgrade without fear</h1>
+    <p class="uxd-sub">Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+
+    <section class="uxd-card" aria-label="Trial countdown and credit balance">
+      <span class="uxd-pill"><span class="uxd-dot" aria-hidden="true"></span>Trial, 3 days total</span>
+      <p class="uxd-countline">Credits 82 of 100</p>
+      <div class="uxd-meter" role="img" aria-label="82 of 100 trial credits used"><div class="uxd-meter-fill"></div></div>
+      <p class="uxd-body">18 credits left. That is about 16 builder runs, or about 240 persona replies, or a mix of the two.</p>
+      <p class="uxd-body">Day 4: pay or your bot sleeps. Data is kept 12 months and wakes on upgrade. Nothing is deleted.</p>
+    </section>
+
+    <section class="uxd-card" aria-label="What each action costs before you spend">
+      <h2 class="uxd-card-title">What each action costs, before you spend</h2>
+      <ul class="uxd-table">
+        <li class="uxd-row"><span class="uxd-row-text">Builder run, per run</span><span class="uxd-row-cost-paid">about 1.1 credits</span></li>
+        <li class="uxd-row"><span class="uxd-row-text">AI persona reply, per message</span><span class="uxd-row-cost-paid">about 0.075 credits</span></li>
+        <li class="uxd-row"><span class="uxd-row-text">Image generation</span><span class="uxd-row-cost">uses credits, exact cost shown before you confirm</span></li>
+        <li class="uxd-row"><span class="uxd-row-text">Welcome messages, reaction roles, automod actions, XP, tickets, logs</span><span class="uxd-row-cost-free">0 credits</span></li>
+      </ul>
+      <p class="uxd-body">Only AI work burns credits. Everyday bot actions cost nothing because no AI call is involved.</p>
+    </section>
+
+    <section class="uxd-card" aria-label="Where trial credits went">
+      <h2 class="uxd-card-title">Where your 82 credits went</h2>
+      <ul class="uxd-table">
+        <li class="uxd-row"><span class="uxd-row-text">Builder runs, 12 runs at about 1.1 each</span><span class="uxd-row-cost">about 13.2</span></li>
+        <li class="uxd-row"><span class="uxd-row-text">Persona replies, 917 messages at about 0.075 each</span><span class="uxd-row-cost">about 68.8</span></li>
+        <li class="uxd-row"><span class="uxd-row-text">Welcome messages, reaction roles, automod, XP, tickets, logs</span><span class="uxd-row-cost-free">0</span></li>
+      </ul>
+      <p class="uxd-body">Example breakdown that adds to 82. Your dashboard shows the real rows.</p>
+    </section>
+
+    <section class="uxd-card" aria-label="Upgrade comparison">
+      <h2 class="uxd-card-title">Upgrade, in plain comparison</h2>
+      <div class="uxd-plans">
+        <div class="uxd-plan uxd-plan-current">
+          <p class="uxd-plan-name">Trial, current plan</p>
+          <p class="uxd-plan-price">$0 for 3 days, no card</p>
+          <ul class="uxd-plan-list">
+            <li>1 bot, 1 server, full Pro features</li>
+            <li>100 credits per 3 days</li>
+            <li>Day 4: pay or your bot sleeps, data kept 12 months</li>
+          </ul>
+          <button class="uxd-btn" type="button" disabled aria-disabled="true">Current plan</button>
+        </div>
+        <div class="uxd-plan">
+          <p class="uxd-plan-name">Pro</p>
+          <p class="uxd-plan-price">$10 per month</p>
+          <ul class="uxd-plan-list">
+            <li>2 bots, up to 5 servers</li>
+            <li>2000 credits per month, about 1800 builds or about 26k replies</li>
+            <li>Card asked only here, at paid upgrade</li>
+          </ul>
+          <button class="uxd-btn" type="button" disabled aria-disabled="true">Upgrade to Pro</button>
+        </div>
+        <div class="uxd-plan">
+          <p class="uxd-plan-name">Studio</p>
+          <p class="uxd-plan-price">$29 per month</p>
+          <ul class="uxd-plan-list">
+            <li>8 bots, up to 100 servers</li>
+            <li>6000 credits per month</li>
+            <li>Card asked only here, at paid upgrade</li>
+          </ul>
+          <button class="uxd-btn" type="button" disabled aria-disabled="true">Upgrade to Studio</button>
+        </div>
+      </div>
+      <p class="uxd-body">Refills, any plan: $5 pack is 1000 credits with 90-day expiry. At zero, AI pauses and your bot stays online.</p>
+    </section>
+
+    <section class="uxd-card uxd-findings" aria-label="Top money confusions today">
+      <h2 class="uxd-card-title">What confuses users today, ranked</h2>
+      <div class="uxd-finding"><span class="uxd-sev">Critical</span><p class="uxd-finding-text">No visible trial end. The trial line names 3 days but never which day it is, page.tsx line 52.</p></div>
+      <div class="uxd-finding"><span class="uxd-sev">Critical</span><p class="uxd-finding-text">Spend happens blind. Builder and persona rates exist in strategy but no cost label sits before the action, page.tsx lines 84-85 show only a bare 82 of 100.</p></div>
+      <div class="uxd-finding"><span class="uxd-sev">High</span><p class="uxd-finding-text">Zero-credit behavior is a guess. Soft-cap, AI pauses with bot online, appears nowhere in the dashboard CSS credits block, lines 174-195.</p></div>
+      <div class="uxd-finding"><span class="uxd-sev">High</span><p class="uxd-finding-text">Upgrade is a button, not a comparison. Trial, Pro $10 and Studio $29 allowances are never shown side by side near the credits line.</p></div>
+      <div class="uxd-finding"><span class="uxd-sev">Medium</span><p class="uxd-finding-text">No ledger behind the number. Nothing explains which runs and replies made the 82, so the meter cannot be trusted or learned from.</p></div>
+    </section>
+
+    <p class="uxd-sub"><a class="uxd-link" href="ux-d-money-2.html">Step 2 of 2: the honest empty state, 0 credits and day 4</a></p>
+    <p class="uxd-foot">Sources: Docs 02_strategy.md pricing and credit rules, dashboard page.tsx credits 82 of 100 and trial line. Tokens from page.module.backup-2026-09-12.css.</p>
+  </main>
+</body>
+</html>

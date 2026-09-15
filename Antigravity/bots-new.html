@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bots — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus bots design preview: bot list with status filter and composer. Example data only.">
+
+  <!-- Tailwind CSS CDN (sandbox only) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Fonts: Poppins (display), Geist Mono (numbers/labels) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (ISC license, free) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0b0b0d;
+      --surface2: #141417;
+      --card: #16161b;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-hard: #1c1c20;
+      --fg: #fafafa;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .display { font-family: 'Poppins', sans-serif; letter-spacing: -0.02em; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .navlink {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 8px 12px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      border: 1px solid transparent;
+      transition: color .2s ease, background .2s ease;
+      text-align: left;
+    }
+    .navlink:hover { color: var(--fg); background: rgba(255,255,255,.05); }
+    .navlink.active { color: var(--fg); background: var(--surface2); border-color: var(--line); }
+    .meter-track { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .meter-fill { height: 100%; width: 82%; border-radius: inherit; background: #34d399; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; flex: none;
+      font-size: 12px; font-weight: 500; padding: 2px 10px;
+      border-radius: 999px; border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05); white-space: nowrap;
+    }
+    .pill-trial { color: #fbbf24; border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.08); }
+    .pill-live { color: #34d399; border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.08); }
+    .pill .dot { background: #8a8a93; }
+    .pill-live .dot { background: #34d399; }
+    .pill-trial .dot { background: #fbbf24; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #8a8a93; flex: none; }
+    .field {
+      height: 40px; padding: 0 16px; border-radius: 8px;
+      border: 1px solid var(--line); background: #0e0e11; color: var(--fg);
+      font-size: 14px; width: 100%; transition: border-color .2s ease;
+    }
+    .field::placeholder { color: var(--faint); }
+    .field:hover { border-color: rgba(255,255,255,.2); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 40px; padding: 0 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 500; white-space: nowrap;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .btn-primary { background: #fafafa; color: #0a0a0b; }
+    .btn-primary:hover { background: #ffffff; }
+    .btn-ghost { border: 1px solid rgba(255,255,255,.15); color: var(--fg); background: transparent; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+    .tabpill {
+      height: 32px; padding: 0 16px; border-radius: 999px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      border: 1px solid var(--line); background: transparent;
+      transition: background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    .tabpill:hover { color: var(--fg); border-color: rgba(255,255,255,.25); }
+    .tabpill[aria-pressed="true"] { background: #fafafa; color: #0a0a0b; border-color: #fafafa; }
+    .tabpill[aria-current="page"] { background: #fafafa; color: #0a0a0b; border-color: #fafafa; }
+    .botcard {
+      text-align: left; width: 100%;
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      padding: 18px; display: block; text-decoration: none; color: inherit;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .botcard:hover { border-color: rgba(255,255,255,.22); background: #18181d; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%; flex: none;
+      display: grid; place-items: center;
+      font-size: 16px; font-weight: 600;
+      background: var(--surface2); border: 1px solid var(--line); color: var(--fg);
+    }
+    :focus-visible { outline: 2px solid #2dd4bf; outline-offset: 3px; border-radius: 6px; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-black">
+
+  <!-- Preview strip -->
+  <p class="mono text-center text-[12px] px-4 py-2 border-b" style="color: var(--faint); border-color: var(--line-hard); background: var(--surface);">
+    Design preview - example data. Names and numbers below are placeholders.
+  </p>
+
+  <div class="flex min-h-screen">
+
+    <!-- Left rail -->
+    <nav aria-label="Primary" class="hidden md:flex flex-col flex-none p-4 border-r" style="width: 260px; border-color: var(--line-hard); background: var(--surface); min-height: calc(100vh - 33px);">
+      <div class="flex items-center gap-3 px-1 py-2">
+        <span aria-hidden="true" class="avatar" style="width:36px; height:36px; font-size:14px;">M</span>
+        <span class="text-[14px] font-medium">My server</span>
+        <span class="pill mono" style="font-size:11px;">Pro</span>
+      </div>
+
+      <ul class="mt-4 space-y-1">
+        <li>
+          <button type="button" class="navlink active" aria-current="page">
+            <i data-lucide="bot" class="w-4 h-4" aria-hidden="true"></i>Bots
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="layout-template" class="w-4 h-4" aria-hidden="true"></i>Templates
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="messages-square" class="w-4 h-4" aria-hidden="true"></i>Interview
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="activity" class="w-4 h-4" aria-hidden="true"></i>Activity
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="shield-check" class="w-4 h-4" aria-hidden="true"></i>Pre-flight
+          </button>
+        </li>
+        <li>
+          <button type="button" class="navlink">
+            <i data-lucide="settings" class="w-4 h-4" aria-hidden="true"></i>Settings
+          </button>
+        </li>
+      </ul>
+
+      <div class="mt-auto pt-6">
+        <p class="mono text-[12px] mb-2" style="color: var(--muted);">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="meter-track">
+          <div class="meter-fill"></div>
+        </div>
+        <button type="button" class="btn btn-ghost w-full mt-3">Upgrade</button>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main id="main-content" class="flex-1 min-w-0 px-5 md:px-8 py-6 max-w-[1080px] mx-auto w-full">
+
+      <h1 class="display text-[28px] font-semibold">Bots</h1>
+      <p class="mono text-[12px] mt-1" style="color: var(--muted);">Live 1 / Trial 1 / Off 1</p>
+
+      <!-- Shared tab bar -->
+      <nav aria-label="Sections" class="flex items-center gap-2 mt-5 flex-wrap">
+        <a href="home-new.html" class="tabpill inline-flex items-center">Home</a>
+        <a href="bots-new.html" class="tabpill inline-flex items-center" aria-current="page">Bots</a>
+        <a href="templates-new.html" class="tabpill inline-flex items-center">Templates</a>
+      </nav>
+
+      <!-- Toolbar -->
+      <div class="flex items-center gap-3 mt-5 flex-wrap">
+        <div class="flex-1 min-w-[200px] max-w-[340px]">
+          <label for="bot-search" class="sr-only">Search bots</label>
+          <input id="bot-search" type="search" placeholder="Search bots..." autocomplete="off" class="field">
+        </div>
+        <div id="bot-pills" role="group" aria-label="Filter bots by status" class="flex items-center gap-2 flex-wrap"></div>
+      </div>
+
+      <!-- Bot cards -->
+      <div id="bot-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5" role="list" aria-label="Your bots">
+        <a href="bot-detail-new.html" class="botcard" role="listitem" data-status="live" data-name="Study Hall">
+          <div class="flex items-center gap-3">
+            <span aria-hidden="true" class="avatar">S</span>
+            <div class="min-w-0">
+              <div class="text-[15px] font-semibold truncate">Study Hall</div>
+              <div class="mono text-[12px] mt-0.5" style="color: var(--faint);">1,240 members · 3 servers</div>
+            </div>
+          </div>
+          <div class="mt-3"><span class="pill pill-live"><span aria-hidden="true" class="dot"></span>Live</span></div>
+        </a>
+        <a href="bot-detail-new.html" class="botcard" role="listitem" data-status="trial" data-name="Draft Arena">
+          <div class="flex items-center gap-3">
+            <span aria-hidden="true" class="avatar">D</span>
+            <div class="min-w-0">
+              <div class="text-[15px] font-semibold truncate">Draft Arena</div>
+              <div class="mono text-[12px] mt-0.5" style="color: var(--faint);">86 members · 1 server</div>
+            </div>
+          </div>
+          <div class="mt-3"><span class="pill pill-trial"><span aria-hidden="true" class="dot"></span>Trial</span></div>
+        </a>
+        <a href="bot-detail-new.html" class="botcard" role="listitem" data-status="offline" data-name="Night Market mods">
+          <div class="flex items-center gap-3">
+            <span aria-hidden="true" class="avatar">N</span>
+            <div class="min-w-0">
+              <div class="text-[15px] font-semibold truncate">Night Market mods</div>
+              <div class="mono text-[12px] mt-0.5" style="color: var(--faint);">2,013 members · 2 servers</div>
+            </div>
+          </div>
+          <div class="mt-3"><span class="pill"><span aria-hidden="true" class="dot"></span>Offline</span></div>
+        </a>
+      </div>
+      <div id="bot-empty" class="card hidden text-center px-6 py-10 mt-5">
+        <p class="text-[14px]" style="color: var(--muted);">No bots match this search.</p>
+        <button type="button" id="bot-clear" class="btn btn-ghost mt-4">Clear search</button>
+      </div>
+
+      <!-- Composer -->
+      <div class="mx-auto mt-10 mb-12" style="max-width: 640px;">
+        <form id="composer" class="card p-3 flex items-center gap-2">
+          <label for="ai-change" class="sr-only">Describe a change</label>
+          <input id="ai-change" type="text" placeholder="Describe a change…" autocomplete="off" class="field" style="border-color: transparent; background: transparent;">
+          <button type="submit" aria-label="Send change" class="btn btn-primary flex-none">Send</button>
+        </form>
+        <p class="text-[13px] text-center mt-3" style="color: var(--faint);">Drafts never touch your live bot until you Publish.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    var BOT_TABS = ['all', 'live', 'trial'];
+    var BOT_LABELS = { all: 'All', live: 'Live', trial: 'Trial' };
+    var botState = { status: 'all', query: '' };
+
+    function renderBotPills() {
+      var wrap = document.getElementById('bot-pills');
+      wrap.innerHTML = '';
+      BOT_TABS.forEach(function (s) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tabpill';
+        b.textContent = BOT_LABELS[s];
+        b.setAttribute('aria-pressed', botState.status === s ? 'true' : 'false');
+        b.addEventListener('click', function () {
+          botState.status = s;
+          renderBots();
+        });
+        wrap.appendChild(b);
+      });
+    }
+
+    function renderBots() {
+      renderBotPills();
+      var grid = document.getElementById('bot-grid');
+      var empty = document.getElementById('bot-empty');
+      var q = botState.query.trim().toLowerCase();
+      var shown = 0;
+      grid.querySelectorAll('.botcard').forEach(function (card) {
+        var ok = true;
+        if (botState.status !== 'all' && card.getAttribute('data-status') !== botState.status) ok = false;
+        if (q && card.getAttribute('data-name').toLowerCase().indexOf(q) === -1) ok = false;
+        card.classList.toggle('hidden', !ok);
+        if (ok) shown++;
+      });
+      if (shown === 0) {
+        grid.classList.add('hidden');
+        empty.classList.remove('hidden');
+      } else {
+        grid.classList.remove('hidden');
+        empty.classList.add('hidden');
+      }
+    }
+
+    var bSearch = document.getElementById('bot-search');
+    bSearch.addEventListener('input', function () {
+      botState.query = bSearch.value;
+      renderBots();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.activeElement === bSearch) {
+        bSearch.value = '';
+        botState.query = '';
+        renderBots();
+      }
+    });
+    document.getElementById('bot-clear').addEventListener('click', function () {
+      bSearch.value = '';
+      botState.query = '';
+      botState.status = 'all';
+      renderBots();
+      bSearch.focus();
+    });
+
+    document.getElementById('composer').addEventListener('submit', function (e) {
+      e.preventDefault();
+    });
+
+    renderBots();
+    lucide.createIcons();
+  </script>
+</body>
+</html>

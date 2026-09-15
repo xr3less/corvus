@@ -1,0 +1,538 @@
+{
+  "url": "https://pryzm.design/",
+  "capturedVia": "browser-network+recon",
+  "total": 66,
+  "ok": 66,
+  "error": 0,
+  "fontsCss": "fonts/fonts.css",
+  "assets": [
+    {
+      "url": "https://pryzm.design/_next/static/chunks/03.~42dzdz8yl.css?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "stylesheet",
+      "via": "network",
+      "status": "ok",
+      "bytes": 7983,
+      "localPath": "css/pryzm.design/03.-42dzdz8yl-c84edcb8fd.css"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/chunks/0htmf10woja2j.css?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "stylesheet",
+      "via": "network",
+      "status": "ok",
+      "bytes": 456,
+      "localPath": "css/pryzm.design/0htmf10woja2j-084814f74f.css"
+    },
+    {
+      "url": "https://pryzm.design/logo.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 5684,
+      "localPath": "images/pryzm.design/logo-e5d3c83e28.png"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero-video-poster.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 91840,
+      "localPath": "images/pryzm.design/hero-video-poster-85113128de.webp"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "network",
+      "status": "ok",
+      "bytes": 48432,
+      "localPath": "fonts/pryzm.design/83afe278b6a6bb3c-s.p.0q-301v4kxxnr-a979c868ab.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/47fe1b7cd6e6ed85-s.p.0~mcdl10zdfb3.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "network",
+      "status": "ok",
+      "bytes": 7848,
+      "localPath": "fonts/pryzm.design/47fe1b7cd6e6ed85-s.p.0-mcdl10zdfb3-6561b13a87.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "network",
+      "status": "ok",
+      "bytes": 7740,
+      "localPath": "fonts/pryzm.design/8e6fa89aa22d24ec-s.p.0uvzar8hswo3p-affc94d2f4.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/chunks/06vs2fiawemam.css?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "stylesheet",
+      "via": "network",
+      "status": "ok",
+      "bytes": 151203,
+      "localPath": "css/pryzm.design/06vs2fiawemam-9e1082e072.css"
+    },
+    {
+      "url": "https://pryzm.design/landing/flow-mobile.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 33808,
+      "localPath": "images/pryzm.design/flow-mobile-85ad6d8b05.webp"
+    },
+    {
+      "url": "https://pryzm.design/polar.svg",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 5518,
+      "localPath": "images/pryzm.design/polar-1cf2483fcd.svg"
+    },
+    {
+      "url": "https://pryzm.design/landing/footer3.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 290862,
+      "localPath": "images/pryzm.design/footer3-1087a09b15.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/signin.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 348502,
+      "localPath": "images/pryzm.design/signin-f20ce09ebb.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/40a7ad40-cbf2-415a-bd56-39b203bab9cf.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 45280,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/40a7ad40-cbf2-415a-bd56-39b203bab9cf-8a6782c112.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/948ef16f-0d09-439f-b5a3-2def86ef8b64.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 16474,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/948ef16f-0d09-439f-b5a3-2def86ef8b64-e05f518ae1.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/5a5b9b87-7f76-49fa-9c1f-c2d992b93024.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 37594,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/5a5b9b87-7f76-49fa-9c1f-c2d992b93024-f5a9a5ab4d.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/6e2100a2-8f63-4143-bc65-343695489c05.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 159184,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/6e2100a2-8f63-4143-bc65-343695489c05-581ec61625.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/e9640c3b-187b-4578-b081-417f8ca78b50.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 62772,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/e9640c3b-187b-4578-b081-417f8ca78b50-0dcf11e365.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/24a771fc-d9cd-49ac-8e46-c2703c5fb79f.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 103830,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/24a771fc-d9cd-49ac-8e46-c2703c5fb79f-a399817be2.png"
+    },
+    {
+      "url": "https://pryzm.design/polar-white.svg",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 5509,
+      "localPath": "images/pryzm.design/polar-white-a17eb632dd.svg"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/6b088bc8-ca3a-441e-8c4e-c2894a6c237c.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 108378,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/6b088bc8-ca3a-441e-8c4e-c2894a6c237c-b3259b7717.png"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/e2334d715941921e-s.p.12skym0rqknxy.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "network",
+      "status": "ok",
+      "bytes": 7992,
+      "localPath": "fonts/pryzm.design/e2334d715941921e-s.p.12skym0rqknxy-4c407fbe9b.woff2"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/gallery-thumbs/8aa04b3f-d783-4d70-b47b-3c6a710025a1.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 154684,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/8aa04b3f-d783-4d70-b47b-3c6a710025a1-8ae7895461.png"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "network",
+      "status": "ok",
+      "bytes": 23108,
+      "localPath": "fonts/pryzm.design/797e433ab948586e-s.p.08e28id.o-okb-accf646361.woff2"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/10.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 33424,
+      "localPath": "images/pryzm.design/10-78a1bd812a.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/16.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 79170,
+      "localPath": "images/pryzm.design/16-249988f9bf.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/1.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 72744,
+      "localPath": "images/pryzm.design/1-8a802146d6.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/6.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 103688,
+      "localPath": "images/pryzm.design/6-3f21c0f6c1.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/14.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 55390,
+      "localPath": "images/pryzm.design/14-df6e8fca09.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/8.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 52606,
+      "localPath": "images/pryzm.design/8-14d22231b6.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/5.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 55942,
+      "localPath": "images/pryzm.design/5-1b4a2eb530.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/7.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 80878,
+      "localPath": "images/pryzm.design/7-9e89da75af.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/12.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 27848,
+      "localPath": "images/pryzm.design/12-495e56b3ce.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/4.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 8828,
+      "localPath": "images/pryzm.design/4-7bfa1dcaf8.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/2.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 42280,
+      "localPath": "images/pryzm.design/2-f5f56194c0.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/19.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 93206,
+      "localPath": "images/pryzm.design/19-7bfbba5e18.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/13.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 145958,
+      "localPath": "images/pryzm.design/13-9c07d143a4.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/15.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 231130,
+      "localPath": "images/pryzm.design/15-5123652a60.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/9.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 156850,
+      "localPath": "images/pryzm.design/9-dfa7787df6.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/18.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 70266,
+      "localPath": "images/pryzm.design/18-6e6d3ed328.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/3.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 68190,
+      "localPath": "images/pryzm.design/3-2a02a828a1.webp"
+    },
+    {
+      "url": "https://pryzm.design/landing/landing.webm",
+      "kind": "media",
+      "via": "network",
+      "status": "ok",
+      "bytes": 1513734,
+      "localPath": "media/pryzm.design/landing-9fe8eb4939.webm"
+    },
+    {
+      "url": "https://pryzm.design/landing/hero/11.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 65138,
+      "localPath": "images/pryzm.design/11-0b4424149a.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/blog-images/covers/1ff99add-b709-4066-8c0d-bf35857ed470.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 349502,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/1ff99add-b709-4066-8c0d-bf35857ed470-c629a6aad5.png"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/blog-images/covers/52c8c115-599b-4dee-8a68-4e86a7645424.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 254226,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/52c8c115-599b-4dee-8a68-4e86a7645424-6d8cce2602.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/blog-images/covers/3958bfb8-9add-43dd-9505-514a5ba6d425.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 333720,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/3958bfb8-9add-43dd-9505-514a5ba6d425-570a041c7a.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/blog-images/covers/5bcfdd94-61ed-4443-bb91-500ac9eeb55e.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 331000,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/5bcfdd94-61ed-4443-bb91-500ac9eeb55e-a1fb6865cd.png"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/blog-images/covers/fc9b5466-8ba8-4696-aa88-0770232f6380.webp",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 140550,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/fc9b5466-8ba8-4696-aa88-0770232f6380-7d7c5577c4.webp"
+    },
+    {
+      "url": "https://qbbeqzzqoylaziguwfjx.supabase.co/storage/v1/object/public/blog-images/covers/9a70e2c8-89d7-48af-bfd5-d965a254b5db.png",
+      "kind": "image",
+      "via": "network",
+      "status": "ok",
+      "bytes": 172580,
+      "localPath": "images/qbbeqzzqoylaziguwfjx.supabase.co/9a70e2c8-89d7-48af-bfd5-d965a254b5db-8c4db3468d.png"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/chunks/12-36zx-s5zlo.css?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "stylesheet",
+      "via": "network",
+      "status": "ok",
+      "bytes": 15412,
+      "localPath": "css/pryzm.design/12-36zx-s5zlo-ad5c20dd68.css"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/2c55a0e60120577a-s.0bjc5tiuqdqro.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 25844,
+      "localPath": "fonts/pryzm.design/2c55a0e60120577a-s.0bjc5tiuqdqro-dc4baab5c8.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/9c72aa0f40e4eef8-s.0m6w47a4e5dy9.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 18744,
+      "localPath": "fonts/pryzm.design/9c72aa0f40e4eef8-s.0m6w47a4e5dy9-62be34692f.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/ad66f9afd8947f86-s.11u06r12fd6v_.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 11272,
+      "localPath": "fonts/pryzm.design/ad66f9afd8947f86-s.11u06r12fd6v_-2d400bf877.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/5476f68d60460930-s.0wxq9webf.ew4.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 19044,
+      "localPath": "fonts/pryzm.design/5476f68d60460930-s.0wxq9webf.ew4-98f52c3e3f.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/2bbe8d2671613f1f-s.067x_6k0k23tk.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 10280,
+      "localPath": "fonts/pryzm.design/2bbe8d2671613f1f-s.067x_6k0k23tk-47b3f57b22.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/1bffadaabf893a1e-s.16ipb6fqu393i.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 85272,
+      "localPath": "fonts/pryzm.design/1bffadaabf893a1e-s.16ipb6fqu393i-883e72c6e7.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/bdc7e24a509eb931-s.0apt5mko2.qn3.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 39160,
+      "localPath": "fonts/pryzm.design/bdc7e24a509eb931-s.0apt5mko2.qn3-bec68ac13f.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/0da9c7f357bd9d4d-s.0ek5sshv8wk3m.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 5496,
+      "localPath": "fonts/pryzm.design/0da9c7f357bd9d4d-s.0ek5sshv8wk3m-7594d76c0b.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/0a7740363b4d4863-s.1110aazvokzp..woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 39384,
+      "localPath": "fonts/pryzm.design/0a7740363b4d4863-s.1110aazvokzp.-1d8140d3da.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/5f9d24ebef5d5292-s.0esuu2f5si~v8.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 5552,
+      "localPath": "fonts/pryzm.design/5f9d24ebef5d5292-s.0esuu2f5si-v8-16de19b0fc.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/b53057dbf91a7acf-s.0carvq6u72s58.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 39204,
+      "localPath": "fonts/pryzm.design/b53057dbf91a7acf-s.0carvq6u72s58-c5d327819f.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/798ea22d9983e047-s.106do9xzbuago.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 5448,
+      "localPath": "fonts/pryzm.design/798ea22d9983e047-s.106do9xzbuago-ad7f1620e2.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/5ce348bf30bf5439-s.0zgw-jeven.3w.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 6204,
+      "localPath": "fonts/pryzm.design/5ce348bf30bf5439-s.0zgw-jeven.3w-1a29f5cf03.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/4fa387ec64143e14-s.0wkzw~je483f-.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 12872,
+      "localPath": "fonts/pryzm.design/4fa387ec64143e14-s.0wkzw-je483f--99c7bd5f9a.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/6306c77e7c8268e4-s.0rhz0arwfsn~5.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 5892,
+      "localPath": "fonts/pryzm.design/6306c77e7c8268e4-s.0rhz0arwfsn-5-ebb12fefa6.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/7d817b4c03b0c5f1-s.0l76wvqk9d84w.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 7728,
+      "localPath": "fonts/pryzm.design/7d817b4c03b0c5f1-s.0l76wvqk9d84w-57a87799ea.woff2"
+    },
+    {
+      "url": "https://pryzm.design/_next/static/media/bbc41e54d2fcbd21-s.0k4k9394f2q-k.woff2?dpl=dpl_CbWfrtNvzCjBEkVA1xjDY4qTpbMW",
+      "kind": "font",
+      "via": "recon",
+      "status": "ok",
+      "bytes": 14712,
+      "localPath": "fonts/pryzm.design/bbc41e54d2fcbd21-s.0k4k9394f2q-k-6671cd2b5d.woff2"
+    }
+  ]
+}

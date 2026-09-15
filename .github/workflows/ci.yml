@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: corvus
+          POSTGRES_PASSWORD: corvus_ci
+          POSTGRES_DB: corvus_ci
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd="pg_isready -U corvus -d corvus_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://corvus:corvus_ci@localhost:5432/corvus_ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node 24
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0c275ff60de406 # v4.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build spec contract (dist for workspace consumers)
+        run: npm run build --workspace @corvus/spec
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Format
+        run: npm run format
+      - name: Test (incl. launch-blockers on real Postgres)
+        run: npm test

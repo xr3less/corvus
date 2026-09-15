@@ -1,0 +1,6 @@
+# Build outputs are never formatted. (Workspace-owned per D-028.)
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo

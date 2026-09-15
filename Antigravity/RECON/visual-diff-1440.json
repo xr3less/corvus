@@ -1,0 +1,26 @@
+{
+  "original": {
+    "width": 1440,
+    "height": 9360
+  },
+  "clone": {
+    "width": 1440,
+    "height": 6755
+  },
+  "comparedCanvas": {
+    "width": 1440,
+    "height": 9360
+  },
+  "threshold": 0.08,
+  "changedPixels": 6803571,
+  "totalPixels": 13478400,
+  "diffPixelRatio": 0.5047758636039886,
+  "meanAbsDiff": 0.28947292116165346,
+  "rmse": 0.4308527711110997,
+  "visualScore": 1,
+  "files": {
+    "original": "C:\\Users\\xr3less\\AppData\\Roaming\\Open Design\\namespaces\\release-stable-win\\data\\projects\\def55c3c-e823-4339-a625-84567c17477c\\RECON\\screenshots\\original-1440.png",
+    "clone": "C:\\Users\\xr3less\\AppData\\Roaming\\Open Design\\namespaces\\release-stable-win\\data\\projects\\def55c3c-e823-4339-a625-84567c17477c\\RECON\\screenshots\\clone-1440.png",
+    "diff": "C:\\Users\\xr3less\\AppData\\Roaming\\Open Design\\namespaces\\release-stable-win\\data\\projects\\def55c3c-e823-4339-a625-84567c17477c\\RECON\\screenshots\\visual-diff-1440.png"
+  }
+}

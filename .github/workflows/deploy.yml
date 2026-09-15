@@ -1,0 +1,149 @@
+name: deploy
+
+# Manual-only ON PURPOSE: this workflow pushes images to GHCR and touches the live
+# server. Auto-deploy on push to main stays OFF until the founder explicitly approves
+# it (Hard Rule 12: no deploy without approval). To enable later, add:
+#   push:
+#     branches: ['main']
+#
+# Flow: `gates` (same order as ci.yml) -> `build` (buildx + push GHCR) -> `deploy` (SSH).
+# Images: ghcr.io/<owner>/corvus-web and ghcr.io/<owner>/corvus-gateway.
+# Tags:   <resolved-sha> and `stable` (compose defaults to `stable`).
+#
+# Rollback: re-run this workflow with `previous-sha` = the last good SHA. That skips
+# build/push (the image for that SHA already exists in GHCR) and re-pulls that tag on
+# the host. `stable` is NOT moved by a rollback — it still points at the newer build
+# until the next successful push, which is why rollback sets TAG explicitly.
+#
+# Pin note (10 §2): third-party actions are pinned to a full commit SHA below.
+# Consuming upstream tags as-is is a short-term choice; adding step-security/harden-runner
+# and Dependabot for action updates is a separate hardening follow-up (see task report).
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Image tag (commit SHA) to deploy; empty = current commit'
+        required: false
+        default: ''
+      previous-sha:
+        description: 'Rollback only: last good SHA (takes precedence over sha)'
+        required: false
+        default: ''
+
+# Least privilege by default; `build` opts into packages: write.
+permissions:
+  contents: read
+
+jobs:
+  # Same gate order as .github/workflows/ci.yml, re-stated so a deploy can never ship
+  # a commit that ci.yml would reject. Keep these steps in sync with ci.yml.
+  gates:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: corvus
+          POSTGRES_PASSWORD: corvus_ci
+          POSTGRES_DB: corvus_ci
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd="pg_isready -U corvus -d corvus_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://corvus:corvus_ci@localhost:5432/corvus_ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node 24
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0c275ff60de406 # v4.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build spec contract (dist for workspace consumers)
+        run: npm run build --workspace @corvus/spec
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Format
+        run: npm run format
+      - name: Test (incl. launch-blockers on real Postgres)
+        run: npm test
+
+  build:
+    runs-on: ubuntu-latest
+    needs: gates
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: corvus-web
+            dockerfile: apps/web/Dockerfile
+          - image: corvus-gateway
+            dockerfile: apps/gateway/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Compute lowercase image owner
+        id: ns
+        # GHCR paths must be lowercase; github.repository_owner is not guaranteed to be.
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - name: Set up Buildx
+        if: ${{ inputs['previous-sha'] == '' }}
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+      - name: Log in to GHCR
+        if: ${{ inputs['previous-sha'] == '' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ${{ matrix.image }}
+        if: ${{ inputs['previous-sha'] == '' }}
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          # Monorepo: context is the repo root so the Dockerfile can install the npm
+          # workspaces (apps/*, packages/*) it depends on. Dockerfiles are owned by
+          # the app-packaging workstream.
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ steps.ns.outputs.owner }}/${{ matrix.image }}:${{ inputs['previous-sha'] || inputs.sha || github.sha }}
+            ghcr.io/${{ steps.ns.outputs.owner }}/${{ matrix.image }}:stable
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy over SSH (compose pull + up)
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          # Resolved tag: rollback SHA wins, else input SHA, else this commit.
+          DEPLOY_TAG: ${{ inputs['previous-sha'] || inputs.sha || github.sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          # envs is the documented v1.2.5 way to forward a step env var to the remote shell.
+          envs: DEPLOY_TAG
+          command_timeout: 10m
+          script: |
+            set -e
+            cd /opt/corvus
+            export TAG="${DEPLOY_TAG:?DEPLOY_TAG was not passed to the remote script}"
+            docker compose --env-file .env -f infra/compose/compose.yml pull web gateway
+            docker compose --env-file .env -f infra/compose/compose.yml up -d web gateway
+            docker compose --env-file .env -f infra/compose/compose.yml ps

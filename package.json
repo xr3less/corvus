@@ -1,0 +1,41 @@
+{
+  "name": "corvus",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Corvus — versioned behavior-spec bots on one multiplexed gateway (npm workspaces monorepo)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "node -e \"var fs=require('fs');var has=false;var ds=fs.readdirSync('.', {withFileTypes: true});for (var i = 0; i < ds.length; i++) { var e = ds[i]; if (e.isDirectory()) { if (e.name === 'apps') { has = true; } if (e.name === 'packages') { has = true; } } } if (has) { process.exit(1); } else { console.log('no workspaces yet, skipping workspace step'); }\" || npm run typecheck --workspaces --if-present",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --check --ignore-unknown package.json tsconfig.base.json eslint.config.mjs .prettierrc README.md .env.example .nvmrc .github infra .husky && (node -e \"var fs=require('fs');var has=false;var ds=fs.readdirSync('.', {withFileTypes: true});for (var i = 0; i < ds.length; i++) { var e = ds[i]; if (e.isDirectory()) { if (e.name === 'apps') { has = true; } if (e.name === 'packages') { has = true; } } } if (has) { process.exit(1); } else { console.log('no workspaces yet, skipping workspace step'); }\" || npm run format --workspaces --if-present)",
+    "format:write": "prettier --write --ignore-unknown package.json tsconfig.base.json eslint.config.mjs .prettierrc README.md .env.example .nvmrc .github infra .husky",
+    "test": "node -e \"var fs=require('fs');var has=false;var ds=fs.readdirSync('.', {withFileTypes: true});for (var i = 0; i < ds.length; i++) { var e = ds[i]; if (e.isDirectory()) { if (e.name === 'apps') { has = true; } if (e.name === 'packages') { has = true; } } } if (has) { process.exit(1); } else { console.log('no workspaces yet, skipping workspace step'); }\" || npm run test --workspaces --if-present",
+    "ci": "npm run build --workspace @corvus/spec && npm run typecheck && npm run lint && npm run format && npm test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx}": [
+      "eslint --max-warnings 0",
+      "prettier --check --ignore-unknown"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --check --ignore-unknown"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}

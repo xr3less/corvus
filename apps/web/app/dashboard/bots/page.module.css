@@ -1,0 +1,468 @@
+/* Bots list page — the list-exclusive rules moved verbatim from
+   `../page.module.css`. Shared shell classes (scroll column, title block,
+   section titles) still live there and are imported alongside this sheet. */
+
+/* Bots header — 'Your bots' + counts on the left, the primary New-bot action
+   on the right. */
+.headLead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Primary New-bot button: same white 40px/8px primary as the detail actions,
+   with an icon. */
+.newBotButton {
+  gap: 8px;
+  flex: none;
+  text-decoration: none;
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.countsLine {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #a1a1aa;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.tab:hover {
+  background: #141417;
+  color: #fafafa;
+}
+
+.tab[aria-pressed='true'] {
+  background: #141417;
+  border-color: rgb(255 255 255 / 0.15);
+  color: #fafafa;
+}
+
+.searchRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchField {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sortField {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.searchLabel {
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.search {
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: #0b0b0d;
+  color: #fafafa;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.search::placeholder {
+  color: #71717a;
+}
+
+.search:hover {
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+.sortSelect {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: #0b0b0d;
+  color: #fafafa;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sortSelect:hover {
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+/* Your bots — 3-column card grid, Scraphe rhythm: media box, title+time,
+   pill row, then a top-bordered action row. Same depth ring + top light. */
+.botGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.botGridCard {
+  width: 100%;
+  height: 100%;
+  background-color: #16161b;
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(255 255 255 / 0.06),
+    transparent 70%
+  );
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.1);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.botGridCard:hover {
+  border-color: rgb(255 255 255 / 0.15);
+  background-color: #18181d;
+}
+
+/* Card body — media box + title/time + pill row. A real button so the whole
+   body stays keyboard-openable; the action row below is a sibling. */
+.botGridBody {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Honest placeholder — the bot's initial centered on the card's own top
+   light. No fabricated screenshot and no outside image. */
+.botGridMedia {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background-color: #0b0b0d;
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(255 255 255 / 0.06),
+    transparent 70%
+  );
+  overflow: hidden;
+}
+
+.botGridAvatar {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 50%;
+  background: #141417;
+  color: #fafafa;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.botGridTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.botGridName {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #fafafa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.botGridTime {
+  flex: none;
+  color: #a1a1aa;
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Last-publish keeps its real mock text, demoted to a quiet sub under the
+   name; the relative time now lives in the title row above. */
+.botGridLast {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.botGridPillRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.botGridMeta {
+  color: #a1a1aa;
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Action row — top hairline, text buttons; hover brightens colour only. */
+.botGridActions {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.botAction {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a1a1aa;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.botAction:hover {
+  color: #fafafa;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  padding: 3px 12px 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: #141417;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #71717a;
+  flex: none;
+}
+
+.pill-online {
+  color: #22c55e;
+}
+
+.pill-online .dot {
+  background: #22c55e;
+}
+
+.pill-trial {
+  color: #f59e0b;
+}
+
+.pill-trial .dot {
+  background: #f59e0b;
+}
+
+.pill-offline {
+  color: #71717a;
+}
+
+.pill-offline .dot {
+  background: #71717a;
+}
+
+.empty {
+  padding: 24px 20px;
+  background: #0b0b0d;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.emptyText {
+  margin: 0;
+  color: #fafafa;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 500;
+  text-wrap: pretty;
+}
+
+/* Shared action buttons used by the bots list empty states. */
+.ghostAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  color: #fafafa;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ghostAction:hover {
+  background: #141417;
+  border-color: rgb(255 255 255 / 0.3);
+}
+
+.ghostAction:active {
+  transform: scale(0.98);
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #fafafa;
+  color: #0a0a0b;
+  background: #fafafa;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.primaryAction:hover {
+  background: #d4d4d8;
+  border-color: #d4d4d8;
+}
+
+.primaryAction:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 1100px) {
+  .botGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .botGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

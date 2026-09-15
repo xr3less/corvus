@@ -1,0 +1,75 @@
+# 05 — Architecture
+
+## Status: DRAFT (filled 2026-09-07, stack locked D-018)
+
+> How the system is built and how the pieces fit. Tech-stack choices are mostly two-way doors (the AI decides and records in `DECISIONS.md`), EXCEPT anything with a recurring cost or hard-to-reverse lock-in — those are founder decisions (`GLOBAL_RULES.md §6`). Explain the system to the founder in plain terms; keep the technical depth here.
+
+---
+
+## 1. System overview (plain language)
+
+One box in Germany runs everything. The website (landing + dashboard) talks to the gateway — the engine room that hosts every customer's bot. Each bot's brain is a versioned recipe file (`behavior-spec.json`); the gateway reads recipes, not code, so bots can't break each other. The warehouse (Postgres database) keeps recipes, XP, credits, and history with nightly off-box backups. The AI (via a swappable provider router) only writes recipes and chat replies — it never touches the live bots directly. A separate tiny watchdog box pings ours and shouts if it goes quiet. (Term pairs: database = warehouse, gateway = engine room, router = switchboard — see `GLOSSARY.md`.)
+
+---
+
+## 2. Architecture diagram
+
+> V1 = ONE box. Web, gateway, and Postgres all live on the Hetzner CX33 (D-010/D-012/D-018). No microservices, no second region until triggers fire.
+
+```
+visitor/owner -> [ Caddy/Nginx :443 ] -> [ web (Next.js 16) ] -> [ gateway (Node 24 + discord.js v14, N tokens) ]
+                                                          |        |                |
+                                                          |        +-> [ Postgres 17 (specs, XP, ledger) + pg-boss ]
+                                                          |        +-> [ GLM 5.3 Flash via OpenRouter ] (builder/persona only)
+                                                          +-> [ Creem.io webhooks ] (billing -> allowance ledger)
+        [ Uptime Kuma on SEPARATE cheap VPS ] ---> watches /healthz of web + gateway
+        [ pg_dump sidecar ] ---> nightly ---> [ Hetzner Object Storage NBG1 ]
+```
+
+---
+
+## 3. Tech stack
+
+> LOCKED 2026-09-07 (D-018; all versions verified live, do NOT upgrade majors without a new decision).
+
+| Layer | Choice | Why | Cost impact |
+|---|---|---|---|
+| Language/runtime | Node.js 24 LTS ("Krypton", EOL Apr 2028) in Docker `node:24-bookworm-slim` | Active LTS, 20-mo runway; satisfies discord.js + voice floors | $0 |
+| Web (landing + dashboard + panel + gallery + demo) | Next.js 16.3.4 App Router + React, Turbopack | Current LTS major; landing static/ISR, dashboard force-dynamic (caching rule recorded to avoid stale dashboards) | $0 (same box) |
+| Bot gateway | discord.js **v14** pinned `^14.27.0` (v15 is pre-release — do NOT chase) | Stable, documented; voice deliberately excluded from V1 (`@discordjs/voice` NOT installed) | $0 |
+| Database | Postgres `17.11-bookworm` (EOL Nov 2029) + Drizzle ORM | 3-yr runway; Drizzle = plain SQL-mapped TS + `drizzle-kit` migrations, no engine binary, lowest friction for JSONB spec tables | $0 (same box) |
+| Jobs/queue | pg-boss ^12.29.0 on Postgres (NO Redis for V1) | Transactional enqueue, backoff, cron; Redis only if >700-1500 jobs/sec sustained or <10ms pickup needed | $0 (ships in web + gateway; first live worker: `preflight` scans, V1-4) |
+| AI codegen | ROUTER (D-021, lanes locked D-026): builder = wiro `glm/5-2` single meter; chat/persona = wiro `xai/grok-4-1-fast`; deepseek/v4-flash cold standby; then wiro sonnet-5 → off-wiro OpenRouter GLM-5.3-Flash → direct api.z.ai → direct DeepSeek → Sonnet direct. Balance end → GLM 5.3 Flash off-wiro. No provider SDKs; `baseURL+key+model` + cost-meter reconciled to provider totals (`usage.cost`/`totalcost`, never token math alone). Gateway base `https://llm.wiro.ai/v1` (OpenAI-compat, `Authorization: Bearer KEY:SECRET`, browser-like User-Agent — bare Python-urllib gets Cloudflare 1010); Run API `https://api.wiro.ai/v1` stays as alternate. Evals R1→R4 gated every lane (GLM 5.2 7/7 expert PASS); K1 ~100x under bar | ~$0.05/realistic build on GLM 5.2 (wiro balance ≈ 3,400 builds); then ~$0.0055/run GLM list |
+| Payments | Creem.io (MoR; 3.9% + $0.40/txn) | D-014; TR payout works; Test Mode until review passes | ~$0.79 per $10 charge |
+| Hosting V1 | INTERIM 2026-09-07 (D-020): Contabo VPS 4 Nuremberg (4vCPU/8GB/100GB SSD, Ubuntu 24.04, 1-mo, ~€5.50) — Hetzner all-locations OUT (incident since 2026-06-26, no ETA). TARGET stays Hetzner CX23/CX33 nbg1 (migrate by Compose re-deploy when stock returns). Ubuntu 24.04, IPv4 ON, firewall ON, backups OFF (snapshot + pg_dump off-box) | D-010/D-012; €8.99/mo excl VAT; single box runs EVERYTHING (web + gateway + Postgres) | ~€9-14/mo at 100 bots |
+| Backups | Nightly `pg_dump -Fc` sidecar → Hetzner Object Storage (NBG1, €6.49/mo base w/ 1TB — DB dumps fit forever) | Same-vendor, same-DC, no egress; 7 daily + 4 weekly, restore tested monthly | €6.49/mo (flat) |
+| Status monitor | Uptime Kuma 2.5.0 on a SEPARATE €4-6 VPS (other DC) watching `/healthz` | A monitor on the same box dies with the box; Telegram+email alerts | ~€5/mo |
+| Testing | Vitest everywhere (unit + launch-blocker tests A/B against real Postgres service container) | TS-native, jsdom for components, one runner | $0 |
+
+---
+
+## 4. Repo shape
+
+> LOCKED D-018: single repo `corvus`, `npm workspaces` only (no Turborepo/Nx until 10+ packages or >2min CI — layout stays compatible). Deploy = GH Actions build → GHCR (SHA + stable tags) → SSH `compose pull && up -d`; rollback = previous SHA re-pull; DB migrations forward-only + pre-deploy `pg_dump` snapshot. No Coolify (2GB RAM cost + no zero-downtime compose), no Watchtower (surprise pulls). Detailed tree lives in `07_folder_structure_and_standards.md §1`.
+
+---
+
+## 5. Key technical decisions
+
+Decided 2026-09-07 (see `DECISIONS.md` D-005, D-006; numbers in `Marketing/corvus-model-and-pricing-2026-09-07.md`):
+
+- **Codegen model = GLM 5.2 on wiro, single meter (D-026, supersedes the D-005 Flash-default for the balance era).** Builder lane won a 4-round golden eval (R4 7/7 expert PASS); persona lane is grok-4-1-fast; migration to GLM 5.3 Flash off-wiro locked for balance end. Model-agnostic interface required — lanes are config, swap without rewrite. K1 armed throughout.
+- **Single behavior-spec.json source of truth** — AI chat and visual editor both write drafts; Publish/Rollback explicit; prod never mutates in place.
+- **One multiplexed gateway** routing N Discord tokens (not one container per bot) — the $0.15/bot vs $2.02/bot decision that funds free tier + flat pricing.
+- **OAuth install, zero token paste; least-privilege scopes** computed from enabled behaviors; never Administrator by default. Corvus-owned fleet apps per D-038 — users never touch secrets; bring-your-own-app arrives later as the paid custom-identity upgrade.
+- **Hosting (D-010, re-verified D-012):** Hetzner Cloud `nbg1`, CX33 (€8.99 w/ IPv4 — CX32 deprecated). OVH VPS-2 ($8.50) is price-parity backup with the strongest bundled anti-DDoS, but hourly billing + instant resize + delete-anytime keep Hetzner for V1. Contabo (cheaper, oversell/support caveats) and netcup RS (term-locked, worst exit) rejected for V1. OVH Public Cloud = global-2nd-region candidate only (hourly b2 + LB + managed DB).
+- **Virtualization: NOT bought for V1 (D-012).** Bot brains are spec DATA interpreted by our gateway — no untrusted code executes, so there is nobody to sandbox; per-bot cgroup caps + firewall egress rules + token encryption + crash-loop quarantine (all free Linux/app code) cover V1. Trigger that forces sandboxing (TRIGGER-SANDBOX-1): first commit executing AI/user code (`eval`/`new Function`/`vm`/dynamic import/child-process) or any "Custom Code" box — then Docker+gVisor `runsc` on the same box ($0, ~1h config, no /dev/kvm needed). Firecracker/Kata impossible on Hetzner Cloud (no nested virt) — needs Dedicated if ever sold as "private bot server" tier. Never `node:vm`/vm2 (not sandboxes); `isolated-vm` only for low-risk preview expressions.
+- **Persistent per-bot database (D-007):** XP, warnings, economy, configs live in durable storage with backups; restarts/updates/redeploys MUST NOT wipe user data — data-loss-on-restart is a launch-blocking defect class with its own regression test.
+- **Self-healing supervised runtime (D-007):** error boundary + auto-retry/fix + resume without downtime; user never sees stack traces; platform-failure retries are free (never billed).
+- **Prompt privilege separation (D-016):** THREE prompt layers that NEVER mix — (a) PLATFORM prompts (builder, codegen, ops tools; Corvus-owned, never attached to tenant model calls); (b) TENANT persona prompts (each server owner's bot personality; scoped to that bot only, never sees platform prompts or other tenants'); (c) SAFETY wrapper (provider filters + our policy floor; neither layer can override it). Anti-leakage: persona model calls carry zero platform context; builder calls carry zero tenant secrets; outputs filtered against prompt-disclosure ("ignore previous instructions", "reveal your system prompt") and cross-tenant references. A member chatting with a bot can never reach the prompts that built it.
+
+---
+
+## 6. Cost & scaling notes
+
+> LOCKED numbers (D-010/D-012/D-018/D-019): fixed START ≈ **~€6/mo** (CX23 + IPv4; object storage + monitor VPS deferred with triggers) → STANDARD ≈ ~€9-14/mo at ~100 bots (CX33 + optional backup). Full buy-table (Contabo/netcup/OVH/IONOS-verdicts): research wave 2026-09-07, IONOS avoided, €35+ boxes never without founder sign. Per-user AI: ~$0.0055/run, ~$0.0004/msg (GLM list). 100 bots ≈ €9-14/mo infra; 1,000 bots ≈ €35-70/mo. Revenue at 100 Pro users ≈ $1,000/mo vs ~€25/mo infra — infra is never the binding cost; AI allowances (ledger-enforced) are. What scales cost: music/voice egress (gated to paid + capped), US-region box (only on latency/capacity triggers).

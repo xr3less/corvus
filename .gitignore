@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+coverage/
+.env
+.env.*
+!.env.example
+# Local-only dev runtime state (D-089: votes live in a file, lost on box move)
+.pick-votes/
+# Founder-supplied unlicensed harvest (D-058): never enters version control
+pyrzm.zip

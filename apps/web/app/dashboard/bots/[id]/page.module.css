@@ -1,0 +1,454 @@
+/* Bot detail page — standalone surface (D-118): header, actions, tabs
+   (Overview / Activity / Pre-flight), and the AI composer with a live thread.
+   Moved out of the dashboard overlay so links open it and refresh is safe.
+   Bots and specs are mock until backend binding lands; the explainer and the
+   activity feed run live over them. */
+
+.detailScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.detailInner {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 16px 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backLink {
+  align-self: flex-start;
+  padding: 4px 0;
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.backLink:hover {
+  color: #fafafa;
+}
+
+.detailHead {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background-color: #16161b;
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(255 255 255 / 0.06),
+    transparent 70%
+  );
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
+.detailTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rowAvatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  background: #141417;
+  color: #fafafa;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.detailTitle {
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #fafafa;
+  text-wrap: balance;
+}
+
+.trialText {
+  margin: 0;
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 24px;
+  text-wrap: pretty;
+}
+
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ghostAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  color: #fafafa;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ghostAction:hover {
+  background: #141417;
+  border-color: rgb(255 255 255 / 0.3);
+}
+
+.ghostAction:active {
+  transform: scale(0.98);
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #fafafa;
+  color: #0a0a0b;
+  background: #fafafa;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.primaryAction:hover {
+  background: #d4d4d8;
+  border-color: #d4d4d8;
+}
+
+.primaryAction:active {
+  transform: scale(0.98);
+}
+
+.textAction {
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.textAction:hover {
+  color: #fafafa;
+}
+
+.detailTabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #a1a1aa;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.tab:hover {
+  background: #141417;
+  color: #fafafa;
+}
+
+.detailTabs .tab[aria-selected='true'] {
+  background: #141417;
+  border-color: rgb(255 255 255 / 0.15);
+  color: #fafafa;
+}
+
+.detailPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background-color: #16161b;
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(255 255 255 / 0.06),
+    transparent 70%
+  );
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardTitle {
+  margin: 0;
+  color: #fafafa;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.todaySentence {
+  margin: 0;
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 22px;
+  text-wrap: pretty;
+}
+
+.exampleBadge {
+  flex: none;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: #141417;
+  color: #d4d4d8;
+}
+
+.activityKind {
+  display: inline-block;
+  margin-right: 8px;
+  color: #a1a1aa;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.activityList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.activityRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  font-variant-numeric: tabular-nums;
+}
+
+.activityRow:last-child {
+  border-bottom: none;
+}
+
+.activityText {
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 22px;
+  flex: 1;
+  min-width: 0;
+}
+
+.activityTime {
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.preflightRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  color: #d4d4d8;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.preflightRow:last-child {
+  border-bottom: none;
+}
+
+.preDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.prePass {
+  background: #22c55e;
+}
+
+.preWarn {
+  background: #f59e0b;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  padding: 3px 12px 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: #141417;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #71717a;
+  flex: none;
+}
+
+.pill-online {
+  color: #22c55e;
+}
+
+.pill-online .dot {
+  background: #22c55e;
+}
+
+.pill-trial {
+  color: #f59e0b;
+}
+
+.pill-trial .dot {
+  background: #f59e0b;
+}
+
+.pill-offline {
+  color: #71717a;
+}
+
+.pill-offline .dot {
+  background: #71717a;
+}
+
+.aiBar {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  padding: 12px 0 20px;
+  background: #000000;
+  position: relative;
+  z-index: 1;
+}
+
+.aiBarInner {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.empty {
+  padding: 24px 20px;
+  background: #0b0b0d;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.emptyText {
+  margin: 0;
+  color: #fafafa;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 500;
+  text-wrap: pretty;
+}
+
+@media (max-width: 900px) {
+  .detailInner {
+    padding: 12px 20px 32px;
+  }
+
+  .aiBarInner {
+    padding: 0 20px;
+  }
+
+  .detailTitle {
+    font-size: 28px;
+    line-height: 34px;
+  }
+}

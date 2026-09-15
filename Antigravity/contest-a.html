@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corvus — Bots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['system-ui', '-apple-system', "'Segoe UI'", 'sans-serif'], display: ['Poppins', 'system-ui', 'sans-serif'], mono: ["'Geist Mono'", 'ui-monospace', 'monospace'] },
+      colors: {
+        ink: '#000000',
+        panel: '#101014',
+        panel2: '#141417',
+        line: 'rgb(255 255 255 / 0.09)',
+        lineStrong: 'rgb(255 255 255 / 0.15)',
+        fog: '#A1A1AA',
+        mute: '#71717A',
+        paper: '#FAFAFA',
+        accent: '#2DD4BF'
+      }
+    }
+  }
+}
+</script>
+<style>
+  :root {
+    --bg: #000000; --surface: #0B0B0D; --surface2: #141417; --card: #16161B; --panel: #101014;
+    --text: #FAFAFA; --body: #D4D1D9; --muted: #A1A1AA; --faint: #71717A;
+    --line: rgb(255 255 255 / 0.09); --line-strong: rgb(255 255 255 / 0.15);
+    --accent: #2DD4BF;
+  }
+  html, body { background: #000000; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+  h1, h2 { font-family: 'Poppins', system-ui, sans-serif; font-weight: 500; }
+  ::selection { background: rgba(45, 212, 191, 0.24); }
+  .hairline-b { border-bottom: 1px solid rgb(255 255 255 / 0.09); }
+  .hairline-r { border-right: 1px solid rgb(255 255 255 / 0.09); }
+  .hairline-t { border-top: 1px solid rgb(255 255 255 / 0.09); }
+  .rail-link { position: relative; }
+  .rail-link[aria-current="page"] { color: #FAFAFA; background: #141417; }
+  .rail-link[aria-current="page"]::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px;
+    background: #2DD4BF; border-radius: 2px;
+  }
+  .bot-card { border: 1px solid rgb(255 255 255 / 0.09); border-radius: 12px; }
+  .bot-card[aria-selected="true"] { border-color: rgb(255 255 255 / 0.15); background: #141417; }
+  .bot-card:hover { background: #141417; }
+  .bot-name { font-family: 'Poppins', system-ui, sans-serif; font-weight: 500; }
+  .mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+  .filter-btn { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+  .filter-btn[aria-pressed="true"] { color: #0A0A0B; background: #FAFAFA; border-color: #FAFAFA; }
+  .btn-primary { display: inline-flex; align-items: center; justify-content: center; background: #FAFAFA; color: #0A0A0B; height: 40px; border-radius: 8px; font-weight: 500; }
+  .btn-ghost { display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 1px solid rgb(255 255 255 / 0.15); color: #FAFAFA; height: 40px; border-radius: 8px; font-weight: 500; }
+  .btn-ghost:hover { background: rgb(255 255 255 / 0.06); }
+  input:focus, button:focus-visible { outline: 2px solid #2DD4BF; outline-offset: 3px; }
+  input::placeholder { color: #71717A; }
+  .thin-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .thin-scroll::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.15); border-radius: 8px; }
+  .thin-scroll::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body class="bg-ink text-paper text-sm leading-6">
+
+<!-- Top strip -->
+<div class="hairline-b bg-panel">
+  <p class="mx-auto max-w-none px-6 h-8 flex items-center justify-center text-xs tracking-wide text-fog">Design preview - example data.</p>
+</div>
+
+<div class="flex min-h-[calc(100vh-32px)]">
+
+  <!-- Slim rail -->
+  <aside class="hairline-r w-52 shrink-0 bg-panel flex flex-col">
+    <div class="p-4 hairline-b">
+      <div class="flex items-center gap-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-panel2 border border-line">
+          <i data-lucide="bot" class="h-4 w-4 text-paper"></i>
+        </span>
+        <div class="min-w-0">
+          <p class="truncate text-[13px] font-medium text-paper">My server</p>
+          <p class="text-xs text-mute">Pro</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="p-2 flex flex-col gap-1" aria-label="Primary">
+      <button type="button" data-dead class="rail-link flex items-center gap-2 rounded-md px-4 py-2 text-[13px] text-paper" aria-current="page">
+        <i data-lucide="bot" class="h-4 w-4"></i>Bots
+      </button>
+      <button type="button" data-dead class="rail-link flex items-center gap-2 rounded-md px-4 py-2 text-[13px] text-fog hover:text-paper hover:bg-panel2">
+        <i data-lucide="layout-template" class="h-4 w-4"></i>Templates
+      </button>
+      <button type="button" data-dead class="rail-link flex items-center gap-2 rounded-md px-4 py-2 text-[13px] text-fog hover:text-paper hover:bg-panel2">
+        <i data-lucide="messages-square" class="h-4 w-4"></i>Interview
+      </button>
+      <button type="button" data-dead class="rail-link flex items-center gap-2 rounded-md px-4 py-2 text-[13px] text-fog hover:text-paper hover:bg-panel2">
+        <i data-lucide="activity" class="h-4 w-4"></i>Activity
+      </button>
+      <button type="button" data-dead class="rail-link flex items-center gap-2 rounded-md px-4 py-2 text-[13px] text-fog hover:text-paper hover:bg-panel2">
+        <i data-lucide="shield-check" class="h-4 w-4"></i>Pre-flight
+      </button>
+      <button type="button" data-dead class="rail-link flex items-center gap-2 rounded-md px-4 py-2 text-[13px] text-fog hover:text-paper hover:bg-panel2">
+        <i data-lucide="settings" class="h-4 w-4"></i>Settings
+      </button>
+    </nav>
+
+    <div class="mt-auto p-4 flex flex-col gap-4">
+      <div class="rounded-md border border-line bg-panel2 p-4">
+        <div class="flex items-baseline justify-between">
+          <p class="text-xs text-fog mono">Credits</p>
+          <p class="text-xs text-paper mono">82/100</p>
+        </div>
+        <div class="mt-2 h-1 w-full rounded-full bg-line" role="img" aria-label="Credits 82 of 100 used">
+          <div class="h-1 rounded-full bg-[#FAFAFA]" style="width: 82%"></div>
+        </div>
+        <button type="button" data-dead class="btn-ghost mt-4 w-full px-4 text-[13px]">Upgrade</button>
+      </div>
+      <div class="hairline-t pt-4">
+        <a href="#" data-dead class="flex items-center gap-2 text-[13px] text-fog hover:text-paper">
+          Browse 8 starters<i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 3-zone console -->
+  <main class="flex-1 grid grid-cols-[280px_minmax(0,1fr)_300px] min-h-0">
+
+    <!-- Zone 1: Bots -->
+    <section class="hairline-r bg-ink p-6 flex flex-col gap-4 min-h-0" aria-label="Bots">
+      <h1 class="text-[13px] font-medium text-paper">Bots</h1>
+      <div class="relative">
+        <i data-lucide="search" class="h-4 w-4 text-mute absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        <input id="search" type="text" placeholder="Search bots" autocomplete="off"
+          class="w-full rounded-md border border-line bg-panel pl-12 pr-4 py-2 text-[13px] text-paper">
+      </div>
+      <div class="flex gap-2" role="group" aria-label="Status filter" id="filters">
+        <button type="button" data-filter="All" aria-pressed="true" class="filter-btn rounded-full border border-line px-4 py-1 text-xs text-fog hover:text-paper">All</button>
+        <button type="button" data-filter="Live" aria-pressed="false" class="filter-btn rounded-full border border-line px-4 py-1 text-xs text-fog hover:text-paper">Live</button>
+        <button type="button" data-filter="Trial" aria-pressed="false" class="filter-btn rounded-full border border-line px-4 py-1 text-xs text-fog hover:text-paper">Trial</button>
+        <button type="button" data-filter="Offline" aria-pressed="false" class="filter-btn rounded-full border border-line px-4 py-1 text-xs text-fog hover:text-paper">Offline</button>
+      </div>
+      <ul id="botList" class="flex flex-col gap-2 overflow-y-auto thin-scroll"></ul>
+      <div id="emptyState" class="hidden rounded-md border border-line bg-panel p-8 text-center">
+        <i data-lucide="search-x" class="h-4 w-4 text-mute mx-auto"></i>
+        <p class="mt-2 text-[13px] text-paper">No bots match this search.</p>
+        <p class="mt-1 text-xs text-mute">Try a different name.</p>
+      </div>
+    </section>
+
+    <!-- Zone 2: Detail -->
+    <section class="hairline-r bg-panel p-8 min-h-0 overflow-y-auto thin-scroll" aria-label="Bot detail">
+      <div id="detail"></div>
+
+      <div class="hairline-t mt-8 pt-6">
+        <h2 class="text-[13px] font-medium text-paper">Pre-flight</h2>
+        <ul class="mt-4 flex flex-col">
+          <li class="flex items-center gap-2 py-2 hairline-b">
+            <span class="h-2 w-2 rounded-full bg-[#22C55E] shrink-0" aria-hidden="true"></span>
+            <span class="text-[13px] text-fog">Token and permissions look right</span>
+          </li>
+          <li class="flex items-center gap-2 py-2 hairline-b">
+            <span class="h-2 w-2 rounded-full bg-[#22C55E] shrink-0" aria-hidden="true"></span>
+            <span class="text-[13px] text-fog">Rate limits within caps</span>
+          </li>
+          <li class="flex items-center gap-2 py-2">
+            <i data-lucide="triangle-alert" class="h-4 w-4 text-[#F59E0B] shrink-0"></i>
+            <span class="text-[13px] text-fog">Welcome reply targets a hidden channel</span>
+          </li>
+        </ul>
+      </div>
+
+      <form id="composer" class="mt-8 flex items-center gap-2">
+        <input type="text" placeholder="Describe a change…" aria-label="Describe a change"
+          class="flex-1 rounded-md border border-line bg-ink px-4 py-2 text-[13px] text-paper">
+        <button type="submit" data-dead class="btn-primary px-4 text-[13px]">Send</button>
+      </form>
+    </section>
+
+    <!-- Zone 3: Activity -->
+    <section class="bg-ink p-6 min-h-0 overflow-y-auto thin-scroll" aria-label="Activity">
+      <h2 class="text-[13px] font-medium text-paper">Activity</h2>
+      <ul id="activityList" class="mt-4 flex flex-col"></ul>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+(function () {
+  var BOTS = [
+    { name: 'Study Hall', status: 'Live', members: 1240, servers: 3 },
+    { name: 'Draft Arena', status: 'Trial', members: 86, servers: 1 },
+    { name: 'Night Market mods', status: 'Offline', members: 2013, servers: 2 }
+  ];
+
+  var TRIAL_LINE = 'Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.';
+
+  var STATUS_COLORS = { Live: '#22C55E', Trial: '#F59E0B', Offline: '#8a8a93' };
+
+  var state = { q: '', filter: 'All', selected: 'Study Hall' };
+
+  function fmt(n, one, many) {
+    return n.toLocaleString('en-US') + ' ' + (n === 1 ? one : many);
+  }
+
+  function activityFor(name) {
+    if (name === 'Study Hall') {
+      return [
+        'Published Study Hall v12 · 2h ago',
+        'Simulated welcome flow · 5h ago',
+        'Rolled back Study Hall to v11 · yesterday',
+        'Published Study Hall v11 · 3d ago'
+      ];
+    }
+    return [
+      'Published ' + name + ' v12 · 2h ago',
+      'Simulated welcome flow · 5h ago',
+      'Rolled back ' + name + ' to v11 · yesterday',
+      'Published ' + name + ' v11 · 3d ago'
+    ];
+  }
+
+  function statusDot(status) {
+    return '<span class="h-2 w-2 rounded-full shrink-0" style="background: ' + STATUS_COLORS[status] + '" aria-hidden="true"></span>';
+  }
+
+  function visibleBots() {
+    var q = state.q.trim().toLowerCase();
+    return BOTS.filter(function (b) {
+      var okFilter = state.filter === 'All' || b.status === state.filter;
+      var okQ = q === '' || b.name.toLowerCase().indexOf(q) !== -1;
+      return okFilter && okQ;
+    });
+  }
+
+  function renderList() {
+    var list = document.getElementById('botList');
+    var empty = document.getElementById('emptyState');
+    var rows = visibleBots();
+    list.innerHTML = '';
+    rows.forEach(function (b) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bot-card w-full bg-panel p-4 text-left';
+      btn.setAttribute('aria-selected', b.name === state.selected ? 'true' : 'false');
+      btn.setAttribute('data-bot', b.name);
+      btn.innerHTML =
+        '<span class="flex items-center justify-between gap-2">' +
+          '<span class="bot-name text-[13px] text-paper"></span>' +
+          '<span class="flex items-center gap-2 text-xs text-fog">' + statusDot(b.status) + '<span class="mono"></span></span>' +
+        '</span>' +
+        '<span class="mono mt-2 block text-xs text-mute"></span>';
+      btn.querySelector('span span:first-child').textContent = b.name;
+      var badge = btn.querySelectorAll('span span')[1];
+      badge.textContent = b.status;
+      badge.style.color = STATUS_COLORS[b.status];
+      btn.querySelector('span.mt-2').textContent = fmt(b.members, 'member', 'members') + ' \u00B7 ' + fmt(b.servers, 'server', 'servers');
+      btn.addEventListener('click', function () {
+        state.selected = b.name;
+        renderList();
+        renderDetail();
+        renderActivity();
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    var isEmpty = rows.length === 0;
+    empty.classList.toggle('hidden', isEmpty === false);
+    list.classList.toggle('hidden', isEmpty);
+  }
+
+  function renderDetail() {
+    var box = document.getElementById('detail');
+    var b = BOTS.filter(function (x) { return x.name === state.selected; })[0] || BOTS[0];
+    box.innerHTML = '';
+    var top = document.createElement('div');
+    top.className = 'flex items-center gap-2 text-xs text-fog';
+    top.innerHTML = statusDot(b.status) + '<span class="mono"></span>';
+    var topLabel = top.querySelector('span:last-child');
+    topLabel.textContent = b.status;
+    topLabel.style.color = STATUS_COLORS[b.status];
+    var h = document.createElement('h2');
+    h.className = 'mt-2 text-xl font-semibold tracking-tight text-paper';
+    h.textContent = b.name;
+    var meta = document.createElement('p');
+    meta.className = 'mono mt-1 text-[13px] text-mute';
+    meta.textContent = fmt(b.members, 'member', 'members') + ' \u00B7 ' + fmt(b.servers, 'server', 'servers');
+    box.appendChild(top);
+    box.appendChild(h);
+    box.appendChild(meta);
+    if (b.status === 'Trial') {
+      var trial = document.createElement('p');
+      trial.className = 'mt-4 rounded-md border border-line bg-ink px-4 py-2 text-[13px] text-fog';
+      trial.textContent = TRIAL_LINE;
+      box.appendChild(trial);
+    }
+    var actions = document.createElement('div');
+    actions.className = 'mt-4 flex gap-2';
+    actions.innerHTML =
+      '<button type="button" data-dead class="btn-ghost px-4 text-[13px]">Open</button>' +
+      '<button type="button" data-dead class="btn-primary px-4 text-[13px]">Publish</button>' +
+      '<button type="button" data-dead class="btn-ghost px-4 text-[13px]">Rollback</button>';
+    box.appendChild(actions);
+    bindDead(box);
+  }
+
+  function renderActivity() {
+    var list = document.getElementById('activityList');
+    list.innerHTML = '';
+    activityFor(state.selected).forEach(function (text, i) {
+      var li = document.createElement('li');
+      li.className = i === 0 ? 'py-2' : 'py-2 hairline-t';
+      var p = document.createElement('p');
+      p.className = 'text-[13px] text-fog';
+      p.textContent = text;
+      li.appendChild(p);
+      list.appendChild(li);
+    });
+  }
+
+  function bindDead(root) {
+    var scope = root || document;
+    var els = scope.querySelectorAll('[data-dead]');
+    els.forEach(function (el) {
+      if (el.getAttribute('data-bound') === '1') { return; }
+      el.setAttribute('data-bound', '1');
+      el.addEventListener('click', function (e) { e.preventDefault(); });
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', function (e) {
+    state.q = e.target.value;
+    renderList();
+  });
+
+  document.getElementById('filters').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-filter]');
+    if (btn === null) { return; }
+    state.filter = btn.getAttribute('data-filter');
+    var all = document.querySelectorAll('#filters [data-filter]');
+    all.forEach(function (f) {
+      f.setAttribute('aria-pressed', f.getAttribute('data-filter') === state.filter ? 'true' : 'false');
+    });
+    renderList();
+  });
+
+  document.getElementById('composer').addEventListener('submit', function (e) {
+    e.preventDefault();
+  });
+
+  bindDead(document);
+  renderList();
+  renderDetail();
+  renderActivity();
+
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+})();
+</script>
+</body>
+</html>

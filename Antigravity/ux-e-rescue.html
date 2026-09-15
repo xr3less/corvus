@@ -1,0 +1,282 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescue preview — Night Market mods</title>
+<style>
+  body {
+    margin: 0;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    color-scheme: dark;
+    line-height: 1.5;
+  }
+  .uxe-strip {
+    padding: 10px 20px;
+    background: #0d0d10;
+    border-bottom: 1px solid #1c1c20;
+    color: #8a8a93;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .uxe-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .uxe-head {
+    padding: 16px;
+    border-radius: 16px;
+    background: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .uxe-title {
+    margin: 0;
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .uxe-sub {
+    margin: 0;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 500;
+    padding: 3px 12px 3px 10px;
+    border-radius: 999px;
+    border: 1px solid #2a2a30;
+    background: #111111;
+    color: #8a8a93;
+  }
+  .uxe-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #8a8a93;
+  }
+  .uxe-pill-live {
+    color: #22c55e;
+  }
+  .uxe-pill-live .uxe-dot {
+    background: #22c55e;
+  }
+  .uxe-card {
+    background: #0d0d10;
+    border: 1px solid #1c1c20;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .uxe-card-title {
+    margin: 0;
+    font-size: 15px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .uxe-body {
+    margin: 0;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-quote {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #111111;
+    border: 1px solid #2a2a30;
+    color: #fafafa;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #1c1c20;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-row-last {
+    border-bottom: none;
+  }
+  .uxe-predot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .uxe-pass {
+    background: #22c55e;
+  }
+  .uxe-warn {
+    background: #f59e0b;
+  }
+  .uxe-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .uxe-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid #ffffff;
+    color: #000000;
+    background: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .uxe-primary:hover {
+    background: #c9d1d9;
+    border-color: #c9d1d9;
+  }
+  .uxe-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid #2a2a30;
+    color: #fafafa;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .uxe-ghost:hover {
+    background: #111111;
+    border-color: #8a8a93;
+  }
+  .uxe-proof {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #111111;
+    border: 1px solid #2a2a30;
+    color: #22c55e;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .uxe-note {
+    margin: 0;
+    color: #8a8a93;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .uxe-card:focus-within {
+    border-color: #2a2a30;
+  }
+  .uxe-primary:focus-visible,
+  .uxe-ghost:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="uxe-strip">Practice preview, mock only. Nothing here changes your live bot. Screen 1 of 2, fixing what paused you.</div>
+<main class="uxe-wrap">
+  <header class="uxe-head">
+    <span class="uxe-pill" id="uxe-status-pill"><span class="uxe-dot" aria-hidden="true"></span><span id="uxe-status-label">Offline</span></span>
+    <h1 class="uxe-title">Night Market mods</h1>
+    <p class="uxe-sub">2,013 members across 2 servers. Your bot is resting right now, and everything it learned is still saved.</p>
+  </header>
+
+  <section class="uxe-card" aria-labelledby="uxe-offline-title">
+    <h2 class="uxe-card-title" id="uxe-offline-title">Your bot is resting, here is why</h2>
+    <p class="uxe-body">The link between your bot and your servers paused, so your bot stepped aside instead of half-working. Your rooms, members, and settings are untouched.</p>
+    <div class="uxe-actions">
+      <button type="button" class="uxe-primary" id="uxe-wake-btn">Bring the bot back</button>
+      <button type="button" class="uxe-ghost" id="uxe-wake-later" title="Preview only, this choice does nothing in the mock">Look at this later</button>
+    </div>
+    <p class="uxe-proof" id="uxe-wake-proof" hidden>Checked just now. The bot is back in your 2 servers and saying hello again.</p>
+  </section>
+
+  <section class="uxe-card" aria-labelledby="uxe-checks-title">
+    <h2 class="uxe-card-title" id="uxe-checks-title">Checks before you share, in plain words</h2>
+    <div class="uxe-row"><span class="uxe-predot uxe-pass" aria-hidden="true"></span><span>Sign-in and access look right</span></div>
+    <div class="uxe-row"><span class="uxe-predot uxe-pass" aria-hidden="true"></span><span>Use stays within limits</span></div>
+    <div class="uxe-row uxe-row-last"><span class="uxe-predot uxe-warn" aria-hidden="true"></span><span>Welcome reply targets a hidden channel</span></div>
+    <p class="uxe-body" id="uxe-amber-cause">What this means. New members land in a room they cannot see, so the hello note never reaches them. Sharing stays paused until this one line is cared for.</p>
+    <div class="uxe-actions">
+      <button type="button" class="uxe-primary" id="uxe-amber-fix">Move the hello note where everyone can see it</button>
+      <button type="button" class="uxe-ghost" id="uxe-share-btn" title="Preview only, sharing stays off while this check needs care">Share anyway</button>
+    </div>
+    <p class="uxe-proof" id="uxe-amber-proof" hidden>Checked just now. The hello note reaches the main room, and sharing is open again.</p>
+    <p class="uxe-note">Screen 2 covers the calm trial ending and the safe undo, <a class="uxe-note" href="./ux-e-rescue-2.html" id="uxe-next-link" title="Preview only, opens the second mock screen">continue to screen 2</a>.</p>
+  </section>
+</main>
+<script>
+(function () {
+  function show(id) {
+    var el = document.getElementById(id);
+    if (el === null) { return; }
+    el.hidden = false;
+  }
+  function setStatusLive() {
+    var label = document.getElementById('uxe-status-label');
+    var pill = document.getElementById('uxe-status-pill');
+    if (label === null || pill === null) { return; }
+    label.textContent = 'Live';
+    pill.className = 'uxe-pill uxe-pill-live';
+  }
+  var wakeBtn = document.getElementById('uxe-wake-btn');
+  if (wakeBtn === null) { return; }
+  wakeBtn.addEventListener('click', function () {
+    setStatusLive();
+    show('uxe-wake-proof');
+    wakeBtn.textContent = 'The bot is back';
+  });
+  var laterBtn = document.getElementById('uxe-wake-later');
+  if (laterBtn === null) { return; }
+  laterBtn.addEventListener('click', function (ev) {
+    ev.preventDefault();
+  });
+  var fixBtn = document.getElementById('uxe-amber-fix');
+  if (fixBtn === null) { return; }
+  fixBtn.addEventListener('click', function () {
+    show('uxe-amber-proof');
+    fixBtn.textContent = 'Done, the hello note moved';
+    var cause = document.getElementById('uxe-amber-cause');
+    if (cause === null) { return; }
+    cause.textContent = 'Cared for. The hello note now lives in the main room, where every new member can read it.';
+  });
+  var shareBtn = document.getElementById('uxe-share-btn');
+  if (shareBtn === null) { return; }
+  shareBtn.addEventListener('click', function (ev) {
+    ev.preventDefault();
+  });
+})();
+</script>
+</body>
+</html>

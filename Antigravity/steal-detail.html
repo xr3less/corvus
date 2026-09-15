@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Hall — Corvus (Design Preview)</title>
+  <meta name="description" content="Corvus bot detail steal preview: publish-status sentence, cost-honest composer, receipt activity. Example data only.">
+  <style>
+    :root {
+      --stl-bg: #000000;
+      --stl-card: #0d0d10;
+      --stl-line: #1c1c20;
+      --stl-line-soft: #2a2a30;
+      --stl-fg: #ffffff;
+      --stl-body: #c9d1d9;
+      --stl-muted: #8a8a93;
+      --stl-focus: #3cc0ae;
+      --stl-pass: #22c55e;
+      --stl-warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--stl-bg); }
+    body {
+      margin: 0;
+      background: var(--stl-bg);
+      color: var(--stl-fg);
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color-scheme: dark;
+    }
+    .stl-strip {
+      margin: 0; text-align: center; font-size: 12px; line-height: 20px;
+      padding: 8px 16px; color: var(--stl-muted);
+      border-bottom: 1px solid var(--stl-line); background: var(--stl-card);
+      font-variant-numeric: tabular-nums;
+    }
+    .stl-shell { display: flex; min-height: 100vh; background: #000000; }
+    .stl-rail {
+      width: 240px; flex: none;
+      background: #000000;
+      border-right: 1px solid var(--stl-line);
+      padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .stl-workspace { display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-width: 0; }
+    .stl-avatar {
+      width: 28px; height: 28px; flex: none; border-radius: 50%;
+      background: #262626; color: #fafafa;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; line-height: 20px; font-weight: 600;
+    }
+    .stl-wsname {
+      font-size: 14px; line-height: 20px; font-weight: 500; color: #ffffff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stl-pro {
+      margin-left: auto; flex: none;
+      font-size: 12px; line-height: 16px; font-weight: 500;
+      padding: 2px 10px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft);
+      background: #111111; color: var(--stl-body);
+    }
+    .stl-navlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .stl-navitem {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 8px 12px; border: none; border-radius: 999px;
+      background: transparent; color: var(--stl-muted);
+      font: inherit; font-size: 14px; line-height: 20px; font-weight: 500;
+      text-align: left; text-decoration: none; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-navitem:hover { background: #111111; color: #ffffff; }
+    .stl-navitem[aria-current="page"] { background: #262626; color: #fafafa; }
+    .stl-glyph {
+      width: 14px; height: 14px; flex: none; border-radius: 4px;
+      border: 1px solid var(--stl-line-soft); background: transparent;
+    }
+    .stl-navitem[aria-current="page"] .stl-glyph { background: #fafafa; border-color: #fafafa; }
+    .stl-railfoot {
+      margin-top: auto; display: flex; flex-direction: column; gap: 8px;
+      border-top: 1px solid var(--stl-line); padding: 16px 8px 0;
+    }
+    .stl-credits { margin: 0; color: var(--stl-body); font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .stl-meter { height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .stl-meterfill { height: 100%; width: 82%; border-radius: inherit; background: #ffffff; }
+    .stl-upgrade {
+      align-self: flex-start; padding: 6px 16px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft); background: #262626; color: #fafafa;
+      font: inherit; font-size: 13px; line-height: 20px; font-weight: 500; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-upgrade:hover { background: #111111; border-color: var(--stl-muted); }
+    .stl-main {
+      flex: 1; min-width: 0; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+      max-width: 720px; width: 100%;
+    }
+    .stl-switcher { display: flex; gap: 4px; flex-wrap: wrap; }
+    .stl-swbtn {
+      padding: 6px 14px; border-radius: 999px;
+      border: 1px solid transparent; background: transparent; color: var(--stl-muted);
+      font: inherit; font-size: 13px; line-height: 20px; font-weight: 500; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-swbtn:hover { background: #111111; color: #ffffff; }
+    .stl-swbtn[aria-pressed="true"] { background: #262626; border-color: var(--stl-line-soft); color: #fafafa; }
+    .stl-head { display: flex; flex-direction: column; gap: 12px; }
+    .stl-titlerow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .stl-title {
+      margin: 0; font-size: 28px; line-height: 32px; font-weight: 600;
+      letter-spacing: -0.01em; color: #ffffff;
+    }
+    .stl-bigavatar {
+      width: 36px; height: 36px; flex: none; border-radius: 12px;
+      background: #111111; border: 1px solid var(--stl-line); color: #fafafa;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 600;
+    }
+    .stl-status {
+      display: inline-flex; align-items: center; gap: 8px; flex: none;
+      font-size: 13px; line-height: 20px; font-weight: 500;
+      padding: 3px 12px 3px 10px; border-radius: 999px;
+      border: 1px solid var(--stl-line-soft); background: #111111; white-space: nowrap;
+    }
+    .stl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--stl-muted); flex: none; }
+    .stl-status-live { color: var(--stl-pass); }
+    .stl-status-live .stl-dot { background: var(--stl-pass); }
+    .stl-status-trial { color: var(--stl-warn); }
+    .stl-status-trial .stl-dot { background: var(--stl-warn); }
+    .stl-status-offline { color: var(--stl-muted); }
+    .stl-status-offline .stl-dot { background: var(--stl-muted); }
+    .stl-trial { margin: 0; color: var(--stl-body); font-size: 14px; line-height: 20px; }
+    .stl-card {
+      background: var(--stl-card);
+      border: 1px solid var(--stl-line);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .stl-cardtitle { margin: 0; color: #ffffff; font-size: 15px; line-height: 24px; font-weight: 600; }
+    .stl-sentence { margin: 0; color: var(--stl-body); font-size: 14px; line-height: 20px; }
+    .stl-checks { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+    .stl-check {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--stl-line);
+      color: var(--stl-body); font-size: 14px; line-height: 20px;
+    }
+    .stl-check:last-child { border-bottom: none; }
+    .stl-checkdot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .stl-checkdot-pass { background: var(--stl-pass); }
+    .stl-checkdot-warn { background: var(--stl-warn); }
+    .stl-actionrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .stl-primary {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 16px; border-radius: 999px;
+      border: 1px solid #ffffff; color: #000000; background: #ffffff;
+      font: inherit; font-size: 14px; line-height: 20px; font-weight: 500;
+      white-space: nowrap; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-primary:hover { background: var(--stl-body); border-color: var(--stl-body); }
+    .stl-rollback {
+      padding: 8px 4px; border: none; background: transparent; color: var(--stl-muted);
+      font: inherit; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 3px;
+      transition: color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-rollback:hover { color: #ffffff; }
+    .stl-cost { margin: 0; color: var(--stl-muted); font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums; }
+    .stl-label { color: var(--stl-muted); font-size: 13px; line-height: 20px; font-weight: 500; }
+    .stl-form { display: flex; align-items: center; gap: 8px; }
+    .stl-input {
+      flex: 1; min-width: 0; height: 44px; padding: 0 20px; border-radius: 999px;
+      border: 1px solid var(--stl-line); background: #111111; color: #ffffff;
+      font: inherit; font-size: 14px; line-height: 20px;
+      transition: border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-input::placeholder { color: var(--stl-muted); }
+    .stl-input:hover { border-color: var(--stl-line-soft); }
+    .stl-send {
+      flex: none; height: 44px; padding: 0 20px; border-radius: 999px;
+      border: 1px solid #ffffff; background: #ffffff; color: #000000;
+      font: inherit; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1), border-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .stl-send:hover { background: var(--stl-body); border-color: var(--stl-body); }
+    .stl-bubbles { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .stl-bubble {
+      background: #111111; border: 1px solid var(--stl-line);
+      border-radius: 12px; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .stl-bubbletext { margin: 0; color: #ffffff; font-size: 14px; line-height: 20px; overflow-wrap: break-word; }
+    .stl-bubblenote { margin: 0; color: var(--stl-muted); font-size: 13px; line-height: 20px; }
+    .stl-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+    .stl-row {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 8px 0; border-bottom: 1px solid var(--stl-line);
+    }
+    .stl-row:last-child { border-bottom: none; }
+    .stl-text { color: var(--stl-body); font-size: 14px; line-height: 20px; flex: 1; min-width: 0; }
+    .stl-tag { color: var(--stl-muted); font-size: 13px; line-height: 20px; white-space: nowrap; }
+    .stl-time { color: var(--stl-muted); font-size: 13px; line-height: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .stl-shell button:focus-visible, .stl-shell input:focus-visible, .stl-shell a:focus-visible {
+      outline: 2px solid var(--stl-focus); outline-offset: 2px;
+    }
+    @media (max-width: 900px) {
+      .stl-shell { flex-direction: column; }
+      .stl-rail { width: auto; border-right: none; border-bottom: 1px solid var(--stl-line); }
+      .stl-railfoot { margin-top: 0; }
+      .stl-main { padding: 24px 16px 40px; max-width: none; }
+      .stl-title { font-size: 24px; line-height: 28px; }
+      .stl-form { flex-direction: column; align-items: stretch; }
+      .stl-send { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <p class="stl-strip">Design preview - example data.</p>
+
+  <div class="stl-shell">
+
+    <nav aria-label="Primary" class="stl-rail">
+      <div class="stl-workspace">
+        <span aria-hidden="true" class="stl-avatar">M</span>
+        <span class="stl-wsname">My server</span>
+        <span class="stl-pro">Pro</span>
+      </div>
+
+      <ul class="stl-navlist">
+        <li>
+          <a class="stl-navitem" href="steal-detail.html" aria-current="page">
+            <span aria-hidden="true" class="stl-glyph"></span>Bots
+          </a>
+        </li>
+        <li>
+          <a class="stl-navitem" href="steal-templates.html">
+            <span aria-hidden="true" class="stl-glyph"></span>Templates
+          </a>
+        </li>
+        <li>
+          <a class="stl-navitem" href="#" data-stl-dead title="Preview only — stays on this page">
+            <span aria-hidden="true" class="stl-glyph"></span>Interview
+          </a>
+        </li>
+        <li>
+          <a class="stl-navitem" href="#" data-stl-dead title="Preview only — stays on this page">
+            <span aria-hidden="true" class="stl-glyph"></span>Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="stl-railfoot">
+        <p class="stl-credits">Credits 82/100</p>
+        <div role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100" class="stl-meter">
+          <div class="stl-meterfill"></div>
+        </div>
+        <button type="button" class="stl-upgrade" data-stl-dead title="Preview only — upgrading does nothing">Upgrade</button>
+      </div>
+    </nav>
+
+    <main class="stl-main" id="stl-main">
+      <div class="stl-switcher" role="group" aria-label="Choose a bot">
+        <button type="button" class="stl-swbtn" data-stl-bot="study" aria-pressed="true">Study Hall</button>
+        <button type="button" class="stl-swbtn" data-stl-bot="draft" aria-pressed="false">Draft Arena</button>
+        <button type="button" class="stl-swbtn" data-stl-bot="night" aria-pressed="false">Night Market mods</button>
+      </div>
+
+      <div class="stl-head">
+        <div class="stl-titlerow">
+          <span aria-hidden="true" class="stl-bigavatar" id="stl-avatar">S</span>
+          <h1 class="stl-title" id="stl-title">Study Hall</h1>
+          <span class="stl-status stl-status-live" id="stl-statuspill">
+            <span aria-hidden="true" class="stl-dot"></span><span id="stl-statustext">Live</span>
+          </span>
+        </div>
+        <p class="stl-trial" id="stl-trial" hidden>Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+      </div>
+
+      <section aria-label="Publish status" aria-live="polite" class="stl-card">
+        <p class="stl-sentence" id="stl-sentence">Study Hall is live. Updated 2 hours ago. 2 checks green, 1 needs you.</p>
+        <ul class="stl-checks" id="stl-checks" aria-label="Pre-flight"></ul>
+        <div class="stl-actionrow">
+          <button type="button" class="stl-primary" id="stl-primary" data-stl-dead title="Preview only — publishes nothing">Publish</button>
+          <button type="button" class="stl-rollback" id="stl-rollback" data-stl-dead title="Preview only — rolls nothing back">Rollback to v11 · safe, one click</button>
+        </div>
+      </section>
+
+      <section aria-label="Describe a change" class="stl-card">
+        <label class="stl-label" for="stl-input">Describe a change to your bot</label>
+        <p class="stl-cost">About 1.1 credits per change. Platform failures retry free — never billed.</p>
+        <form class="stl-form" id="stl-form" action="#">
+          <input class="stl-input" id="stl-input" type="text" placeholder="Describe a change…" autocomplete="off" aria-label="Describe a change to your bot">
+          <button class="stl-send" type="submit">Send</button>
+        </form>
+        <ul class="stl-bubbles" id="stl-bubbles" aria-label="Submitted changes"></ul>
+      </section>
+
+      <section aria-label="Recent activity" class="stl-card">
+        <h2 class="stl-cardtitle">Recent activity</h2>
+        <ul class="stl-rows" id="stl-activity"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var stlData = {
+      study: {
+        name: 'Study Hall',
+        statusLabel: 'Live',
+        statusClass: 'stl-status-live',
+        trial: false,
+        sentence: 'Study Hall is live. Updated 2 hours ago. 2 checks green, 1 needs you.',
+        checks: [
+          { tone: 'pass', text: 'Token and permissions look right' },
+          { tone: 'pass', text: 'Rate limits within caps' },
+          { tone: 'warn', text: 'Welcome reply targets a hidden channel' }
+        ],
+        primaryLabel: 'Publish',
+        primaryTitle: 'Preview only — publishes nothing',
+        rollback: true
+      },
+      draft: {
+        name: 'Draft Arena',
+        statusLabel: 'Trial',
+        statusClass: 'stl-status-trial',
+        trial: true,
+        sentence: 'Draft Arena is not live yet. 1 check needs you.',
+        checks: [
+          { tone: 'pass', text: 'Token and permissions look right' },
+          { tone: 'pass', text: 'Rate limits within caps' },
+          { tone: 'warn', text: 'Welcome reply targets a hidden channel' }
+        ],
+        primaryLabel: 'Fix and publish',
+        primaryTitle: 'Preview only — publishes nothing until the hidden-channel check is fixed',
+        rollback: false
+      },
+      night: {
+        name: 'Night Market mods',
+        statusLabel: 'Offline',
+        statusClass: 'stl-status-offline',
+        trial: false,
+        sentence: 'Night Market mods is offline. 1 check needs you.',
+        checks: [
+          { tone: 'pass', text: 'Token and permissions look right' },
+          { tone: 'pass', text: 'Rate limits within caps' },
+          { tone: 'warn', text: 'Welcome reply targets a hidden channel' }
+        ],
+        primaryLabel: 'Fix and publish',
+        primaryTitle: 'Preview only — publishes nothing until the hidden-channel check is fixed',
+        rollback: false
+      }
+    };
+
+    var stlCurrent = 'study';
+
+    function stlActivityFor(name) {
+      return [
+        { text: 'Published ' + name + ' v12', tag: '· 1.1 credits', time: '2h ago' },
+        { text: 'Simulated welcome flow', tag: '· no charge', time: '5h ago' },
+        { text: 'Rolled back ' + name + ' to v11', tag: '· 1.1 credits', time: 'yesterday' },
+        { text: 'Published ' + name + ' v11', tag: '· 1.1 credits', time: '3d ago' }
+      ];
+    }
+
+    function stlRender() {
+      var b = stlData[stlCurrent];
+
+      var swbtns = document.querySelectorAll('[data-stl-bot]');
+      for (var i = 0; i < swbtns.length; i++) {
+        swbtns[i].setAttribute('aria-pressed', swbtns[i].getAttribute('data-stl-bot') === stlCurrent ? 'true' : 'false');
+      }
+
+      document.getElementById('stl-avatar').textContent = b.name.charAt(0);
+      document.getElementById('stl-title').textContent = b.name;
+      document.title = b.name + ' — Corvus (Design Preview)';
+
+      var pill = document.getElementById('stl-statuspill');
+      pill.className = 'stl-status ' + b.statusClass;
+      document.getElementById('stl-statustext').textContent = b.statusLabel;
+
+      document.getElementById('stl-trial').hidden = b.trial ? false : true;
+
+      document.getElementById('stl-sentence').textContent = b.sentence;
+
+      var checks = document.getElementById('stl-checks');
+      checks.innerHTML = '';
+      b.checks.forEach(function (c) {
+        var li = document.createElement('li');
+        li.className = 'stl-check';
+        var dot = document.createElement('span');
+        dot.className = 'stl-checkdot ' + (c.tone === 'pass' ? 'stl-checkdot-pass' : 'stl-checkdot-warn');
+        dot.setAttribute('aria-hidden', 'true');
+        var span = document.createElement('span');
+        span.textContent = c.text;
+        li.appendChild(dot);
+        li.appendChild(span);
+        checks.appendChild(li);
+      });
+
+      var primary = document.getElementById('stl-primary');
+      primary.textContent = b.primaryLabel;
+      primary.setAttribute('title', b.primaryTitle);
+
+      document.getElementById('stl-rollback').style.display = b.rollback ? '' : 'none';
+
+      var activity = document.getElementById('stl-activity');
+      activity.innerHTML = '';
+      stlActivityFor(b.name).forEach(function (row) {
+        var li = document.createElement('li');
+        li.className = 'stl-row';
+        var text = document.createElement('span');
+        text.className = 'stl-text';
+        text.textContent = row.text + ' ';
+        var tag = document.createElement('span');
+        tag.className = 'stl-tag';
+        tag.textContent = row.tag;
+        text.appendChild(tag);
+        var time = document.createElement('span');
+        time.className = 'stl-time';
+        time.textContent = row.time;
+        li.appendChild(text);
+        li.appendChild(time);
+        activity.appendChild(li);
+      });
+    }
+
+    var stlSw = document.querySelectorAll('[data-stl-bot]');
+    for (var s = 0; s < stlSw.length; s++) {
+      stlSw[s].addEventListener('click', function () {
+        stlCurrent = this.getAttribute('data-stl-bot');
+        stlRender();
+      });
+    }
+
+    document.getElementById('stl-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('stl-input');
+      var value = input.value.trim();
+      if (value === '') return;
+      var list = document.getElementById('stl-bubbles');
+      var li = document.createElement('li');
+      li.className = 'stl-bubble';
+      var text = document.createElement('p');
+      text.className = 'stl-bubbletext';
+      text.textContent = value;
+      var note = document.createElement('p');
+      note.className = 'stl-bubblenote';
+      note.textContent = 'Preview only — not sent, no charge.';
+      li.appendChild(text);
+      li.appendChild(note);
+      list.appendChild(li);
+      input.value = '';
+      input.focus();
+    });
+
+    document.querySelectorAll('[data-stl-dead]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.preventDefault(); });
+    });
+
+    stlRender();
+  </script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corvus — First run preview</title>
+<style>
+  :root{
+    --uxa-bg:#000000;
+    --uxa-panel:#0d0d10;
+    --uxa-panel-soft:#111111;
+    --uxa-hairline:#1c1c20;
+    --uxa-border:#2a2a30;
+    --uxa-text:#ffffff;
+    --uxa-text-soft:#fafafa;
+    --uxa-body:#c9d1d9;
+    --uxa-muted:#8a8a93;
+    --uxa-pass:#22c55e;
+    --uxa-warn:#f59e0b;
+    --uxa-focus:#3cc0ae;
+    --uxa-radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--uxa-bg);
+    color:var(--uxa-text);
+    font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',ui-sans-serif,system-ui,sans-serif;
+    color-scheme:dark;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .uxa-strip{
+    width:100%;
+    text-align:center;
+    padding:8px 16px;
+    font-size:13px;
+    line-height:20px;
+    color:var(--uxa-muted);
+    border-bottom:1px solid var(--uxa-hairline);
+    background:#0d0d10;
+  }
+  .uxa-wrap{
+    width:100%;
+    max-width:640px;
+    padding:32px 20px 64px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .uxa-trial{
+    margin:0;
+    padding:12px 16px;
+    border:1px solid var(--uxa-border);
+    border-radius:var(--uxa-radius);
+    background:var(--uxa-panel);
+    color:var(--uxa-body);
+    font-size:14px;
+    line-height:20px;
+  }
+  .uxa-card{
+    background:var(--uxa-panel);
+    border:1px solid var(--uxa-hairline);
+    border-radius:var(--uxa-radius);
+    padding:24px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .uxa-progress{
+    margin:0;
+    color:var(--uxa-muted);
+    font-size:13px;
+    line-height:20px;
+    font-variant-numeric:tabular-nums;
+  }
+  .uxa-track{
+    height:4px;
+    border-radius:999px;
+    background:#262626;
+    overflow:hidden;
+  }
+  .uxa-fill{
+    height:100%;
+    border-radius:inherit;
+    background:var(--uxa-text);
+    transition:width 200ms ease;
+  }
+  .uxa-title{
+    margin:0;
+    font-size:24px;
+    line-height:28px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .uxa-sub{
+    margin:0;
+    color:var(--uxa-body);
+    font-size:14px;
+    line-height:20px;
+  }
+  .uxa-hint{
+    margin:0;
+    color:var(--uxa-muted);
+    font-size:13px;
+    line-height:20px;
+  }
+  .uxa-label{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    color:var(--uxa-body);
+    font-size:14px;
+    line-height:20px;
+    font-weight:500;
+  }
+  .uxa-input,.uxa-select{
+    height:44px;
+    padding:0 20px;
+    border-radius:999px;
+    border:1px solid var(--uxa-hairline);
+    background:var(--uxa-panel-soft);
+    color:var(--uxa-text);
+    font:inherit;
+    font-size:14px;
+    width:100%;
+  }
+  .uxa-input::placeholder{color:var(--uxa-muted)}
+  .uxa-input:hover{border-color:var(--uxa-border)}
+  .uxa-textarea{
+    min-height:88px;
+    padding:12px 20px;
+    border-radius:var(--uxa-radius);
+    border:1px solid var(--uxa-hairline);
+    background:var(--uxa-panel-soft);
+    color:var(--uxa-text);
+    font:inherit;
+    font-size:14px;
+    line-height:20px;
+    width:100%;
+    resize:vertical;
+  }
+  .uxa-textarea::placeholder{color:var(--uxa-muted)}
+  .uxa-cost{
+    margin:0;
+    color:var(--uxa-body);
+    font-size:13px;
+    line-height:20px;
+  }
+  .uxa-primary{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px 24px;
+    border-radius:999px;
+    border:1px solid #ffffff;
+    background:#ffffff;
+    color:#000000;
+    font:inherit;
+    font-size:14px;
+    line-height:20px;
+    font-weight:500;
+    cursor:pointer;
+    align-self:flex-start;
+  }
+  .uxa-primary:hover{background:var(--uxa-body);border-color:var(--uxa-body)}
+  .uxa-primary:active{transform:scale(0.98)}
+  .uxa-primary:disabled{opacity:0.45;cursor:not-allowed}
+  .uxa-back{
+    align-self:flex-start;
+    padding:8px 4px;
+    border:none;
+    background:transparent;
+    color:var(--uxa-muted);
+    font:inherit;
+    font-size:14px;
+    line-height:20px;
+    font-weight:500;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .uxa-back:hover{color:var(--uxa-text)}
+  .uxa-empty{
+    border:1px dashed var(--uxa-border);
+    border-radius:var(--uxa-radius);
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .uxa-empty-title{margin:0;font-size:15px;line-height:24px;font-weight:600}
+  .uxa-empty-text{margin:0;color:var(--uxa-muted);font-size:14px;line-height:20px}
+  .uxa-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--uxa-border);
+    background:var(--uxa-panel-soft);
+  }
+  .uxa-row-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+  .uxa-row-name{font-weight:500;font-size:15px;line-height:24px}
+  .uxa-row-sub{color:var(--uxa-muted);font-size:13px;line-height:20px}
+  .uxa-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    flex:none;
+    font-size:13px;
+    line-height:20px;
+    font-weight:500;
+    padding:3px 12px 3px 10px;
+    border-radius:999px;
+    border:1px solid var(--uxa-border);
+    background:var(--uxa-panel-soft);
+    color:var(--uxa-warn);
+    white-space:nowrap;
+  }
+  .uxa-dot{width:8px;height:8px;border-radius:50%;background:var(--uxa-warn);flex:none}
+  .uxa-pill-live{color:var(--uxa-pass)}
+  .uxa-pill-live .uxa-dot{background:var(--uxa-focus)}
+  .uxa-check{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 0;
+    border-bottom:1px solid var(--uxa-hairline);
+    color:var(--uxa-body);
+    font-size:14px;
+    line-height:20px;
+  }
+  .uxa-check:last-child{border-bottom:none}
+  .uxa-pre-dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--uxa-pass)}
+  .uxa-pre-warn{background:var(--uxa-warn)}
+  .uxa-preview-note{
+    margin:0;
+    padding:10px 16px;
+    border-radius:12px;
+    border:1px solid var(--uxa-border);
+    background:var(--uxa-panel-soft);
+    color:var(--uxa-muted);
+    font-size:13px;
+    line-height:20px;
+  }
+  .uxa-bubble{
+    margin:0;
+    padding:12px 16px;
+    border-radius:var(--uxa-radius);
+    border:1px solid var(--uxa-border);
+    background:var(--uxa-panel-soft);
+    font-size:14px;
+    line-height:20px;
+  }
+  .uxa-bubble-tag{
+    display:block;
+    color:var(--uxa-muted);
+    font-size:12px;
+    line-height:16px;
+    font-weight:500;
+    margin-bottom:4px;
+  }
+  .uxa-step{display:none}
+  .uxa-step[data-active="true"]{display:flex;flex-direction:column;gap:16px}
+  .uxa-wrap button:focus-visible,.uxa-wrap input:focus-visible,.uxa-wrap textarea:focus-visible,.uxa-wrap select:focus-visible{
+    outline:2px solid var(--uxa-focus);
+    outline-offset:2px;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .uxa-fill{transition:none}
+  }
+</style>
+</head>
+<body>
+<p class="uxa-strip">Design preview - example data.</p>
+
+<main class="uxa-wrap">
+  <p class="uxa-trial">Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+
+  <!-- Step 1 of 6 : connect -->
+  <section class="uxa-step" data-active="true" data-step="1" aria-labelledby="uxa-t1">
+    <div class="uxa-card">
+      <p class="uxa-progress">Step 1 of 6</p>
+      <div class="uxa-track" aria-hidden="true"><div class="uxa-fill" style="width:17%"></div></div>
+      <h1 class="uxa-title" id="uxa-t1">Connect your server</h1>
+      <p class="uxa-sub">Your bot needs one Discord server to welcome people in. Connect it first, everything else follows.</p>
+      <div class="uxa-empty">
+        <p class="uxa-empty-title">No servers connected</p>
+        <p class="uxa-empty-text">Nothing is linked yet. Connecting takes less than a minute and you can remove it at any time.</p>
+      </div>
+      <button class="uxa-primary" type="button" data-next="2">Connect Discord server</button>
+    </div>
+  </section>
+
+  <!-- Step 2 of 6 : purpose (Q1 of 4) -->
+  <section class="uxa-step" data-active="false" data-step="2" aria-labelledby="uxa-t2">
+    <div class="uxa-card">
+      <p class="uxa-progress">Step 2 of 6 · Question 1 of 4</p>
+      <div class="uxa-track" aria-hidden="true"><div class="uxa-fill" style="width:33%"></div></div>
+      <h1 class="uxa-title" id="uxa-t2">What is this bot for?</h1>
+      <p class="uxa-hint">One or two sentences — e.g. a study group, a gaming clan.</p>
+      <label class="uxa-label" for="uxa-purpose">Your answer
+        <input class="uxa-input" id="uxa-purpose" type="text" maxlength="500" placeholder="A study group for exam season" autocomplete="off">
+      </label>
+      <button class="uxa-primary" type="button" data-next="3" data-require="uxa-purpose">Continue</button>
+      <button class="uxa-back" type="button" data-next="1">Back</button>
+    </div>
+  </section>
+
+  <!-- Step 3 of 6 : channels (Q2 of 4) -->
+  <section class="uxa-step" data-active="false" data-step="3" aria-labelledby="uxa-t3">
+    <div class="uxa-card">
+      <p class="uxa-progress">Step 3 of 6 · Question 2 of 4</p>
+      <div class="uxa-track" aria-hidden="true"><div class="uxa-fill" style="width:50%"></div></div>
+      <h1 class="uxa-title" id="uxa-t3">Which channels should the bot live in?</h1>
+      <p class="uxa-hint">Name the channels, e.g. #general and #announcements.</p>
+      <label class="uxa-label" for="uxa-channels">Your answer
+        <input class="uxa-input" id="uxa-channels" type="text" maxlength="500" placeholder="#general and #announcements" autocomplete="off">
+      </label>
+      <button class="uxa-primary" type="button" data-next="4" data-require="uxa-channels">Continue</button>
+      <button class="uxa-back" type="button" data-next="2">Back</button>
+    </div>
+  </section>
+
+  <!-- Step 4 of 6 : welcome (Q3 of 4) -->
+  <section class="uxa-step" data-active="false" data-step="4" aria-labelledby="uxa-t4">
+    <div class="uxa-card">
+      <p class="uxa-progress">Step 4 of 6 · Question 3 of 4</p>
+      <div class="uxa-track" aria-hidden="true"><div class="uxa-fill" style="width:67%"></div></div>
+      <h1 class="uxa-title" id="uxa-t4">What should the welcome message say?</h1>
+      <p class="uxa-hint">The exact text new members should see when they join.</p>
+      <label class="uxa-label" for="uxa-welcome">Your answer
+        <textarea class="uxa-textarea" id="uxa-welcome" maxlength="500" placeholder="Welcome in, read the pinned rules and say hi"></textarea>
+      </label>
+      <button class="uxa-primary" type="button" data-next="5" data-require="uxa-welcome">Continue</button>
+      <button class="uxa-back" type="button" data-next="3">Back</button>
+    </div>
+  </section>
+
+  <!-- Step 5 of 6 : moderation (Q4 of 4) -->
+  <section class="uxa-step" data-active="false" data-step="5" aria-labelledby="uxa-t5">
+    <div class="uxa-card">
+      <p class="uxa-progress">Step 5 of 6 · Question 4 of 4</p>
+      <div class="uxa-track" aria-hidden="true"><div class="uxa-fill" style="width:83%"></div></div>
+      <h1 class="uxa-title" id="uxa-t5">How strict should moderation be?</h1>
+      <p class="uxa-hint">Pick a level: off, light, or strict.</p>
+      <label class="uxa-label" for="uxa-moderation">Your answer
+        <select class="uxa-select" id="uxa-moderation">
+          <option value="light" selected>Light</option>
+          <option value="off">Off</option>
+          <option value="strict">Strict</option>
+        </select>
+      </label>
+      <button class="uxa-primary" type="button" data-next="6">See my bot working</button>
+      <button class="uxa-back" type="button" data-next="4">Back</button>
+    </div>
+  </section>
+
+  <!-- Step 6 of 6 : working -->
+  <section class="uxa-step" data-active="false" data-step="6" aria-labelledby="uxa-t6">
+    <div class="uxa-card">
+      <p class="uxa-progress">Step 6 of 6 · Done</p>
+      <div class="uxa-track" aria-hidden="true"><div class="uxa-fill" style="width:100%"></div></div>
+      <h1 class="uxa-title" id="uxa-t6">Your bot welcomed someone</h1>
+      <p class="uxa-sub">This is Draft Arena, running in trial. Type a test hello below and see exactly what a new member would see.</p>
+      <div class="uxa-row">
+        <div class="uxa-row-main">
+          <span class="uxa-row-name">Draft Arena</span>
+          <span class="uxa-row-sub">Trial · 82 of 100 credits left</span>
+        </div>
+        <span class="uxa-pill"><span class="uxa-dot" aria-hidden="true"></span>Trial</span>
+      </div>
+      <div class="uxa-check"><span class="uxa-pre-dot" aria-hidden="true"></span>Token and permissions look right</div>
+      <div class="uxa-check"><span class="uxa-pre-dot" aria-hidden="true"></span>Rate limits within caps</div>
+      <label class="uxa-label" for="uxa-test">Send a test message
+        <input class="uxa-input" id="uxa-test" type="text" maxlength="500" placeholder="Type hello as a new member" autocomplete="off">
+      </label>
+      <p class="uxa-cost">Each message costs about 1 credit.</p>
+      <button class="uxa-primary" type="button" id="uxa-send">Send test message</button>
+      <div id="uxa-result" hidden>
+        <p class="uxa-bubble"><span class="uxa-bubble-tag">Preview</span><span id="uxa-echo"></span></p>
+        <p class="uxa-preview-note">Preview only. Nothing was sent to Discord and no credits were used.</p>
+      </div>
+      <button class="uxa-back" type="button" data-next="5">Back</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var steps = Array.prototype.slice.call(document.querySelectorAll(".uxa-step"));
+
+  function show(n) {
+    steps.forEach(function (s) {
+      s.setAttribute("data-active", s.getAttribute("data-step") === String(n) ? "true" : "false");
+    });
+    var current = document.querySelector('.uxa-step[data-step="' + n + '"]');
+    if (current) {
+      var field = current.querySelector("input, textarea, select");
+      if (field) { field.focus(); }
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function gate(input) {
+    var btn = input.closest(".uxa-card").querySelector("[data-require]");
+    if (!btn) { return; }
+    btn.disabled = input.value.trim().length === 0;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-require]"), function (btn) {
+    var input = document.getElementById(btn.getAttribute("data-require"));
+    if (input) {
+      gate(input);
+      input.addEventListener("input", function () { gate(input); });
+    }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-next]"), function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.disabled) { return; }
+      show(btn.getAttribute("data-next"));
+    });
+  });
+
+  var send = document.getElementById("uxa-send");
+  var test = document.getElementById("uxa-test");
+  var result = document.getElementById("uxa-result");
+  var echo = document.getElementById("uxa-echo");
+
+  send.addEventListener("click", function () {
+    var value = test.value.trim();
+    if (value.length === 0) { test.focus(); return; }
+    echo.textContent = value;
+    result.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bots — Corvus (Design Preview)</title>
+<meta name="description" content="Corvus dashboard bots workbench design preview. Example data only.">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg:#000000; --card:#0d0d10; --line:#1c1c20; --line2:#2a2a30;
+    --fg:#ffffff; --muted:#8a8a93; --muted2:#c9d1d9;
+    --trial:#f59e0b; --pass:#22C55E; --focus:#3cc0ae;
+  }
+  html{ font-size:16px; }
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',ui-sans-serif,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; color-scheme:dark;
+  }
+  .mono{ font-family:'Geist Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+  .strip{
+    font-family:'Geist Mono',ui-monospace,monospace; font-size:12px; text-align:center;
+    color:var(--muted); background:#0d0d10; border-bottom:1px solid var(--line); padding:8px 16px;
+  }
+  .shell{ display:flex; min-height:calc(100vh - 33px); }
+  .rail{
+    width:240px; flex:none; background:#000; border-right:1px solid var(--line);
+    padding:16px 12px; display:flex; flex-direction:column; gap:16px;
+    position:sticky; top:0; height:calc(100vh - 33px);
+  }
+  .workspace{ display:flex; align-items:center; gap:8px; padding:4px 8px; min-width:0; }
+  .avatar-sm{
+    width:28px; height:28px; flex:none; border-radius:50%; background:#262626; color:#fafafa;
+    display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:600;
+  }
+  .ws-name{ font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pro{
+    margin-left:auto; flex:none; font-size:12px; font-weight:500; padding:2px 10px; border-radius:999px;
+    border:1px solid var(--line2); background:#111111; color:var(--muted2);
+  }
+  .navlist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .navitem{
+    display:flex; align-items:center; gap:10px; width:100%; padding:8px 12px; border-radius:999px;
+    color:var(--muted); font-size:14px; font-weight:500; text-decoration:none;
+    transition:background-color 200ms ease, color 200ms ease;
+  }
+  .navitem:hover{ background:#111111; color:#ffffff; }
+  .navitem.active{ background:#262626; color:#fafafa; }
+  .navitem svg{ width:14px; height:14px; flex:none; }
+  .railfoot{ margin-top:auto; display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding:16px 8px 0; }
+  .creditsline{ margin:0; color:var(--muted2); font-size:13px; font-weight:500; }
+  .meter{ height:4px; border-radius:999px; background:#262626; overflow:hidden; }
+  .meter > div{ height:100%; width:82%; border-radius:inherit; background:#ffffff; }
+  .upgrade{
+    align-self:flex-start; padding:6px 16px; border-radius:999px; border:1px solid var(--line2);
+    background:#262626; color:#fafafa; font-size:13px; font-weight:500; cursor:pointer;
+  }
+  .upgrade:hover{ background:#111111; border-color:var(--muted); }
+  .main{ flex:1; min-width:0; padding:32px; display:flex; flex-direction:column; gap:20px; }
+  .page-title{ margin:0; font-size:32px; line-height:38px; font-weight:700; letter-spacing:-0.01em; }
+  .page-sub{ margin:4px 0 0; color:var(--muted); font-size:16px; line-height:24px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .card-title{ margin:0; font-size:20px; line-height:28px; font-weight:600; }
+  .card-sub{ margin:0; color:var(--muted); font-size:15px; line-height:22px; }
+  .switcher{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .swcard{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px;
+    display:flex; flex-direction:column; gap:12px; text-align:left; color:inherit; cursor:pointer; width:100%;
+    transition:border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+  }
+  .swcard:hover{ border-color:var(--line2); }
+  .swcard[aria-pressed="true"]{ border-color:#fafafa; box-shadow:0 0 0 1px #fafafa; background:#111113; }
+  .bot-top{ display:flex; align-items:center; gap:16px; }
+  .avatar-lg{
+    width:56px; height:56px; flex:none; border-radius:50%; background:#262626; color:#fafafa;
+    display:inline-flex; align-items:center; justify-content:center; font-size:20px; font-weight:600;
+    border:1px solid var(--line2);
+  }
+  .bot-name{ margin:0; font-size:19px; line-height:26px; font-weight:600; }
+  .bot-meta{ margin:2px 0 0; color:var(--muted); font-size:14px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; flex:none; align-self:flex-start;
+    font-size:13px; font-weight:500; padding:3px 12px 3px 10px; border-radius:999px;
+    border:1px solid var(--line2); background:#111111; white-space:nowrap;
+  }
+  .pill .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+  .pill-online{ color:var(--pass); } .pill-online .dot{ background:var(--focus); }
+  .pill-trial{ color:var(--trial); } .pill-trial .dot{ background:var(--trial); }
+  .pill-offline{ color:var(--muted); } .pill-offline .dot{ background:var(--muted); }
+  .detail-head{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .detail-name{ margin:0; font-size:30px; line-height:36px; font-weight:600; letter-spacing:-0.01em; }
+  .trial-line{ margin:0; color:var(--muted2); font-size:15px; line-height:24px; }
+  .actions{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .btn-primary{
+    display:inline-flex; align-items:center; justify-content:center; height:46px; padding:0 24px;
+    border-radius:999px; border:1px solid #ffffff; background:#ffffff; color:#000000;
+    font-size:15px; font-weight:600; white-space:nowrap; cursor:pointer;
+  }
+  .btn-primary:hover{ background:var(--muted2); border-color:var(--muted2); }
+  .btn-ghost{
+    display:inline-flex; align-items:center; justify-content:center; height:46px; padding:0 24px;
+    border-radius:999px; border:1px solid var(--line2); background:transparent; color:#fafafa;
+    font-size:15px; font-weight:600; white-space:nowrap; cursor:pointer;
+  }
+  .btn-ghost:hover{ background:#111111; border-color:var(--muted); }
+  .btn-text{
+    padding:8px 4px; border:none; background:transparent; color:var(--muted);
+    font-size:15px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:3px;
+  }
+  .btn-text:hover{ color:#ffffff; }
+  .tray{
+    background:rgb(255 255 255 / 0.08); border-radius:16px; padding:16px;
+    -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / 0.1);
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .field-label{ color:var(--muted2); font-size:15px; font-weight:600; }
+  .composer{ display:flex; gap:12px; }
+  .composer input{
+    flex:1; min-width:0; height:56px; padding:0 22px; border-radius:999px;
+    border:1px solid var(--line); background:#111111; color:#ffffff; font:inherit; font-size:15px;
+  }
+  .composer input::placeholder{ color:var(--muted); }
+  .composer input:hover{ border-color:var(--line2); }
+  .composer button{
+    flex:none; height:56px; padding:0 30px; border-radius:999px; border:1px solid #ffffff;
+    background:#ffffff; color:#000000; font:inherit; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .composer button:hover{ background:var(--muted2); border-color:var(--muted2); }
+  .chips{ display:flex; gap:10px; flex-wrap:wrap; }
+  .chip{
+    height:40px; padding:0 18px; border-radius:999px; border:1px solid var(--line2);
+    background:transparent; color:var(--muted2); font-size:14px; font-weight:500; cursor:pointer;
+  }
+  .chip:hover{ background:#111111; border-color:var(--muted); color:#ffffff; }
+  .twocol{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .rows{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .arow{
+    display:flex; align-items:baseline; gap:12px; padding:14px 0; border-bottom:1px solid var(--line);
+  }
+  .arow:last-child{ border-bottom:none; }
+  .atext{ color:var(--muted2); font-size:15px; line-height:22px; flex:1; min-width:0; }
+  .atime{ color:var(--muted); font-size:13px; white-space:nowrap; }
+  .prow{ display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); color:var(--muted2); font-size:15px; }
+  .prow:last-child{ border-bottom:none; }
+  .predot{ width:10px; height:10px; border-radius:50%; flex:none; }
+  .pre-pass{ background:var(--pass); } .pre-warn{ background:var(--trial); }
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  @media (max-width:1100px){
+    .switcher{ grid-template-columns:1fr; }
+    .twocol{ grid-template-columns:1fr; }
+    .rail{ display:none; }
+    .composer{ flex-direction:column; }
+    .composer button{ width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<p class="strip">Design preview - example data.</p>
+
+<div class="shell">
+  <nav aria-label="Primary" class="rail">
+    <div class="workspace">
+      <span aria-hidden="true" class="avatar-sm">M</span>
+      <span class="ws-name">My server</span>
+      <span class="pro">Pro</span>
+    </div>
+    <ul class="navlist">
+      <li><a class="navitem" href="dash-home.html"><i data-lucide="home"></i>Home</a></li>
+      <li><a class="navitem active" aria-current="page" href="dash-bots.html"><i data-lucide="bot"></i>Bots</a></li>
+      <li><a class="navitem" href="dash-templates.html"><i data-lucide="layout-template"></i>Templates</a></li>
+      <li><a class="navitem" href="dash-bots.html#builder"><i data-lucide="messages-square"></i>Interview</a></li>
+      <li><a class="navitem" href="dash-home.html#week"><i data-lucide="activity"></i>Activity</a></li>
+      <li><a class="navitem" href="dash-bots.html#preflight"><i data-lucide="shield-check"></i>Pre-flight</a></li>
+      <li><a class="navitem" href="dash-home.html#workspace"><i data-lucide="settings"></i>Settings</a></li>
+    </ul>
+    <div class="railfoot">
+      <p class="creditsline mono">Credits 82/100</p>
+      <div class="meter" role="progressbar" aria-label="Credits" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><div></div></div>
+      <button type="button" class="upgrade" data-dead>Upgrade</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div>
+      <h1 class="page-title">Bots</h1>
+      <p class="page-sub">Pick a bot. Everything below follows it.</p>
+    </div>
+
+    <div class="switcher" role="group" aria-label="Pick a bot" id="switcher">
+      <button type="button" class="swcard" data-bot="bot-1" aria-pressed="true">
+        <div class="bot-top">
+          <span class="avatar-lg" aria-hidden="true">S</span>
+          <div><h2 class="bot-name">Study Hall</h2><p class="bot-meta mono">1,240 members · 3 servers</p></div>
+        </div>
+        <span class="pill pill-online"><span class="dot" aria-hidden="true"></span>Live</span>
+      </button>
+      <button type="button" class="swcard" data-bot="bot-2" aria-pressed="false">
+        <div class="bot-top">
+          <span class="avatar-lg" aria-hidden="true">D</span>
+          <div><h2 class="bot-name">Draft Arena</h2><p class="bot-meta mono">86 members · 1 server</p></div>
+        </div>
+        <span class="pill pill-trial"><span class="dot" aria-hidden="true"></span>Trial</span>
+      </button>
+      <button type="button" class="swcard" data-bot="bot-3" aria-pressed="false">
+        <div class="bot-top">
+          <span class="avatar-lg" aria-hidden="true">N</span>
+          <div><h2 class="bot-name">Night Market mods</h2><p class="bot-meta mono">2,013 members · 2 servers</p></div>
+        </div>
+        <span class="pill pill-offline"><span class="dot" aria-hidden="true"></span>Offline</span>
+      </button>
+    </div>
+
+    <section class="card" aria-label="Bot details">
+      <div class="detail-head">
+        <h2 class="detail-name" id="detail-name">Study Hall</h2>
+        <span class="pill pill-online" id="detail-pill"><span class="dot" aria-hidden="true"></span><span id="detail-pill-label">Live</span></span>
+      </div>
+      <p class="trial-line" id="detail-trial" hidden>Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.</p>
+      <div class="actions">
+        <button type="button" class="btn-ghost" data-dead>Open</button>
+        <button type="button" class="btn-primary" data-dead>Publish</button>
+        <button type="button" class="btn-text" data-dead>Rollback</button>
+      </div>
+    </section>
+
+    <section class="card" id="builder" aria-label="Builder" tabindex="-1">
+      <h2 class="card-title">Builder</h2>
+      <div class="tray">
+        <label class="field-label" for="ai-change">Describe a change to your bot</label>
+        <form id="composer-form" class="composer">
+          <input id="ai-change" type="text" placeholder="Describe a change…" autocomplete="off">
+          <button type="submit" aria-label="Send change">Send</button>
+        </form>
+        <div class="chips" aria-label="Example changes">
+          <button type="button" class="chip" data-suggest="Welcome new members">Welcome new members</button>
+          <button type="button" class="chip" data-suggest="Keep spam out">Keep spam out</button>
+          <button type="button" class="chip" data-suggest="Reward regulars with XP">Reward regulars with XP</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="twocol">
+      <section class="card" aria-label="Recent activity">
+        <h2 class="card-title">Recent activity</h2>
+        <ul class="rows" id="activity-list"></ul>
+      </section>
+      <section class="card" id="preflight" aria-label="Pre-flight" tabindex="-1">
+        <h2 class="card-title">Pre-flight</h2>
+        <ul class="rows">
+          <li class="prow"><span class="predot pre-pass" aria-hidden="true"></span>Token and permissions look right</li>
+          <li class="prow"><span class="predot pre-pass" aria-hidden="true"></span>Rate limits within caps</li>
+          <li class="prow"><span class="predot pre-warn" aria-hidden="true"></span>Welcome reply targets a hidden channel</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+  var BOTS = {
+    'bot-1': { name: 'Study Hall', status: 'online', pillClass: 'pill-online', pillLabel: 'Live', trial: false },
+    'bot-2': { name: 'Draft Arena', status: 'trial', pillClass: 'pill-trial', pillLabel: 'Trial', trial: true },
+    'bot-3': { name: 'Night Market mods', status: 'offline', pillClass: 'pill-offline', pillLabel: 'Offline', trial: false }
+  };
+
+  function activityFor(name) {
+    return [
+      { text: 'Published ' + name + ' v12', time: '2h ago' },
+      { text: 'Simulated welcome flow', time: '5h ago' },
+      { text: 'Rolled back ' + name + ' to v11', time: 'yesterday' },
+      { text: 'Published ' + name + ' v11', time: '3d ago' }
+    ];
+  }
+
+  function selectBot(id) {
+    var bot = BOTS[id];
+    if (bot === undefined) { return; }
+    var cards = document.querySelectorAll('#switcher .swcard');
+    cards.forEach(function (card) {
+      var active = card.getAttribute('data-bot') === id;
+      card.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    document.getElementById('detail-name').textContent = bot.name;
+    var pill = document.getElementById('detail-pill');
+    pill.className = 'pill ' + bot.pillClass;
+    document.getElementById('detail-pill-label').textContent = bot.pillLabel;
+    var trial = document.getElementById('detail-trial');
+    if (bot.trial) { trial.removeAttribute('hidden'); } else { trial.setAttribute('hidden', ''); }
+    var list = document.getElementById('activity-list');
+    list.innerHTML = '';
+    activityFor(bot.name).forEach(function (item) {
+      var li = document.createElement('li');
+      li.className = 'arow';
+      var text = document.createElement('span');
+      text.className = 'atext';
+      text.textContent = item.text;
+      var time = document.createElement('span');
+      time.className = 'atime';
+      time.textContent = item.time;
+      li.appendChild(text);
+      li.appendChild(time);
+      list.appendChild(li);
+    });
+  }
+
+  document.querySelectorAll('#switcher .swcard').forEach(function (card) {
+    card.addEventListener('click', function () {
+      selectBot(card.getAttribute('data-bot'));
+    });
+  });
+
+  var input = document.getElementById('ai-change');
+  document.querySelectorAll('[data-suggest]').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      input.value = chip.getAttribute('data-suggest');
+      input.focus();
+    });
+  });
+  document.getElementById('composer-form').addEventListener('submit', function (e) { e.preventDefault(); });
+
+  document.querySelectorAll('[data-dead]').forEach(function (el) {
+    el.addEventListener('click', function (e) { e.preventDefault(); });
+  });
+
+  selectBot('bot-1');
+  if (window.lucide) { lucide.createIcons(); }
+</script>
+</body>
+</html>

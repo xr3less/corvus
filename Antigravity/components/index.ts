@@ -1,0 +1,14 @@
+﻿export * from './Navbar';
+export * from './Hero';
+export * from './OnboardCard';
+export * from './SocialProofMarquee';
+export * from './FeaturesCarousel';
+export * from './BentoGrid';
+export * from './BotTemplatesGrid';
+export * from './RemixGrid';
+export * from './Pricing';
+export * from './FaqAccordion';
+export * from './Footer';
+export { Velaris, default as VelarisComponent } from './ui/velaris';
+export type { VelarisProps } from './ui/velaris';
+export { VelarisDemo, default as VelarisDemoComponent } from './ui/demo';
