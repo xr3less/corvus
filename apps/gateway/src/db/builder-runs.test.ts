@@ -1093,6 +1093,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   email text,
   creem_id text,
   credits numeric NOT NULL DEFAULT 0,
+  tier text NOT NULL DEFAULT 'trial',
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS bots (
@@ -1115,6 +1116,7 @@ CREATE TABLE IF NOT EXISTS ai_spend (
   credits numeric,
   reason text NOT NULL,
   ref_id uuid,
+  attempt integer,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE ai_spend ADD COLUMN IF NOT EXISTS attempt integer;

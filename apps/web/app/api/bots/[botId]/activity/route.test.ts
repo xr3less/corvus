@@ -55,7 +55,8 @@ if (!probe.ok) {
 }
 
 // Inline fallback DDL matching the sibling migrations verbatim (0001_init,
-// 0003_v12, 0006_audit_events). Read first; this only covers an unreadable
+// 0003_v12, 0006_audit_events) plus 0008/0009 parity (accounts.tier,
+// ai_spend.attempt). Read first; this only covers an unreadable
 // migration.
 const FALLBACK_DDL = `
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   email text,
   creem_id text,
   credits numeric NOT NULL DEFAULT 0,
+  tier text NOT NULL DEFAULT 'trial',
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS bots (
@@ -96,6 +98,7 @@ CREATE TABLE IF NOT EXISTS ai_spend (
   credits numeric,
   reason text NOT NULL,
   ref_id uuid,
+  attempt integer,
   created_at timestamptz NOT NULL DEFAULT now()
 );`;
 
@@ -122,6 +125,25 @@ async function ensurePg(): Promise<void> {
     }
   }
   await pool.query(FALLBACK_DDL);
+  // Self-heal for the cross-workspace shared-DB path: real migrations may have
+  // applied (fallback no-op) on an older tree lacking 0008/0009, or vice versa.
+  // Best-effort — loud warn, never fail the hook on repair DDL.
+  try {
+    await pool.query(
+      `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS tier text NOT NULL DEFAULT 'trial'`,
+    );
+  } catch (error) {
+    console.warn(
+      `[activity.route.test] self-heal accounts.tier failed: ${(error as Error).message}`,
+    );
+  }
+  try {
+    await pool.query('ALTER TABLE ai_spend ADD COLUMN IF NOT EXISTS attempt integer');
+  } catch (error) {
+    console.warn(
+      `[activity.route.test] self-heal ai_spend.attempt failed: ${(error as Error).message}`,
+    );
+  }
   pgReady = true;
 }
 

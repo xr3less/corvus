@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   email text,
   creem_id text,
   credits numeric NOT NULL DEFAULT 0,
+  tier text NOT NULL DEFAULT 'trial',
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS bots (

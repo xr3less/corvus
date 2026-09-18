@@ -601,6 +601,18 @@ beforeAll(async () => {
     await candidate.end().catch(() => undefined);
     return;
   }
+  // Shared CI DB means an older suite may have created public.ai_spend without
+  // the 0009 column (its fallback DDL predates it). Self-heal: add it if absent.
+  // Best-effort — never fail the hook on repair DDL.
+  try {
+    await candidate.query('ALTER TABLE ai_spend ADD COLUMN IF NOT EXISTS attempt integer;');
+  } catch (error) {
+    pgSkipped = `ai.test: SKIP — could not self-heal ai_spend.attempt. Cause: ${
+      (error as Error).message
+    }`;
+    await candidate.end().catch(() => undefined);
+    return;
+  }
   pgPool = candidate;
 }, 30_000);
 
