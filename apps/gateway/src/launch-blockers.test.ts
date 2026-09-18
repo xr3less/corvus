@@ -215,7 +215,40 @@ function buildKillWorkerSource(): string {
 
 // ---------------------------------------------------------------------------
 // Suite setup: run the shipped migration (idempotent), clean up afterwards.
+//
+// The CI job (.github/workflows/ci.yml) starts postgres:17 and runs `npm test`
+// with NO migration step, so the database reaches this suite EMPTY. Two
+// consequences are handled explicitly below:
+//   1. `gen_random_uuid()` HAS been core since Postgres 13, so a fresh
+//      postgres:17 satisfies the migration's DEFAULT expressions with no
+//      pgcrypto at all (verified against postgres:17.11). The extension is
+//      still requested first, defensively, so the suite keeps working on any
+//      image where the function is only available via the contrib module.
+//   2. The suite owns its schema: it applies 0001_init.sql (which creates the
+//      ONLY two tables it touches, bots + user_records) and its cleanup
+//      truncates exactly that same set. Migrations owned by other V1 specs
+//      (spec_versions in 0002_v11.sql, guild_installs in 0005_guilds.sql) are
+//      deliberately NOT applied here and therefore must NOT be truncated — an
+//      empty CI DB has no such relations and naming one would red the suite in
+//      afterAll.
 // ---------------------------------------------------------------------------
+
+// The ONLY tables this suite creates and writes (0001_init.sql), in FK-safe
+// order for a single TRUNCATE ... CASCADE. Setup and cleanup share this one
+// constant so the two sets can never drift apart again.
+const SUITE_TABLES = ['user_records', 'bots'] as const;
+
+// Extensions the migration's DEFAULT expressions depend on. CREATE EXTENSION is
+// not reachable for the unprivileged CI role in every image, so a failure is
+// tolerated: if another suite already enabled it, the migration still applies.
+const REQUIRED_EXTENSIONS = ['pgcrypto'] as const;
+
+function splitStatements(sql: string): string[] {
+  return sql
+    .split('--> statement-breakpoint')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
 
 describe('launch blockers (real Postgres)', () => {
   beforeAll(async () => {
@@ -229,13 +262,22 @@ describe('launch blockers (real Postgres)', () => {
       return;
     }
     await mkdir(SCRATCH_DIR, { recursive: true });
+
+    for (const extension of REQUIRED_EXTENSIONS) {
+      try {
+        await pool.query(`CREATE EXTENSION IF NOT EXISTS ${extension};`);
+      } catch (error) {
+        console.warn(
+          `[launch-blockers] could not create extension ${extension} (insufficient privilege?); ` +
+            'continuing — the migration below still needs it to exist. Cause:',
+          error,
+        );
+      }
+    }
+
     const migrationUrl = new URL('../drizzle/0001_init.sql', import.meta.url);
     const sql = await readFile(migrationUrl, 'utf8');
-    const statements = sql
-      .split('--> statement-breakpoint')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    for (const statement of statements) {
+    for (const statement of splitStatements(sql)) {
       await pool.query(statement);
     }
   }, 60_000);
@@ -249,9 +291,11 @@ describe('launch blockers (real Postgres)', () => {
       }
       return;
     }
-    // spec_versions (V1-1) + guild_installs (V1-4) reference bots: truncate
-    // all four in one statement so every FK is satisfied within the command.
-    await pool.query('TRUNCATE TABLE user_records, spec_versions, guild_installs, bots;');
+    // Truncate EXACTLY the tables beforeAll created (SUITE_TABLES), in one
+    // statement so every FK is satisfied within the command. Naming a table
+    // this suite never created (spec_versions, guild_installs) would throw
+    // `relation does not exist` against the empty CI database.
+    await pool.query(`TRUNCATE TABLE ${SUITE_TABLES.join(', ')} CASCADE;`);
     await pool.end();
   }, 60_000);
 

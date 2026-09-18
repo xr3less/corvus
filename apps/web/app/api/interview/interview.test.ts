@@ -42,10 +42,25 @@ if (!probe.ok) {
 }
 
 // Inline fallback DDL matching SPEC section 4 verbatim. Runs when the sibling
-// T-v11-db migration (gateway/drizzle/0002_v11.sql) is not present yet; every
-// statement is IF NOT EXISTS so it is a no-op once the sibling lands.
+// migrations are not present yet; every statement is IF NOT EXISTS so it is a
+// no-op once they land. It must be SUFFICIENT ON ITS OWN — the live routes
+// touch bots (start route) and interview_progress (answer route's durable
+// progress store, V1-2), neither of which the sibling files alone guarantee on
+// an empty CI database. Order matters: bots before spec_versions (FK).
 const FALLBACK_DDL = `
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS bots (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL,
+  name text NOT NULL,
+  token_cipher bytea NOT NULL,
+  prod_spec_id uuid,
+  draft_spec_id uuid,
+  status text NOT NULL,
+  deleted_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   discord_id text UNIQUE NOT NULL,
@@ -70,24 +85,44 @@ CREATE TABLE IF NOT EXISTS spec_versions (
   state text NOT NULL DEFAULT 'draft',
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (bot_id, version)
-);`;
+);
+CREATE TABLE IF NOT EXISTS interview_progress (
+  interview_id uuid PRIMARY KEY,
+  payload jsonb NOT NULL,
+  updated_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS interview_progress_expires_at_idx ON interview_progress (expires_at);`;
 
 let migrationSource = 'none (database unreachable)';
 
 async function ensureSchema(pool: Pool): Promise<void> {
-  const sibling = new URL('../../../../../gateway/drizzle/0002_v11.sql', import.meta.url);
-  let siblingSql: string | null = null;
-  try {
-    siblingSql = await readFile(sibling, 'utf8');
-  } catch {
-    // Sibling migration not present yet — fallback path below.
+  // Four levels up from app/api/interview/ lands on apps/, where the gateway
+  // package lives (apps/gateway/drizzle/...). Five levels overshot to the repo
+  // root, where no gateway/ directory exists, so the sibling was never read.
+  // Applied in dependency order (bots before spec_versions' FK, accounts before
+  // ai_spend's FK) and each file individually try/caught: a file that cannot
+  // apply on its own must not abort the setup, because the fallback DDL below
+  // is self-sufficient.
+  const sources = [
+    '../../../../gateway/drizzle/0001_init.sql',
+    '../../../../gateway/drizzle/0002_v11.sql',
+    '../../../../gateway/drizzle/0003_v12.sql',
+  ];
+  let applied = 0;
+  for (const relative of sources) {
+    try {
+      const sql = await readFile(new URL(relative, import.meta.url), 'utf8');
+      await pool.query(sql);
+      applied += 1;
+    } catch {
+      // Sibling migration not readable/applicable yet — fallback path below.
+    }
   }
-  if (siblingSql !== null) {
-    await pool.query(siblingSql);
-    migrationSource = '0002_v11.sql (sibling migration) + inline no-op fallback';
-  } else {
-    migrationSource = 'inline-fallback (0002_v11.sql absent)';
-  }
+  migrationSource =
+    applied === sources.length
+      ? '0001_init.sql + 0002_v11.sql + 0003_v12.sql (sibling migrations)'
+      : `inline-fallback (${applied}/${sources.length} sibling files applied)`;
   await pool.query(FALLBACK_DDL);
   console.info(`[interview.test] schema ready via ${migrationSource}`);
 }

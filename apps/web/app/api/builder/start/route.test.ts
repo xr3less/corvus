@@ -6,6 +6,7 @@
 // never a silent skip.
 
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
 import type { SendOptions } from 'pg-boss';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -380,6 +381,71 @@ describe('POST /api/builder/start', () => {
 
 // --- Live PG path: runs when reachable, LOUD skip otherwise ---
 
+// Minimal schema for the live ownership read: the route runs
+// `SELECT id FROM bots WHERE id = $1 AND account_id = $2 AND deleted_at IS
+// NULL` (start/route.ts:109-112) BEFORE any INSERT, so `bots` alone decides
+// whether the 404 path is reachable. On an empty database the relation is
+// absent, the read throws, and the route answers 500 'could not start build'
+// instead of 404 'bot not found'.
+//
+// Columns are verbatim from the sibling migration
+// (apps/gateway/drizzle/0001_init.sql) for the columns this route reads.
+const REQUIRED_TABLES = ['bots'] as const;
+
+const FALLBACK_DDL = [
+  // Defensive only: gen_random_uuid() has been Postgres core since v13, so a
+  // fresh postgres:17 provides it without this extension.
+  'CREATE EXTENSION IF NOT EXISTS pgcrypto',
+  `CREATE TABLE IF NOT EXISTS bots (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     account_id uuid NOT NULL,
+     name text NOT NULL,
+     token_cipher bytea NOT NULL,
+     prod_spec_id uuid,
+     draft_spec_id uuid,
+     status text NOT NULL,
+     deleted_at timestamptz,
+     created_at timestamptz NOT NULL DEFAULT now(),
+     updated_at timestamptz NOT NULL DEFAULT now()
+   )`,
+];
+
+// Each statement runs on its own so a concurrent suite creating the same table
+// (other test files share this database) cannot roll back the rest of the
+// batch. The verification below — not the throw — decides whether the schema is
+// usable, so a genuine failure is reported by name instead of surfacing as the
+// very 500 these tests exist to distinguish from a 404.
+async function ensureSchema(pool: Pool): Promise<void> {
+  try {
+    const sql = await readFile(
+      new URL('../../../../../gateway/drizzle/0001_init.sql', import.meta.url),
+      'utf8',
+    );
+    await pool.query(sql);
+  } catch {
+    // Sibling migration unreadable, or a concurrent suite created it first.
+  }
+  for (const statement of FALLBACK_DDL) {
+    try {
+      await pool.query(statement);
+    } catch {
+      // Concurrent create; the verification below is the arbiter.
+    }
+  }
+  const present = await pool.query<{ count: string }>(
+    `SELECT count(*)::text AS count FROM pg_tables
+     WHERE schemaname = 'public' AND tablename = ANY($1::text[])`,
+    [[...REQUIRED_TABLES]],
+  );
+  const found = Number(present.rows[0]?.count);
+  if (found !== REQUIRED_TABLES.length) {
+    throw new Error(
+      `[builder start route.test] schema not ready: ${found}/${REQUIRED_TABLES.length} of ` +
+        `${REQUIRED_TABLES.join(', ')} exist at ${process.env.DATABASE_URL ?? '(DATABASE_URL unset)'}`,
+    );
+  }
+}
+
 describe('live PG path (loud skip when unreachable)', () => {
   const liveUrl = process.env.DATABASE_URL ?? TEST_DATABASE_URL;
 
@@ -408,6 +474,7 @@ describe('live PG path (loud skip when unreachable)', () => {
       __setPool(live);
       setStartReader(liveIdentity);
       __resetBossFactory();
+      await ensureSchema(live);
       const res = await POST(postStart({ botId: randomUUID(), brief: BRIEF }));
       expect(res.status).toBe(404);
       expect(await readBody(res)).toEqual({ error: 'bot not found' });

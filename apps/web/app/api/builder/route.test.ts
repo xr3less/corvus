@@ -3,6 +3,7 @@
 // Hermetic fake-pool shape tests plus a live Postgres path that warns LOUDLY and
 // skips when Postgres is unreachable (L-009) — never a silent skip.
 
+import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -308,6 +309,82 @@ describe('GET /api/builder', () => {
 
 // --- Live PG path: runs when reachable, LOUD skip otherwise ---
 
+// Minimal schema for the live read: the route SELECTs
+// `builder_runs r JOIN bots b ON b.id = r.bot_id` (route.ts:93-96), so both
+// relations must exist before the 404 path can be exercised. On an empty
+// database those tables are absent, the JOIN raises `relation does not exist`,
+// and the route answers 500 'could not fetch run' instead of 404.
+//
+// Column definitions are verbatim from the sibling migrations
+// (apps/gateway/drizzle/0001_init.sql, 0007_builder_runs.sql) for the columns
+// this route reads.
+const REQUIRED_TABLES = ['bots', 'builder_runs'] as const;
+
+const FALLBACK_DDL = [
+  // Defensive only: gen_random_uuid() has been Postgres core since v13, so a
+  // fresh postgres:17 provides it without this extension.
+  'CREATE EXTENSION IF NOT EXISTS pgcrypto',
+  `CREATE TABLE IF NOT EXISTS bots (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     account_id uuid NOT NULL,
+     name text NOT NULL,
+     token_cipher bytea NOT NULL,
+     prod_spec_id uuid,
+     draft_spec_id uuid,
+     status text NOT NULL,
+     deleted_at timestamptz,
+     created_at timestamptz NOT NULL DEFAULT now(),
+     updated_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  `CREATE TABLE IF NOT EXISTS builder_runs (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     bot_id uuid NOT NULL,
+     phase text NOT NULL DEFAULT 'queued',
+     detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+     created_at timestamptz NOT NULL DEFAULT now(),
+     updated_at timestamptz NOT NULL DEFAULT now()
+   )`,
+];
+
+// Each statement runs on its own so a concurrent suite creating the same table
+// (other test files share this database) cannot roll back the rest of the
+// batch. The verification below — not the throw — decides whether the schema is
+// usable, so a genuine failure is reported by name instead of surfacing as the
+// very 500 these tests exist to distinguish from a 404.
+async function ensureSchema(pool: Pool): Promise<void> {
+  const sources = [
+    '../../../../gateway/drizzle/0001_init.sql',
+    '../../../../gateway/drizzle/0007_builder_runs.sql',
+  ];
+  for (const relative of sources) {
+    try {
+      const sql = await readFile(new URL(relative, import.meta.url), 'utf8');
+      await pool.query(sql);
+    } catch {
+      // Sibling migration unreadable, or a concurrent suite created it first.
+    }
+  }
+  for (const statement of FALLBACK_DDL) {
+    try {
+      await pool.query(statement);
+    } catch {
+      // Concurrent create; the verification below is the arbiter.
+    }
+  }
+  const present = await pool.query<{ count: string }>(
+    `SELECT count(*)::text AS count FROM pg_tables
+     WHERE schemaname = 'public' AND tablename = ANY($1::text[])`,
+    [[...REQUIRED_TABLES]],
+  );
+  const found = Number(present.rows[0]?.count);
+  if (found !== REQUIRED_TABLES.length) {
+    throw new Error(
+      `[builder route.test] schema not ready: ${found}/${REQUIRED_TABLES.length} of ` +
+        `${REQUIRED_TABLES.join(', ')} exist at ${process.env.DATABASE_URL ?? '(DATABASE_URL unset)'}`,
+    );
+  }
+}
+
 describe('live PG path (loud skip when unreachable)', () => {
   const liveUrl = process.env.DATABASE_URL ?? TEST_DATABASE_URL;
 
@@ -332,6 +409,7 @@ describe('live PG path (loud skip when unreachable)', () => {
     try {
       __setPool(live);
       __setSessionReader(SIGNED_IN);
+      await ensureSchema(live);
       const res = await GET(getRun(randomUUID()));
       expect(res.status).toBe(404);
       expect(await readBody(res)).toEqual({ error: 'run not found' });
