@@ -10,3 +10,14 @@ coverage/
 next-env.d.ts
 # Quarantined verbatim reference (D-058): byte-identical harvest, never reformatted.
 public/clone-pryzm/
+# Knowingly-red taste/old files, EXCLUDED by decision (KI-019, amended 2026-09-18 / D-130).
+# Do not reformat: --write would also lowercase design-token hex in globals.css
+# (#FAFAFA -> #fafafa), which is unwanted churn. Enumerated explicitly, not globbed.
+app/globals.css
+app/demo/stats-bento/page.tsx
+components/ui/stats-bento.tsx
+components/ui/stats-bento-demo.tsx
+components/ui/thinking-trace.tsx
+# Local-only dev state (gitignored, absent in CI); excluded for local hygiene so the
+# workspace format check is not red on a developer machine.
+.pick-votes/

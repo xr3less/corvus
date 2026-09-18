@@ -8,3 +8,10 @@ out/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
+
+# Vendored skill sandbox (third-party reference bundle, not product code) —
+# mirrors the eslint ignores in eslint.config.mjs. Kept byte-faithful to its
+# source, so it is never reformatted.
+.github/skills/impeccable/
+# Vendored agent definitions shipped with the same bundle; reference-only.
+.github/agents/
