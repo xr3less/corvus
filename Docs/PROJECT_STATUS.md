@@ -6,7 +6,11 @@
 
 ---
 
-## Current state — 2026-09-18 (push bekleniyor)
+## Current state — 2026-09-18 (push tamam, CI koşusu bekleniyor)
+
+KI-028 tıkandığı yerden çözüldü: iş akışı yalnızca `main` dalında tetikleniyordu, depo ise `master` — yani başarılı bir push bile CI koşturmayacaktı. Tek satır düzeltildi (`.github/workflows/ci.yml`: `branches: ['main']` → `['main', 'master']`), commit `7eca5c1` (`ci: trigger on master alongside main (KI-028 unblock)`), bağımsız incelemeciden PASS. Push yapıldı: `master` → `https://github.com/xr3less/corvus` (`a34e454..7eca5c1`); yerel `master` ile `origin/master` `7eca5c1`'de eşit. Push'u kurucu sohbetten `!` komutuyla yaptı (orkestratörün iki denemesi otomatik-mod sınıflandırıcısı tarafından reddedildi — geçici bir red, depo/kimlik sorunu değil). Sırada: GitHub Actions'ta `7eca5c1` için koşunun izlenmesi — KI-028 / KI-015 / KI-017 / KI-024 canlı-postgres kanıtı. **Henüz CI sonucu iddia edilmiyor.** Açık: KI-015/016/017/018/019/024/025/026/027/028.
+
+## Previous — 2026-09-18 (push bekleniyor)
 
 D-130 commitlendi (`42c71e0`, ağaç temiz, kapılar yeşil). Push için onay var ama depoda GitHub adresi yok (`origin` tanımsız, `gh` kurulu değil) — kurucu boş depoyu açıp linki atacak. Link gelince: adres bağlanacak → itilecek → GitHub robotu gerçek bilgi deposuyla denemeyi koşturacak (KI-028). Sonra KI-025/026/027 dalgası. Açık: KI-015/017/024 (canlı kanıt), KI-025/026/027/028.
 

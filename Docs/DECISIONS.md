@@ -2691,3 +2691,20 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: $0. Risk: first push publishes the tree — scanned, no secrets; Antigravity sandbox + design zips ride along (pre-existing tracked files, noted).
 
 **Superseded by:** none
+
+### D-132 — CI trigger fixed and pushed: the run on `7eca5c1` becomes the live-proof instrument (KI-028 unblock)
+
+- **Date:** 2026-09-18
+- **Decided by:** orchestrator (engineering — one-line CI trigger fix, the defect the push had exposed) + founder (executed the push himself via chat `!` command)
+- **Door type:** two-way (reversible — one line in a workflow file; revert restores the previous trigger set)
+- **Type:** engineering
+
+**Context.** D-131 delivered the repo link and the push, which immediately exposed a second, deeper defect: the workflow only triggered on `main`, while this repo's branch is `master`. A successful push would therefore have produced **no CI run at all** — the exact silent-no-op shape the wave has been hunting. The live-postgres proof (KI-028, extending KI-015/KI-017/KI-024) was blocked not by missing infrastructure but by a one-line trigger that could never fire.
+
+**Decision.** Change exactly one line in `.github/workflows/ci.yml` — `branches: ['main']` → `branches: ['main', 'master']` — nothing else. Committed as `7eca5c1` (`ci: trigger on master alongside main (KI-028 unblock)`); independent reviewer verdict PASS (diff confirmed one line, no other workflow change). Pushed `master` to `https://github.com/xr3less/corvus` (`a34e454..7eca5c1`); local `master` and `origin/master` are in sync at `7eca5c1`. The push itself was executed by the founder through a chat `!` command after the orchestrator's two push attempts were denied by the auto-mode classifier — a transient denial, not a repo or auth problem. Next step is observation, not construction: watch the Actions run for `7eca5c1`. **No CI result is claimed in this entry** — the run's outcome is unrecorded until it is seen.
+
+**Why.** The instrument had to exist before the measurement could be read — a green local tree proves nothing about the live path, and a trigger that never fires would have silently converted "pushed" into a false sense of progress. Fixing the trigger first is what makes the CI run a real live-proof rather than a no-op. Kept to one line so the push carries no unrelated risk and the run's result is attributable to the live environment alone, not to a batch of changes.
+
+**Cost & risk.** Cost: 1 fix + 1 review + 1 push, $0. Risk: the CI run's outcome is still unknown — it may surface real live-PG failures (that is its purpose; KI-015/KI-017/KI-024 remain open until it is read). Still open after this push: KI-015, KI-016, KI-017, KI-018, KI-019, KI-024, KI-025, KI-026, KI-027, KI-028. Agent reports on disk (repo-root `Agent Reports/`, untracked, **not** committed): `2026-09-18-0843_ci-fix_MODIFY_ci-trigger.md` (coder) and `2026-09-18-0843_reviewer_ci-trigger-fix-001.md` (reviewer PASS).
+
+**Superseded by:** none

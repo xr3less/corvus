@@ -4,7 +4,7 @@
 
 > The single source of truth for what's done and what's next. Tick boxes as work completes; keep current. Additive only — don't reorder phases without founder approval. Per `GLOBAL_RULES.md §3`, nothing is built that isn't planned here first.
 
-**Last updated:** 2026-09-18 (D-130 committed as `42c71e0`, tree clean; push APPROVED but blocked: no `origin` remote, no `gh` — founder creates empty repo + sends link. Then: add remote → push → CI postgres:17 live-proof run (KI-028) → KI-025/026/027 wave)
+**Last updated:** 2026-09-18 (KI-028 unblock committed as `7eca5c1` — CI trigger `branches: ['main']` → `['main', 'master']`, reviewer PASS — and pushed `a34e454..7eca5c1` to `https://github.com/xr3less/corvus`; local `master` = `origin/master` at `7eca5c1`. Now awaited: the GitHub Actions run for `7eca5c1` — the CI `postgres:17` live-proof (KI-028, extends KI-015/017/024); no CI result claimed yet. Then KI-025/026/027 wave)
 
 ---
 
