@@ -6,7 +6,11 @@
 
 ---
 
-## Current state — 2026-09-18 (push tamam, CI koşusu bekleniyor)
+## Current state — 2026-09-18 (CI yeşil, 12/12 adım)
+
+CI nihayet yeşil: `e3bea9a` commit'i için `35347389002` numaralı koşu **SUCCESS** — 12 adımın tamamı geçti (kurulum, konteynerler, checkout, Node 24, kurulum, spec build, ai build, typecheck, lint, format ve gerçek `postgres:17` üzerinde testler). Bu, deponun **ilk yeşil koşusu**; önceki 6 koşu sırayla kapılarda kırmızıydı (tetikleyici boşluğu → SHA pin → eksik ai build → lint → format). Arkasındaki düzeltme dalgası: `6c9e059` → `2dcffd5` → `1b2c03e` → `933a488` → `e3bea9a` (6 test dosyası boş `postgres:17` üzerinde kendi kendine yeterli hale getirildi). Bağımsız incelemeci gerçek `postgres:17` üzerinde yerelde yeniden doğruladı: gateway 218/218 + web 538/538, paylaşımlı-DB kök koşusu 904 test, çıkış 0. KI-028 çözüldü; KI-024'ün CI bacağı kanıtlandı (canlı-Discord bacağı açık); KI-015/017 kendi CI-dışı kısımları için açık kalıyor. Sırada: KI-025/026/027 dalgası (katman kaynağı migration + defter tekilliği + yeni-sayfa bot id). Açık: KI-015/016/017/018/019/024(kısmi)/025/026/027.
+
+## Previous — 2026-09-18 (push tamam, CI koşusu bekleniyor)
 
 KI-028 tıkandığı yerden çözüldü: iş akışı yalnızca `main` dalında tetikleniyordu, depo ise `master` — yani başarılı bir push bile CI koşturmayacaktı. Tek satır düzeltildi (`.github/workflows/ci.yml`: `branches: ['main']` → `['main', 'master']`), commit `7eca5c1` (`ci: trigger on master alongside main (KI-028 unblock)`), bağımsız incelemeciden PASS. Push yapıldı: `master` → `https://github.com/xr3less/corvus` (`a34e454..7eca5c1`); yerel `master` ile `origin/master` `7eca5c1`'de eşit. Push'u kurucu sohbetten `!` komutuyla yaptı (orkestratörün iki denemesi otomatik-mod sınıflandırıcısı tarafından reddedildi — geçici bir red, depo/kimlik sorunu değil). Sırada: GitHub Actions'ta `7eca5c1` için koşunun izlenmesi — KI-028 / KI-015 / KI-017 / KI-024 canlı-postgres kanıtı. **Henüz CI sonucu iddia edilmiyor.** Açık: KI-015/016/017/018/019/024/025/026/027/028.
 
@@ -47,6 +51,7 @@ New-bot creation is now a ChatGPT-style chat (D-107): the circled "Your draft" c
 
 > Keep the last ~10 meaningful changes. Older history lives in `DECISIONS.md`.
 
+- 2026-09-18 — CI GREEN (D-133): first green CI run on the repo — `35347389002` on `e3bea9a`, 12/12 steps including Test on real `postgres:17` (KI-028 resolved; KI-024's CI leg proven). Fix wave `6c9e059`→`2dcffd5`→`1b2c03e`→`933a488`→`e3bea9a`; local re-verification gateway 218/218 + web 538/538, root run 904 tests exit 0.
 - 2026-09-15 — Debt wave DONE (D-126): KI-006 (/privacy + /terms, footer-linked) + KI-010 (dashboard live-bound, GET /api/bots) + KI-011 (/pryzm self-contained, clone-pryzm 69 files deleted) closed; V1-7 progress backend + V1-9 supervisor built; deploy pipeline ready (Dockerfiles built + run-proven). Merged typecheck clean, gateway 143 + web 483 green, 0 failed.
 - 2026-09-15 — Supervisor on duty (D-127): Gateway.relogin + start.ts wiring (audit/restart-via-vault), preservation test mutation-proven, reviewer PASS; gateway 151 + web 483 green.
 - 2026-09-15 — Builder calls the real model (D-128): @corvus/ai shared lanes, worker brief-to-draft with ai_spend metering, fenced-JSON contract live-proven ($0.0035/2-behavior spec), reviewer PASS; ai 34 + gateway 162 + web 451 green.

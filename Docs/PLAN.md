@@ -4,7 +4,7 @@
 
 > The single source of truth for what's done and what's next. Tick boxes as work completes; keep current. Additive only — don't reorder phases without founder approval. Per `GLOBAL_RULES.md §3`, nothing is built that isn't planned here first.
 
-**Last updated:** 2026-09-18 (KI-028 unblock committed as `7eca5c1` — CI trigger `branches: ['main']` → `['main', 'master']`, reviewer PASS — and pushed `a34e454..7eca5c1` to `https://github.com/xr3less/corvus`; local `master` = `origin/master` at `7eca5c1`. Now awaited: the GitHub Actions run for `7eca5c1` — the CI `postgres:17` live-proof (KI-028, extends KI-015/017/024); no CI result claimed yet. Then KI-025/026/027 wave)
+**Last updated:** 2026-09-18 (CI GREEN — first green run on the repo: run `35347389002` on commit `e3bea9a`, all 12 steps SUCCESS incl. Typecheck, Lint, Format and Test on real `postgres:17`; earlier runs 1-6 were red at gate after gate. The `7eca5c1` trigger fix was pushed as `a34e454..7eca5c1`, then the fix wave `6c9e059` (SHA pin) → `2dcffd5` (ai build) → `1b2c03e` (lint) → `933a488` (format) → `e3bea9a` (6 test files made self-sufficient on an empty `postgres:17`). The CI `postgres:17` live-proof is therefore PROVEN — KI-028 resolved (D-133), KI-024's CI leg proven; KI-015/017 stay open for their non-CI parts. Local re-verification on real `postgres:17`: gateway 218/218 + web 538/538, shared-DB root run 904 tests exit 0. No plan item ticked by this entry — PLAN carries no CI-proof checkbox; next: KI-025/026/027 wave)
 
 ---
 
