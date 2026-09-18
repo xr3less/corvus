@@ -36,6 +36,8 @@ jobs:
         run: npm ci
       - name: Build spec contract (dist for workspace consumers)
         run: npm run build --workspace @corvus/spec
+      - name: Build ai contract (dist for workspace consumers)
+        run: npm run build --workspace @corvus/ai
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
