@@ -6,9 +6,9 @@
 
 ---
 
-## Current state — 2026-09-18 (CI yeşil, 12/12 adım)
+## Current state — 2026-09-18 (KI-025/026/027 dalgası DONE, CI yeşil 12/12)
 
-CI nihayet yeşil: `e3bea9a` commit'i için `35347389002` numaralı koşu **SUCCESS** — 12 adımın tamamı geçti (kurulum, konteynerler, checkout, Node 24, kurulum, spec build, ai build, typecheck, lint, format ve gerçek `postgres:17` üzerinde testler). Bu, deponun **ilk yeşil koşusu**; önceki 6 koşu sırayla kapılarda kırmızıydı (tetikleyici boşluğu → SHA pin → eksik ai build → lint → format). Arkasındaki düzeltme dalgası: `6c9e059` → `2dcffd5` → `1b2c03e` → `933a488` → `e3bea9a` (6 test dosyası boş `postgres:17` üzerinde kendi kendine yeterli hale getirildi). Bağımsız incelemeci gerçek `postgres:17` üzerinde yerelde yeniden doğruladı: gateway 218/218 + web 538/538, paylaşımlı-DB kök koşusu 904 test, çıkış 0. KI-028 çözüldü; KI-024'ün CI bacağı kanıtlandı (canlı-Discord bacağı açık); KI-015/017 kendi CI-dışı kısımları için açık kalıyor. Sırada: KI-025/026/027 dalgası (katman kaynağı migration + defter tekilliği + yeni-sayfa bot id). Açık: KI-015/016/017/018/019/024(kısmi)/025/026/027.
+KI-025/026/027 dalgası bitti ve CI yeşil: `fab15c6` için `35382829514` numaralı koşu **SUCCESS** — 12/12 adım (gerçek `postgres:17` üzerinde testler dahil). Neler açıldı: (1) katman kaynağı bağlı — hesaplara `tier` sütunu + açılışta çözümleyici, ödeyen kullanıcı artık deneme kotasına sıkışmıyor (KI-025); (2) defter çift-faturaya kapalı — `(ref_id,reason,attempt)` tekilliği + çöküşte sessiz-geç, aynı çağrı iki kez ücretlenemez (KI-026); (3) yeni sayfa artık bot basıp inşayı başlatabiliyor — ilk mesajda mint + "Build this bot" → `?runId=` linki (KI-027). Dalga commit'i `ac17d4b` (19 dosya, 4 bağımsız incelemeden PASS); CI'daki ilk kırmızı test-altyapı sorunuydu (paylaşımlı-DB sıralaması, FA-004), ürün koduna dokunmadan `fab15c6` ile kapandı (11 test dosyası). Temiz-DB yerel koşu çıkış 0: gateway 233 + web 546 + ai 94 + spec 56. Açık: KI-015/016/017/018/019/024(kısmi). Sırada: ilk gerçek dağıtım (KI-018) + canlı-Discord kanıtı (filo jetonu/dağıtım gelince).
 
 ## Previous — 2026-09-18 (push tamam, CI koşusu bekleniyor)
 

@@ -2725,3 +2725,28 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: 6 commits (5 gate fixes + 1 test wave) across 6 red runs and the green one, $0 live spend. Risk: KI-019 stays open — 5 taste/old files remain excluded from the format gate via `prettierignore`, so that drift is _masked, not fixed_ (a green format step does not mean the tree is formatted); KI-024's live-**Discord** leg stays open (its CI leg is now proven); KI-015/KI-017 remain open for their non-CI parts and are deliberately **not** closed by this entry. The green run proves the live-PG path, not the live Discord path. Still open after this: KI-015, KI-016, KI-017, KI-018 (first real deploy), KI-019, KI-024 (partial), KI-025, KI-026, KI-027. Next: the KI-025/026/027 wave (tier-source migration, ledger unique constraint, new-page bot mint).
 
 **Superseded by:** none
+
+---
+
+### D-134 — KI-025/026/027 wave: tier source wired, ledger idempotent, new-page can start a build
+
+- **Date:** 2026-09-18
+- **Decided by:** orchestrator (engineering — wave spec `2026-09-18-1647`, built under the standing order)
+- **Door type:** two-way (reversible — forward-only migrations + code)
+- **Type:** engineering
+
+**Context.** Three open defects blocked the product path end to end: KI-025 — the budget ceiling knew trial/Pro/Studio/Scale but production always resolved `trial` (no `accounts.tier` column, boot passed no resolver); KI-026 — the spend ledger resumed from count but a crash between provider response and ledger insert could re-bill one call (no unique backstop, no attempt column); KI-027 — `/dashboard/new` chatted with `botId: null` by contract while `/api/builder/start` needs a real owned UUID, so a brand-new bot could never start a build.
+
+**Options considered.**
+
+1. Leave as-is (trial-only quotas, re-bill risk, chat-only new page) — keeps the defects open, blocks paid launch.
+2. Fix all three in one wave with disjoint write-scopes + an independent reviewer per task — one plan, parallel build, one merge gate.
+3. Fix serially, one KI per day — same code, slower, more CI cycles.
+
+**Decision.** Option 2. KI-025: `0008_accounts_tier.sql` (`tier text NOT NULL DEFAULT 'trial'`, no CHECK by design — invalid reads fall back to trial via `isPlanTier`) + `tier-resolver.ts` (`createAccountsTierResolver`, exact SQL, null on missing/invalid/throw, never throws) + boot wiring (boot pool reused, passed as 2nd arg to `startBuilderWorker`) + schema/test updates (reviewer PASS 2026-09-18-1726). KI-026: `0009_ai_spend_attempt.sql` (nullable `attempt` + partial unique `(ref_id,reason,attempt)` where both NOT NULL) + `recordSpend` 7th column + `insertSpend` 23505→silent-skip else `spend_failed`, attempt passed as `billedSoFar+local` at both call sites, live leg proves double-insert COUNT=1 (reviewer PASS 2026-09-18-1802). KI-027: `POST /api/bots` mint (`MINT_BOT_SQL` + session 401 + `validateBotName` 422 → 200 `{botId}`) + page mint-on-first-submit (exactly-once ref, deferred commit after the stream settles so the first reply is never dropped, 32-char derived name, Build posts `{botId, brief: first message 1..2000}` → `?runId=` link, `role="alert"` errors, chat preserved; 12/12 page tests; reviewers PASS 2026-09-18-1812 + 2026-09-18-2133). Wave commit `ac17d4b` (19 files) pushed; CI then went red on a test-harness defect — `column "attempt" of relation "ai_spend" does not exist` — caused by shared-DB ordering (web's older fallback DDL creates `public.ai_spend` in the old shape before ai's live leg runs; see FA-004). Fixed test-only in `fab15c6` (11 files: consumer self-heal ALTER + fallback parity, zero product source). CI run `35382829514` on `fab15c6` = **SUCCESS, 12/12 steps**. Local clean-DB `npm test` exit 0 (gateway 233 + web 546 + ai 94 + spec 56).
+
+**Why.** Business terms: without this wave every user builds on trial quota (paying users get nothing extra), a crash can charge twice for one AI call (billing trust), and a brand-new bot cannot reach the build button at all (the front door is locked). The three fixes together unlock paid tiers, honest billing, and the creation flow — the minimum for strangers to build.
+
+**Cost & risk.** Cost: 2 commits, $0 live spend, 4 independent reviews (all PASS). Risk: KI-019 stays open (masked drift, not fixed); the cross-workspace shared-DB ordering fragility is hardened, not removed — a future migration adding another column needs the same parity treatment (FA-004); live-Discord leg + deploy untouched. Still open after this: KI-015, KI-016, KI-017, KI-018, KI-019, KI-024 (partial). Next: first real deploy (KI-018) + live-Discord proof when fleet token/deploy lands.
+
+**Superseded by:** none
