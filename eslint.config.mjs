@@ -13,6 +13,14 @@ export default tseslint.config(
       '**/.next/**',
       '**/out/**',
       '**/coverage/**',
+      // Vendored browser bundles (skill sandbox, not node-scoped product code).
+      // Two trees are byte-identical duplicates; both must be ignored.
+      '.agents/skills/impeccable/scripts/live-browser*.js',
+      '.agents/skills/impeccable/scripts/modern-screenshot.umd.js',
+      '.github/skills/impeccable/scripts/live-browser*.js',
+      '.github/skills/impeccable/scripts/modern-screenshot.umd.js',
+      // Reference-only design sandbox (KI-008/KI-010); not product code.
+      'Antigravity/**',
     ],
   },
   js.configs.recommended,

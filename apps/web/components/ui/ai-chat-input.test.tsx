@@ -73,8 +73,9 @@ describe('PromptInput', () => {
       node = node.parentElement;
     }
     expect(box).not.toBeNull();
-    expect(box!.className).toContain('focus-within:border-white/30');
-    expect(box!.className).not.toMatch(/ring-/);
+    if (box === null) throw new Error('Expected composer box to be found');
+    expect(box.className).toContain('focus-within:border-white/30');
+    expect(box.className).not.toMatch(/ring-/);
   });
 
   it('mic button is disabled when voice input is unavailable in this browser', () => {
