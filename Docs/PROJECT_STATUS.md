@@ -6,7 +6,9 @@
 
 ---
 
-## Current state — 2026-09-18 (seam-close wave D-130)
+## Current state — 2026-09-18 (push bekleniyor)
+
+D-130 commitlendi (`42c71e0`, ağaç temiz, kapılar yeşil). Push için onay var ama depoda GitHub adresi yok (`origin` tanımsız, `gh` kurulu değil) — kurucu boş depoyu açıp linki atacak. Link gelince: adres bağlanacak → itilecek → GitHub robotu gerçek bilgi deposuyla denemeyi koşturacak (KI-028). Sonra KI-025/026/027 dalgası. Açık: KI-015/017/024 (canlı kanıt), KI-025/026/027/028.
 
 KI-020 tavan indi (katmanlı kota trial/Pro/Studio/Scale + tur başına 3 faturalı deneme + deftere göre devam; prod çözücüsü henüz bağlı değil — KI-025), KI-021 kapandı (33 dal tek `mapDbError` aracına + havuz önbellek düzeltmesi), KI-014 kapandı (dashboard + bot listesi ilerlemeyi gösteriyor, detayda başlat→`?runId` linki; yeni-sayfa akışı KI-027), gateway sözleşmeleri mühürlendi (KI-022/KI-023). Kapılar yeşil (typecheck 4/4, gateway 211, web 494, ai 92). Wiro canlı-doğrulandı (grok selam ~$0.0001). Kutu TCP:22 açık ama anahtarsız girilemiyor — canlı-PG kutuda değil CI'da koşacak (KI-028). Açık: KI-015/017/024 (canlı PG/Discord), KI-025/026/027/028.
 

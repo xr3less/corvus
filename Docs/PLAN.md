@@ -4,7 +4,7 @@
 
 > The single source of truth for what's done and what's next. Tick boxes as work completes; keep current. Additive only — don't reorder phases without founder approval. Per `GLOBAL_RULES.md §3`, nothing is built that isn't planned here first.
 
-**Last updated:** 2026-09-18 (seam-close wave D-130: KI-020 ceiling + tier table, KI-021 33-site consolidation + pool no-cache, KI-014 progress wiring + runId link, gateway KI-022/023 contracts; wiro live-proven ~$0.0001; box key-auth missing → live-PG via CI as KI-028; merged typecheck 4/4 clean, gateway 211 + web 494 + ai 92 green)
+**Last updated:** 2026-09-18 (D-130 committed as `42c71e0`, tree clean; push APPROVED but blocked: no `origin` remote, no `gh` — founder creates empty repo + sends link. Then: add remote → push → CI postgres:17 live-proof run (KI-028) → KI-025/026/027 wave)
 
 ---
 

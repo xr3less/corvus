@@ -2674,3 +2674,20 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: 8 agent rounds + ~$0.0001 live spend. Risk: ceiling + tier table fake-pool proven only until CI live run; prod resolves trial until KI-025; one crash-window re-bill remains until KI-026.
 
 **Superseded by:** none
+
+### D-131 — Push approved, remote missing; CI live-proof waits on repo link (founder task)
+
+- **Date:** 2026-09-18
+- **Decided by:** founder (push approved; creates empty GitHub repo + sends link) + orchestrator (method)
+- **Door type:** two-way (reversible — local commit `42c71e0` stays; remote add + push when link lands)
+- **Type:** engineering
+
+**Context.** Push to GitHub approved, but the repo has no `origin` remote and no `gh` CLI — there is nowhere to push to. Wiro key live-proven; box key-auth missing; local Docker down — so the live database proof must run on GitHub's robot (CI `postgres:17` service).
+
+**Decision.** Founder creates the empty repo and sends the link. Then: `git remote add origin <link>` → push `master` → watch the CI run → record live proof (KI-028, extends KI-015/017/024). No code change in this entry; PLAN/STATUS/KI-028 updated.
+
+**Why.** The robot test is the only live-proof path that needs nothing else (no box key, no local Docker). One link unblocks it.
+
+**Cost & risk.** Cost: $0. Risk: first push publishes the tree — scanned, no secrets; Antigravity sandbox + design zips ride along (pre-existing tracked files, noted).
+
+**Superseded by:** none
