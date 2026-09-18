@@ -45,7 +45,17 @@ describe('gateway db v12 tables (SPEC section 4 + ADDENDUM)', () => {
   it('defines every SPEC ai_spend column in snake_case', () => {
     const names = Object.values(getTableColumns(aiSpend)).map((c) => (c as { name: string }).name);
     expect([...names].sort()).toEqual(
-      ['account_id', 'created_at', 'credits', 'id', 'model', 'reason', 'ref_id', 'usd_cost'].sort(),
+      [
+        'account_id',
+        'attempt',
+        'created_at',
+        'credits',
+        'id',
+        'model',
+        'reason',
+        'ref_id',
+        'usd_cost',
+      ].sort(),
     );
     for (const name of names) {
       expect(name).not.toMatch(/[A-Z]/);
@@ -75,6 +85,8 @@ describe('gateway db v12 tables (SPEC section 4 + ADDENDUM)', () => {
     expect(s.usdCost.notNull).toBe(false);
     expect(s.credits.notNull).toBe(false);
     expect(s.refId.notNull).toBe(false);
+    // KI-026: builder attempt number, nullable so chat rows (no attempt) keep working.
+    expect(s.attempt.notNull).toBe(false);
   });
 
   it('migration creates all three tables with PKs + FK cascade + defaults + indexes', () => {

@@ -495,7 +495,15 @@ describe('recordSpend validation (no PG)', () => {
     expect(id).toBe('spend-1');
     expect(seen).toHaveLength(1);
     expect(seen[0].text).toContain('INSERT INTO ai_spend');
-    expect(seen[0].params).toEqual(['account-1', 'wiro-glm-5-2', 0.02, 4, 'builder-run', 'ref-1']);
+    expect(seen[0].params).toEqual([
+      'account-1',
+      'wiro-glm-5-2',
+      0.02,
+      4,
+      'builder-run',
+      'ref-1',
+      null,
+    ]);
   });
 
   it('stores null credits for a null cost', async () => {
@@ -507,7 +515,57 @@ describe('recordSpend validation (no PG)', () => {
       },
     };
     await recordSpend(pool, { accountId: 'a', model: 'm', usdCost: null, reason: 'r' });
-    expect(seen[0].params).toEqual(['a', 'm', null, null, 'r', null]);
+    expect(seen[0].params).toEqual(['a', 'm', null, null, 'r', null, null]);
+  });
+
+  it('rejects a non-integer or out-of-range attempt without touching the pool', async () => {
+    await expect(
+      recordSpend(explodingPool, {
+        accountId: 'a',
+        model: 'm',
+        usdCost: 1,
+        reason: 'r',
+        attempt: 0,
+      }),
+    ).rejects.toThrow(SpendError);
+    await expect(
+      recordSpend(explodingPool, {
+        accountId: 'a',
+        model: 'm',
+        usdCost: 1,
+        reason: 'r',
+        attempt: -1,
+      }),
+    ).rejects.toThrow(SpendError);
+    await expect(
+      recordSpend(explodingPool, {
+        accountId: 'a',
+        model: 'm',
+        usdCost: 1,
+        reason: 'r',
+        attempt: 1.5,
+      }),
+    ).rejects.toThrow(SpendError);
+  });
+
+  it('sends the attempt as the 7th INSERT column when present', async () => {
+    const seen: Array<{ text: string; params: unknown[] }> = [];
+    const pool = {
+      query: (text: string, params: unknown[]) => {
+        seen.push({ text, params });
+        return Promise.resolve({ rows: [{ id: 'spend-3' }] });
+      },
+    };
+    await recordSpend(pool, {
+      accountId: 'a',
+      model: 'm',
+      usdCost: 0.01,
+      reason: 'burn:builder',
+      refId: 'run-1',
+      attempt: 2,
+    });
+    expect(seen[0].text).toContain('attempt');
+    expect(seen[0].params).toEqual(['a', 'm', 0.01, 2, 'burn:builder', 'run-1', 2]);
   });
 
   it('throws when the database returns no id', async () => {

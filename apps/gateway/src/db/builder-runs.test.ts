@@ -109,6 +109,10 @@ function fakeDb(
      * added on top, so a second runBuilderJob call observes the first one's rows.
      */
     billedAttempts?: number;
+    /** Fail the next N spend inserts with a 23505 unique violation (KI-026 backstop). */
+    uniqueConflictSpends?: number;
+    /** Fail the next N spend inserts with a generic error (non-unique path). */
+    genericFailSpends?: number;
     /** No run row exists at all. */
     runMissing?: boolean;
     /** The run row is visible for the first read only, then gone. */
@@ -124,6 +128,8 @@ function fakeDb(
   let liveFailures = config.liveWriteFailures ?? 0;
   let runPresent = !config.runMissing;
   let spendInserts = 0;
+  let uniqueConflicts = config.uniqueConflictSpends ?? 0;
+  let genericFailures = config.genericFailSpends ?? 0;
 
   function handle(text: string, params: unknown[]): { rows: unknown[] } {
     log.push({ text, params });
@@ -180,6 +186,19 @@ function fakeDb(
     }
     if (text.includes('INSERT INTO ai_spend')) {
       if (config.failSpend) throw new Error('spend insert failed');
+      if (genericFailures > 0) {
+        genericFailures -= 1;
+        throw new Error('spend insert failed');
+      }
+      if (uniqueConflicts > 0) {
+        uniqueConflicts -= 1;
+        throw Object.assign(
+          new Error(
+            'duplicate key value violates unique constraint "ai_spend_ref_reason_attempt_uidx"',
+          ),
+          { code: '23505' },
+        );
+      }
       if (config.spendReturnsNoId) return { rows: [] };
       spendInserts += 1;
       return { rows: [{ id: 'spend-id-1' }] };
@@ -282,7 +301,7 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     expect(pointer?.params).toEqual([BOT_ID, 'version-id-1']);
 
     const spend = find(db, 'INSERT INTO ai_spend');
-    expect(spend?.params).toEqual(['acct-1', 'glm/5-2', 0.02, 4, 'burn:builder', RUN_ID]);
+    expect(spend?.params).toEqual(['acct-1', 'glm/5-2', 0.02, 4, 'burn:builder', RUN_ID, 1]);
   });
 
   it('retries a persistently unparseable model 3 times, then leaves the pointer untouched', async () => {
@@ -308,7 +327,7 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     expect(detail['spanCredits']).toBeCloseTo(3 * toCredits(0.03), 10);
     expect(count(db, 'INSERT INTO ai_spend')).toBe(3);
     const spend = find(db, 'INSERT INTO ai_spend');
-    expect(spend?.params).toEqual(['acct-1', 'glm/5-2', 0.03, 6, 'burn:builder', RUN_ID]);
+    expect(spend?.params).toEqual(['acct-1', 'glm/5-2', 0.03, 6, 'burn:builder', RUN_ID, 1]);
     expect(find(db, 'INSERT INTO spec_versions')).toBeUndefined();
     expect(find(db, 'UPDATE bots SET draft_spec_id')).toBeUndefined();
     expect(db.log.some((entry) => entry.text === 'BEGIN')).toBe(false);
@@ -478,7 +497,15 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
 
     expect(result).toEqual({ ok: true, phase: 'live' });
     const spend = find(db, 'INSERT INTO ai_spend');
-    expect(spend?.params).toEqual(['acct-1', 'deepseek-chat', null, null, 'burn:builder', RUN_ID]);
+    expect(spend?.params).toEqual([
+      'acct-1',
+      'deepseek-chat',
+      null,
+      null,
+      'burn:builder',
+      RUN_ID,
+      1,
+    ]);
   });
 
   it('fails spend_failed with nothing written when the spend insert fails (D5)', async () => {
@@ -497,6 +524,61 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     expect(find(db, 'INSERT INTO spec_versions')).toBeUndefined();
     expect(find(db, 'UPDATE bots SET draft_spec_id')).toBeUndefined();
     expect(db.log.some((entry) => entry.text === 'COMMIT')).toBe(false);
+  });
+
+  // --- KI-026: the partial unique index makes a double-billed attempt a silent skip ---
+
+  it('KI-026: a 23505 unique violation on the spend insert is an idempotent skip, still live', async () => {
+    const db = fakeDb({ botAccount: 'acct-1', uniqueConflictSpends: 1, nextVersion: 2 });
+    const chatFn = artifactText('{"version":1,"behaviors":[]}', 'glm/5-2', 0.02);
+    const deps = createBuilderDeps(db.pool as unknown as Pool, chatFn);
+
+    const result = await runBuilderJob(deps, {
+      runId: RUN_ID,
+      botId: BOT_ID,
+      brief: 'welcome bot',
+    });
+
+    expect(result).toEqual({ ok: true, phase: 'live' });
+    const live = db.phases.find((entry) => entry.phase === 'live');
+    expect(live?.detail).toEqual({ version: 2, model: 'glm/5-2', stub: false });
+    // The conflicting attempt carried the run-global number (billedSoFar 0 + local 1).
+    const spend = find(db, 'INSERT INTO ai_spend');
+    expect(spend?.params[spend.params.length - 1]).toBe(1);
+  });
+
+  it('KI-026: a generic spend failure still surfaces spend_failed (only 23505 skips)', async () => {
+    const db = fakeDb({ botAccount: 'acct-1', genericFailSpends: 1 });
+    const chatFn = artifactText('{"version":1,"behaviors":[]}');
+    const deps = createBuilderDeps(db.pool as unknown as Pool, chatFn);
+
+    const result = await runBuilderJob(deps, {
+      runId: RUN_ID,
+      botId: BOT_ID,
+      brief: 'welcome bot',
+    });
+
+    expect(result).toEqual({ error: 'builder_failed' });
+    expect(failedDetail(db)).toEqual({ error: 'spend_failed', step: 'generate' });
+    expect(find(db, 'INSERT INTO spec_versions')).toBeUndefined();
+  });
+
+  it('KI-026: attempts are run-global — a resumed run passes billedSoFar + local', async () => {
+    const db = fakeDb({ botAccount: 'acct-1', billedAttempts: 2, nextVersion: 5 });
+    const chatFn = artifactText('{"version":1,"behaviors":[]}');
+    const deps = createBuilderDeps(db.pool as unknown as Pool, chatFn);
+
+    const result = await runBuilderJob(deps, {
+      runId: RUN_ID,
+      botId: BOT_ID,
+      brief: 'welcome bot',
+    });
+
+    expect(result).toEqual({ ok: true, phase: 'live' });
+    const spends = db.log.filter((entry) => entry.text.includes('INSERT INTO ai_spend'));
+    expect(spends).toHaveLength(1);
+    // billedSoFar (2) + local (1) = global attempt 3.
+    expect(spends[0]?.params[spends[0].params.length - 1]).toBe(3);
   });
 
   it('slices the brief to 280 chars for diff_summary', async () => {
@@ -638,6 +720,7 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
       8,
       'burn:builder',
       RUN_ID,
+      1,
     ]);
   });
 
@@ -940,6 +1023,187 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
       attempts: 0,
     });
   });
+});
+
+// ---------------------------------------------------------------------------
+// Live leg (KI-026): apply 0001 + 0002 + 0003 + 0009 on an empty schema and
+// double-insert one (ref_id, reason, attempt) through the real insertSpend
+// path — the second is an idempotent no-op and COUNT stays 1. Loud-skip when
+// Postgres is unreachable; the suite must prove BOTH states.
+// ---------------------------------------------------------------------------
+
+const LIVE_FALLBACK_DB_URL = 'postgresql://corvus:corvus_ci@localhost:5434/corvus_ci';
+
+function resolveLiveDatabaseUrl(): string {
+  const fromEnv = process.env.DATABASE_URL;
+  if (fromEnv !== undefined && fromEnv.length > 0) {
+    return fromEnv;
+  }
+  return LIVE_FALLBACK_DB_URL;
+}
+
+describe('ledger unique backstop migration (real Postgres)', () => {
+  it('double-inserts one attempt through insertSpend: second is a no-op, COUNT = 1', async (ctx) => {
+    // NOTE: this file top-level mocks 'pg', so the live leg must bypass the
+    // mock with importActual — a plain import('pg') would return the stub Pool.
+    const { Pool: LivePool } = await vi.importActual<typeof import('pg')>('pg');
+    const { randomUUID } = await import('node:crypto');
+    const { readFileSync: readSql } = await import('node:fs');
+    const { dirname: dirOf, join: joinPath } = await import('node:path');
+    const { fileURLToPath: toPath } = await import('node:url');
+    const liveUrl = resolveLiveDatabaseUrl();
+    const probe = new LivePool({ connectionString: liveUrl, connectionTimeoutMillis: 5000 });
+    try {
+      await probe.query('SELECT 1');
+    } catch (error) {
+      console.warn(
+        `[ledger-026] SKIP: no Postgres reachable at the configured URL — ${(error as Error).message}. ` +
+          'Start the CI-identical container (postgres:17) or set DATABASE_URL. Skipping loudly, not failing.',
+      );
+      await probe.end().catch(() => undefined);
+      ctx.skip();
+      return;
+    }
+    await probe.end().catch(() => undefined);
+
+    const schema = `ledger_026_${process.pid}_${Date.now()}`;
+    // max:1 plus `options: -c search_path=` binds EVERY backend of this pool
+    // (including a replacement after a query error discards one) to the test
+    // schema — a session SET would be lost when node-postgres reconnects.
+    const pool = new LivePool({
+      connectionString: liveUrl,
+      max: 1,
+      options: `-c search_path=${schema}`,
+    }) as unknown as Pool;
+    const here = dirOf(toPath(import.meta.url));
+    // insertSpend is module-private: the live leg reaches it through
+    // runBuilderJob's generate, which also needs builder_runs (0007) plus the
+    // bots/accounts parents (0001/0002) — hence the wider chain.
+    const migrateFiles = [
+      '0001_init.sql',
+      '0002_v11.sql',
+      '0003_v12.sql',
+      '0007_builder_runs.sql',
+      '0009_ai_spend_attempt.sql',
+    ];
+    const fallbackDdl = `
+CREATE TABLE IF NOT EXISTS accounts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  discord_id text UNIQUE NOT NULL,
+  email text,
+  creem_id text,
+  credits numeric NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS bots (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL,
+  name text NOT NULL,
+  token_cipher bytea NOT NULL,
+  prod_spec_id uuid,
+  draft_spec_id uuid,
+  status text NOT NULL,
+  deleted_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS ai_spend (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
+  model text NOT NULL,
+  usd_cost numeric,
+  credits numeric,
+  reason text NOT NULL,
+  ref_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE ai_spend ADD COLUMN IF NOT EXISTS attempt integer;
+CREATE UNIQUE INDEX IF NOT EXISTS ai_spend_ref_reason_attempt_uidx ON ai_spend (ref_id, reason, attempt) WHERE ref_id IS NOT NULL AND attempt IS NOT NULL;`;
+    try {
+      const control = new LivePool({ connectionString: liveUrl, max: 1 });
+      await control.query(`CREATE SCHEMA "${schema}"`);
+      await control.end().catch(() => undefined);
+      for (const file of migrateFiles) {
+        try {
+          const sql = readSql(joinPath(here, '..', '..', 'drizzle', file), 'utf8');
+          const statements = sql
+            .split('--> statement-breakpoint')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+          for (const statement of statements) {
+            await pool.query(statement);
+          }
+        } catch {
+          const statements = fallbackDdl
+            .split(';')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+          for (const statement of statements) {
+            await pool.query(statement);
+          }
+          break;
+        }
+      }
+      const account = await pool.query<{ id: string }>(
+        'INSERT INTO accounts (discord_id) VALUES ($1) RETURNING id',
+        [`ledger-026-${randomUUID()}`],
+      );
+      const accountId = (account.rows[0] as { id: string }).id;
+      const runId = randomUUID();
+      const deps = createBuilderDeps(pool, async () => ({
+        text: '{"version":1,"behaviors":[]}',
+        model: 'wiro-glm-5-2',
+        providerCostUsd: 0.02,
+        lane: 'builder',
+        attempts: [],
+      }));
+      const botRow = await pool.query<{ id: string }>(
+        `INSERT INTO bots (account_id, name, token_cipher, status)
+         VALUES ($1, 'ledger-026', '\\x'::bytea, 'draft') RETURNING id`,
+        [accountId],
+      );
+      const botId = (botRow.rows[0] as { id: string }).id;
+      await pool.query(
+        `INSERT INTO builder_runs (id, bot_id, phase, detail) VALUES ($1, $2, 'queued', '{}'::jsonb)`,
+        [runId, botId],
+      );
+      const first = await runBuilderJob(deps, { runId, botId, brief: 'ledger-026 probe' });
+      expect(first).toEqual({ ok: true, phase: 'live' });
+      const counted = await pool.query<{ attempts: string }>(
+        'SELECT COUNT(*) AS attempts FROM ai_spend WHERE ref_id = $1 AND reason = $2',
+        [runId, 'burn:builder'],
+      );
+      expect(Number((counted.rows[0] as { attempts: string }).attempts)).toBe(1);
+      // Direct double-insert of the SAME (ref_id, reason, attempt) triple: the
+      // unique backstop rejects the second row, so COUNT stays 1.
+      await expect(
+        pool.query(
+          `INSERT INTO ai_spend (account_id, model, usd_cost, credits, reason, ref_id, attempt)
+           VALUES ($1, 'wiro-glm-5-2', 0.02, 4, 'burn:builder', $2, 1)`,
+          [accountId, runId],
+        ),
+      ).rejects.toMatchObject({ code: '23505' });
+      const after = await pool.query<{ attempts: string }>(
+        'SELECT COUNT(*) AS attempts FROM ai_spend WHERE ref_id = $1 AND reason = $2',
+        [runId, 'burn:builder'],
+      );
+      expect(Number((after.rows[0] as { attempts: string }).attempts)).toBe(1);
+      // NULL-attempt chat rows are untouched by the partial index by construction.
+      await pool.query(
+        `INSERT INTO ai_spend (account_id, model, usd_cost, credits, reason, ref_id, attempt)
+         VALUES ($1, 'persona', NULL, NULL, 'persona-run', $2, NULL)`,
+        [accountId, randomUUID()],
+      );
+      await pool.query(
+        `INSERT INTO ai_spend (account_id, model, usd_cost, credits, reason, ref_id, attempt)
+         VALUES ($1, 'persona', NULL, NULL, 'persona-run', $2, NULL)`,
+        [accountId, randomUUID()],
+      );
+      await pool.query(`DROP SCHEMA "${schema}" CASCADE`);
+    } finally {
+      await pool.end().catch(() => undefined);
+    }
+  }, 60_000);
 });
 
 // The worker lifecycle runs against the mocked PgBoss/Pool above; the singleton

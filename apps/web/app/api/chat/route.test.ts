@@ -297,8 +297,16 @@ describe('ai_spend persistence (mocked persona lane)', () => {
 
     expect(spend.calls).toHaveLength(1);
     expect(spend.calls[0].text).toContain('INSERT INTO ai_spend');
-    // account_id, model, usd_cost, credits, reason, ref_id — NULL, never 0.
-    expect(spend.calls[0].params).toEqual(['acct-1', 'persona', null, null, 'persona-run', BOT]);
+    // account_id, model, usd_cost, credits, reason, ref_id, attempt — NULL, never 0.
+    expect(spend.calls[0].params).toEqual([
+      'acct-1',
+      'persona',
+      null,
+      null,
+      'persona-run',
+      BOT,
+      null,
+    ]);
   });
 
   it('records provider-reported cost and derived credits on a metered done', async () => {
@@ -322,6 +330,7 @@ describe('ai_spend persistence (mocked persona lane)', () => {
     expect(params[3] as number).toBeCloseTo(0.075, 12);
     expect(params[4]).toBe('persona-run');
     expect(params[5]).toBe(BOT);
+    expect(params[6]).toBeNull();
   });
 
   it('leaves ref_id NULL when the turn carries no botId', async () => {

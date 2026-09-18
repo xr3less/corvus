@@ -494,9 +494,19 @@ async function loadAttemptCount(db: BuilderQueryable, runId: string): Promise<nu
 // D10: the canonical @corvus/ai ledger write (RETURNING id + row verification +
 // input validation). A failure to persist a billable call is surfaced as the
 // coded `spend_failed` class, never swallowed.
+// KI-026: a unique violation (23505) on (ref_id, reason, attempt) means another
+// execution already billed this attempt, so it is an idempotent skip — return
+// normally to keep the global per-run total at or under the ceiling. Any other
+// error still surfaces as `spend_failed`.
 async function insertSpend(
   db: BuilderQueryable,
-  input: { accountId: string; model: string; usdCost: number | null; runId: string },
+  input: {
+    accountId: string;
+    model: string;
+    usdCost: number | null;
+    runId: string;
+    attempt: number;
+  },
 ): Promise<void> {
   try {
     await recordSpend(db, {
@@ -505,8 +515,10 @@ async function insertSpend(
       usdCost: input.usdCost,
       reason: SPEND_REASON,
       refId: input.runId,
+      attempt: input.attempt,
     });
-  } catch {
+  } catch (error) {
+    if (isUniqueViolation(error)) return;
     throw new BuilderStepError('spend_failed');
   }
 }
@@ -648,6 +660,7 @@ export function createBuilderDeps(
             model: result.model,
             usdCost: result.providerCostUsd,
             runId: job.runId,
+            attempt,
           });
           continue;
         }
@@ -660,6 +673,7 @@ export function createBuilderDeps(
             model: result.model,
             usdCost: result.providerCostUsd,
             runId: job.runId,
+            attempt,
           });
         }
         return { specJson: parsed.specJson, model: result.model, usdCost: result.providerCostUsd };

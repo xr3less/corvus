@@ -152,7 +152,7 @@ describe('boot', () => {
     expect(mocks.startPreflightWorker).toHaveBeenCalledTimes(1);
     expect(mocks.startPreflightWorker).toHaveBeenCalledWith(DB_URL);
     expect(mocks.startBuilderWorker).toHaveBeenCalledTimes(1);
-    expect(mocks.startBuilderWorker).toHaveBeenCalledWith(DB_URL);
+    expect(mocks.startBuilderWorker).toHaveBeenCalledWith(DB_URL, expect.any(Function));
     expect(mocks.createGateway).toHaveBeenCalledTimes(1);
     // The supervisor is constructed with real callbacks and handed to the gateway.
     expect(mocks.createSupervisor).toHaveBeenCalledTimes(1);
@@ -168,6 +168,22 @@ describe('boot', () => {
     expect(gatewayOptions.supervisor).toBe(supervisor);
     expect(booted.worker).toBe(worker);
     expect(booted.gateway).toBe(gateway);
+  });
+
+  it('passes a tier resolver that degrades to null (trial grant preserved)', async () => {
+    const gateway = makeGateway();
+    mocks.createGateway.mockReturnValue(gateway);
+    mocks.startPreflightWorker.mockResolvedValue(makeWorkerHandle());
+
+    await boot({ DATABASE_URL: DB_URL });
+
+    const resolver = mocks.startBuilderWorker.mock.calls[0]?.[1] as (
+      accountId: string,
+    ) => Promise<unknown>;
+    expect(typeof resolver).toBe('function');
+    // The mocked pg pool rejects every query, so the resolver must degrade to
+    // null — the worker then applies the trial grant, exactly as before KI-025.
+    await expect(resolver('account-1')).resolves.toBeNull();
   });
 
   it('logs lifecycle records as JSON carrying botId, never the connection URL', async () => {

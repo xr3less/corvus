@@ -12,6 +12,8 @@ import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool'
 import {
   GET,
   LIST_BOTS_SQL,
+  MINT_BOT_SQL,
+  POST,
   __resetSessionReader,
   __setSessionReader,
   type ListSession,
@@ -147,6 +149,14 @@ function listRequest(): Request {
   return new Request('http://localhost/api/bots');
 }
 
+function mintRequest(body: unknown): Request {
+  return new Request('http://localhost/api/bots', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  });
+}
+
 afterEach(() => {
   __resetSessionReader();
 });
@@ -251,6 +261,72 @@ describe('GET /api/bots against a fake pool', () => {
   });
 });
 
+// --- POST /api/bots against a fake pool (no database) ------------------------
+
+describe('POST /api/bots against a fake pool', () => {
+  it('returns 401 before any query when there is no session', async () => {
+    const { pool, calls } = makeFakePool(() => ({ rowCount: 1, rows: [] }));
+    __setPool(pool);
+    __resetSessionReader();
+
+    const res = await POST(mintRequest({ botName: 'Study Hall' }));
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: 'unauthorized' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('answers 422 for bad names — empty, over-32, and non-string', async () => {
+    const { pool, calls } = makeFakePool(() => ({ rowCount: 1, rows: [{ id: UUID_A }] }));
+    __setPool(pool);
+    actAs(OWNER);
+
+    for (const bad of ['', '   ', 42, null, undefined, {}, []]) {
+      const res = await POST(mintRequest({ botName: bad }));
+      expect(res.status).toBe(422);
+    }
+    const long = await POST(mintRequest({ botName: 'x'.repeat(33) }));
+    expect(long.status).toBe(422);
+    const badJson = await POST(
+      new Request('http://localhost/api/bots', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: 'not-json{',
+      }),
+    );
+    expect(badJson.status).toBe(422);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('mints one draft bot and answers 200 { botId }', async () => {
+    const { pool, calls } = makeFakePool(() => ({ rowCount: 1, rows: [{ id: UUID_A }] }));
+    __setPool(pool);
+    actAs(OWNER);
+
+    const res = await POST(mintRequest({ botName: 'Study Hall' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ botId: UUID_A });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].text).toBe(MINT_BOT_SQL);
+    expect(calls[0].params).toEqual([OWNER.accountId, 'Study Hall']);
+    expect(calls[0].text).toContain("'draft'");
+  });
+
+  it('returns 500 — not a fake 200 — when the mint query fails', async () => {
+    const { pool } = makeFakePool(() => {
+      throw new Error('connection refused');
+    });
+    __setPool(pool);
+    actAs(OWNER);
+
+    const res = await POST(mintRequest({ botName: 'Study Hall' }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'could not mint bot' });
+  });
+});
+
 // --- Missing DATABASE_URL maps honestly (KI-021) ----------------------------
 
 describe('GET /api/bots with DATABASE_URL absent', () => {
@@ -314,5 +390,44 @@ describe('GET /api/bots against Postgres (loud skip when unreachable)', () => {
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([]);
+  });
+});
+
+// --- POST /api/bots against Postgres (loud skip when unreachable) -------------
+
+describe('POST /api/bots against Postgres (loud skip when unreachable)', () => {
+  it('mints a draft row scoped to the caller — a foreign account cannot see it', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    const tag = `bots-mint-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const ownerId = await makeAccount(`${tag}-owner`);
+    const intruderId = await makeAccount(`${tag}-intruder`);
+
+    actAs({ accountId: ownerId, discordId: `${tag}-owner` });
+    const mintRes = await POST(mintRequest({ botName: 'Fresh Mint' }));
+    expect(mintRes.status).toBe(200);
+    const mintBody = (await mintRes.json()) as { botId: string };
+    expect(typeof mintBody.botId).toBe('string');
+    expect(mintBody.botId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+
+    const active = livePool as Pool;
+    const stored = await active.query<{ account_id: string; name: string; status: string }>(
+      'SELECT account_id, name, status FROM bots WHERE id = $1',
+      [mintBody.botId],
+    );
+    expect(stored.rows).toHaveLength(1);
+    expect(stored.rows[0].account_id).toBe(ownerId);
+    expect(stored.rows[0].name).toBe('Fresh Mint');
+    expect(stored.rows[0].status).toBe('draft');
+
+    actAs({ accountId: intruderId, discordId: `${tag}-intruder` });
+    const foreign = await GET(listRequest());
+    expect(foreign.status).toBe(200);
+    expect(await foreign.json()).toEqual([]);
   });
 });

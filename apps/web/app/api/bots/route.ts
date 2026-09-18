@@ -9,9 +9,16 @@
 // the bots table. Deleted bots are excluded. A database failure answers 500
 // { error }; falling back to the example bots is the page's deliberate choice,
 // the route itself never invents a row.
+//
+// POST /api/bots — mint one draft bot (KI-027). Same seams: session first
+// (401), then the name validated with the shared validateBotName (422), then
+// the mint INSERT (account_id, name, empty token placeholder, draft)
+// RETURNING id → 200 { botId }. DB failure answers through the shared
+// mapDbError mapping, else 500 — mirroring the GET handler's error shape.
 
 import { getPool, mapDbError, __setPool } from '../../../lib/db/pool';
 import { defaultSessionReader } from '../../../lib/interview/session-bind';
+import { validateBotName } from '../../../lib/interview/tree';
 
 export interface ListSession {
   accountId: string;
@@ -73,5 +80,49 @@ export async function GET(req: Request): Promise<Response> {
       return error(mapped.status, mapped.error);
     }
     return error(500, 'could not load bots');
+  }
+}
+
+/* The mint INSERT — same quadruple as interview/start and templates fork:
+   account-scoped, empty token placeholder (no token custody on mint), draft. */
+export const MINT_BOT_SQL =
+  "INSERT INTO bots (account_id, name, token_cipher, status) VALUES ($1, $2, '\\x'::bytea, 'draft') RETURNING id";
+
+export async function POST(req: Request): Promise<Response> {
+  const session = await sessionReader.getSession(req);
+  if (!session) {
+    return error(401, 'unauthorized');
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return error(422, 'body must be JSON');
+  }
+  const botName = (body as { botName?: unknown } | null)?.botName;
+  const name = validateBotName(botName);
+  if (!name.ok) {
+    return error(422, name.error);
+  }
+
+  try {
+    // token_cipher is NOT NULL bytea with no token custody on mint, so the
+    // draft row carries an empty placeholder — never a real token.
+    const result = await getPool().query<{ id: string }>(MINT_BOT_SQL, [
+      session.accountId,
+      name.value,
+    ]);
+    const botId = result.rows[0]?.id;
+    if (typeof botId !== 'string' || botId.length === 0) {
+      return error(500, 'could not mint bot');
+    }
+    return Response.json({ botId }, { status: 200 });
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
+    return error(500, 'could not mint bot');
   }
 }

@@ -57,6 +57,44 @@ function streamResponse(stream: ReadableStream<Uint8Array>) {
   };
 }
 
+function mintResponse(botId: string) {
+  return {
+    ok: true,
+    status: 200,
+    body: null,
+    json: async () => ({ botId }),
+  };
+}
+
+function startResponse(runId: string) {
+  return {
+    ok: true,
+    status: 200,
+    body: null,
+    json: async () => ({ runId }),
+  };
+}
+
+/* Route a stubbed fetch by URL: /api/bots mints, everything else streams chat. */
+function chatFirstStub(
+  first: ReadableStream<Uint8Array>,
+  second: ReadableStream<Uint8Array>,
+  botId: string,
+) {
+  let chatCalls = 0;
+  return (url: string) => {
+    if (url === '/api/bots') {
+      return Promise.resolve(mintResponse(botId));
+    }
+    chatCalls += 1;
+    return Promise.resolve(streamResponse(chatCalls <= 1 ? first : second));
+  };
+}
+
+function callsTo(stub: ReturnType<typeof vi.fn>, url: string) {
+  return stub.mock.calls.filter((call) => call[0] === url);
+}
+
 function frame(data: Record<string, unknown>): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
@@ -66,6 +104,10 @@ async function submitCreation(text: string): Promise<HTMLTextAreaElement> {
   fireEvent.change(textarea, { target: { value: text } });
   fireEvent.keyDown(textarea, { key: 'Enter' });
   return textarea;
+}
+
+function buildButton(): HTMLButtonElement {
+  return screen.getByRole('button', { name: 'Build this bot' }) as HTMLButtonElement;
 }
 
 beforeEach(() => {
@@ -119,7 +161,12 @@ describe('new bot page', () => {
 
   it('submitting streams the reply into a thread with botId null', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn().mockResolvedValue(streamResponse(sse.stream));
+    const fetchStub = vi.fn((url: string) => {
+      if (url === '/api/bots') {
+        return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
+      }
+      return Promise.resolve(streamResponse(sse.stream));
+    });
     vi.stubGlobal('fetch', fetchStub);
     render(<NewBotPage />);
 
@@ -148,16 +195,18 @@ describe('new bot page', () => {
     await waitFor(() => expect(screen.getByText('Got it — drafting.')).toBeTruthy());
     expect(screen.getByText(/This reply used 1.1 credits/)).toBeTruthy();
     expect((screen.getByLabelText('Prompt') as HTMLTextAreaElement).value).toBe('');
+    /* The first-turn mint lands beside the chat without disturbing it. */
+    await waitFor(() => expect(buildButton().disabled).toBe(false));
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('second turn carries the completed first turn as history', async () => {
     const first = sseStream();
     const second = sseStream();
-    const fetchStub = vi
-      .fn()
-      .mockResolvedValueOnce(streamResponse(first.stream))
-      .mockResolvedValueOnce(streamResponse(second.stream));
+    const fetchStub = vi.fn();
+    fetchStub.mockImplementation(
+      chatFirstStub(first.stream, second.stream, '11111111-1111-4111-8111-111111111111'),
+    );
     vi.stubGlobal('fetch', fetchStub);
     render(<NewBotPage />);
 
@@ -168,12 +217,15 @@ describe('new bot page', () => {
       first.close();
     });
     await waitFor(() => expect(screen.getByText('First answer.')).toBeTruthy());
+    /* The first-turn mint commits once the stream settles, so turn two carries it. */
+    await waitFor(() => expect(buildButton().disabled).toBe(false));
 
     await submitCreation('Second question');
-    expect(fetchStub).toHaveBeenCalledTimes(2);
-    const secondInit = fetchStub.mock.calls[1][1] as RequestInit;
+    expect(callsTo(fetchStub, '/api/chat')).toHaveLength(2);
+    const chats = callsTo(fetchStub, '/api/chat');
+    const secondInit = chats[1][1] as RequestInit;
     expect(JSON.parse(String(secondInit.body))).toEqual({
-      botId: null,
+      botId: '11111111-1111-4111-8111-111111111111',
       message: 'Second question',
       history: [
         { role: 'user', content: 'First question' },
@@ -218,7 +270,10 @@ describe('new bot page', () => {
     const sse = sseStream();
     vi.stubGlobal(
       'fetch',
-      vi.fn((_url: string, init?: RequestInit) => {
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url === '/api/bots') {
+          return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
+        }
         capturedSignal = init?.signal ?? undefined;
         return Promise.resolve(streamResponse(sse.stream));
       }),
@@ -229,5 +284,117 @@ describe('new bot page', () => {
 
     unmount();
     expect(capturedSignal?.aborted).toBe(true);
+  });
+
+  it('mints exactly once on the first submit and reuses the id afterwards', async () => {
+    const first = sseStream();
+    const second = sseStream();
+    const fetchStub = vi.fn();
+    fetchStub.mockImplementation(
+      chatFirstStub(first.stream, second.stream, '22222222-2222-4222-8222-222222222222'),
+    );
+    vi.stubGlobal('fetch', fetchStub);
+    render(<NewBotPage />);
+    expect(buildButton().disabled).toBe(true);
+
+    await submitCreation('Welcome bot');
+    await act(async () => {
+      first.push(frame({ t: 'content', text: 'First answer.' }));
+      first.push(frame({ t: 'done', credits: 0.05 }));
+      first.close();
+    });
+    await waitFor(() => expect(screen.getByText('First answer.')).toBeTruthy());
+    await waitFor(() => expect(buildButton().disabled).toBe(false));
+
+    await submitCreation('Second question');
+    await act(async () => {
+      second.push(frame({ t: 'content', text: 'Second answer.' }));
+      second.push(frame({ t: 'done', credits: 0.05 }));
+      second.close();
+    });
+    await waitFor(() => expect(screen.getByText('Second answer.')).toBeTruthy());
+
+    const mints = callsTo(fetchStub, '/api/bots');
+    expect(mints).toHaveLength(1);
+    expect(mints[0][1]).toMatchObject({ method: 'POST' });
+    expect(JSON.parse(String((mints[0][1] as RequestInit).body))).toEqual({
+      botName: 'Welcome bot',
+    });
+    const chats = callsTo(fetchStub, '/api/chat');
+    expect(chats).toHaveLength(2);
+    expect(JSON.parse(String((chats[0][1] as RequestInit).body)).botId).toBeNull();
+    expect(JSON.parse(String((chats[1][1] as RequestInit).body)).botId).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    );
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('Build posts the minted bot id with the first message and links the run', async () => {
+    const sse = sseStream();
+    const fetchStub = vi.fn((url: string) => {
+      if (url === '/api/bots') {
+        return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
+      }
+      if (url === '/api/builder/start') {
+        return Promise.resolve(startResponse('run-123'));
+      }
+      return Promise.resolve(streamResponse(sse.stream));
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<NewBotPage />);
+    expect(buildButton().disabled).toBe(true);
+
+    await submitCreation('A moderation helper');
+    await act(async () => {
+      sse.push(frame({ t: 'content', text: 'Drafting your bot.' }));
+      sse.push(frame({ t: 'done', credits: 0.05 }));
+      sse.close();
+    });
+    await waitFor(() => expect(screen.getByText('Drafting your bot.')).toBeTruthy());
+    await waitFor(() => expect(buildButton().disabled).toBe(false));
+
+    fireEvent.click(buildButton());
+    const link = await screen.findByRole('link', { name: 'View build progress' });
+    expect(link.getAttribute('href')).toBe('/dashboard?runId=run-123');
+    const starts = callsTo(fetchStub, '/api/builder/start');
+    expect(starts).toHaveLength(1);
+    expect(starts[0][1]).toMatchObject({ method: 'POST' });
+    expect(JSON.parse(String((starts[0][1] as RequestInit).body))).toEqual({
+      botId: '11111111-1111-4111-8111-111111111111',
+      brief: 'A moderation helper',
+    });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a failed mint shows an error, keeps the chat, and never starts a build', async () => {
+    const sse = sseStream();
+    const fetchStub = vi.fn((url: string) => {
+      if (url === '/api/bots') {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          body: null,
+          json: async () => ({ error: 'mint blew up' }),
+        });
+      }
+      return Promise.resolve(streamResponse(sse.stream));
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<NewBotPage />);
+
+    await submitCreation('Keep chatting');
+    await act(async () => {
+      sse.push(frame({ t: 'content', text: 'Still here.' }));
+      sse.push(frame({ t: 'done', credits: 0.05 }));
+      sse.close();
+    });
+    await waitFor(() => expect(screen.getByText('Still here.')).toBeTruthy());
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('mint blew up');
+    expect(screen.getByText('Keep chatting')).toBeTruthy();
+    expect(buildButton().disabled).toBe(true);
+    expect(callsTo(fetchStub, '/api/builder/start')).toHaveLength(0);
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,13 @@
-import { index, jsonb, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { accounts } from './v11.js';
 
 // Durable OAuth state — SPEC section 4 (V1-2), verbatim.
@@ -60,6 +69,10 @@ export type NewInterviewProgress = typeof interviewProgress.$inferInsert;
 // - ON DELETE CASCADE: deleting an account wipes its spend history.
 // - Index on (account_id, created_at) serves the K1/K3 readers' median-over-
 //   30-builds aggregation.
+// - `attempt` is the run-global billable attempt number (KI-026, nullable, no
+//   default — chat rows carry NULL). The partial unique index on
+//   (ref_id, reason, attempt) WHERE both are NOT NULL makes a double-billed
+//   attempt an idempotent no-op instead of a second charge.
 export const aiSpend = pgTable(
   'ai_spend',
   {
@@ -72,6 +85,7 @@ export const aiSpend = pgTable(
     credits: numeric('credits'),
     reason: text('reason').notNull(),
     refId: uuid('ref_id'),
+    attempt: integer('attempt'),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('ai_spend_account_created_idx').on(t.accountId, t.createdAt)],

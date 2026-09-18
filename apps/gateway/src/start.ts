@@ -34,6 +34,7 @@ import {
   type PreflightWorkerHandle,
 } from './preflight/worker.js';
 import { startBuilderWorker, type BuilderWorkerHandle } from './db/builder-runs.js';
+import { createAccountsTierResolver } from './db/tier-resolver.js';
 import { decryptToken } from './lib/crypto.js';
 import { createSupervisor } from './supervisor/supervisor.js';
 
@@ -208,7 +209,10 @@ export async function boot(env: NodeJS.ProcessEnv = process.env): Promise<Booted
   // leaves no open handle behind.
   let builderWorker: BuilderWorkerHandle;
   try {
-    builderWorker = await startBuilderWorker(databaseUrl);
+    // The builder pre-check resolves the account's plan tier through the
+    // boot pool (one pool per process); an unreadable tier falls back to the
+    // trial grant inside the worker, never a crash.
+    builderWorker = await startBuilderWorker(databaseUrl, createAccountsTierResolver(pool));
   } catch (error) {
     await worker.stop().catch(() => undefined);
     await pool.end().catch(() => undefined);

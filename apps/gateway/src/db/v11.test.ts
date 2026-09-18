@@ -21,7 +21,7 @@ describe('gateway db v11 tables (SPEC section 4)', () => {
   it('defines every SPEC accounts column in snake_case', () => {
     const names = Object.values(getTableColumns(accounts)).map((c) => (c as { name: string }).name);
     expect([...names].sort()).toEqual(
-      ['created_at', 'credits', 'creem_id', 'discord_id', 'email', 'id'].sort(),
+      ['created_at', 'credits', 'creem_id', 'discord_id', 'email', 'id', 'tier'].sort(),
     );
     for (const name of names) {
       expect(name).not.toMatch(/[A-Z]/);
@@ -52,6 +52,7 @@ describe('gateway db v11 tables (SPEC section 4)', () => {
     const a = getTableColumns(accounts);
     expect(a.discordId.notNull).toBe(true);
     expect(a.credits.notNull).toBe(true);
+    expect(a.tier.notNull).toBe(true);
     expect(a.createdAt.notNull).toBe(true);
     expect(a.email.notNull).toBe(false);
     expect(a.creemId.notNull).toBe(false);

@@ -22,6 +22,8 @@ export const accounts = pgTable('accounts', {
   email: text('email'),
   creemId: text('creem_id'),
   credits: numeric('credits').default('0').notNull(),
+  // Plan tier for the monthly grant (KI-025); 'trial' default keeps old INSERTs working.
+  tier: text('tier').default('trial').notNull(),
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
 });
 

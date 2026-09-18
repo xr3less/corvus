@@ -49,6 +49,8 @@ export interface RecordSpendInput {
   usdCost: number | null;
   reason: string;
   refId?: string;
+  /** KI-026: run-global billable attempt number (integer >= 1). Absent means NULL (chat path). */
+  attempt?: number | null;
 }
 
 export class SpendError extends Error {
@@ -59,8 +61,8 @@ export class SpendError extends Error {
   }
 }
 
-const INSERT_SPEND_SQL = `INSERT INTO ai_spend (account_id, model, usd_cost, credits, reason, ref_id)
-     VALUES ($1, $2, $3, $4, $5, $6)
+const INSERT_SPEND_SQL = `INSERT INTO ai_spend (account_id, model, usd_cost, credits, reason, ref_id, attempt)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id`;
 
 /**
@@ -91,6 +93,10 @@ export async function recordSpend(pool: SpendPool, input: RecordSpendInput): Pro
     throw new SpendError('recordSpend: usdCost must be null or a finite non-negative number');
   }
   const credits = usdCost === null ? null : toCredits(usdCost);
+  const attempt = input.attempt ?? null;
+  if (attempt !== null && (!Number.isInteger(attempt) || attempt < 1)) {
+    throw new SpendError('recordSpend: attempt must be an integer >= 1 when present');
+  }
   const result = await pool.query(INSERT_SPEND_SQL, [
     accountId,
     model,
@@ -98,6 +104,7 @@ export async function recordSpend(pool: SpendPool, input: RecordSpendInput): Pro
     credits,
     reason,
     input.refId ?? null,
+    attempt,
   ]);
   const firstRow = Array.isArray(result.rows) ? result.rows[0] : undefined;
   const id =
