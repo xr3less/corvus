@@ -1,0 +1,4 @@
+# Normalize line endings to LF on commit and checkout.
+# Windows checkouts used to produce CRLF, which fails the pre-commit prettier
+# gate on files sub-agents wrote with LF. eol=lf closes that class for good.
+* text=auto eol=lf

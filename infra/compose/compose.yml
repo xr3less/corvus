@@ -54,8 +54,8 @@ services:
       - -c
       - pg_dump -Fc -h postgres -U $${POSTGRES_USER} $${POSTGRES_DB} > /backups/corvus.dump
 
-  # Next.js web app. Published on 3000; TLS/reverse-proxy is a documented follow-up
-  # (infra/RUNBOOK.md) — this compose file intentionally ships no proxy service yet.
+  # Next.js web app. Published on 3000 for direct debug; public traffic
+  # terminates at the `caddy` service (HTTPS, Automatic HTTPS via ACME).
   web:
     image: ghcr.io/${GHCR_OWNER:-corvus}/corvus-web:${TAG:-stable}
     restart: unless-stopped
@@ -92,5 +92,25 @@ services:
         condition: service_healthy
     logging: *default-logging
 
+  # TLS terminator / reverse proxy. Terminates HTTPS for the nip.io hostname
+  # (Automatic HTTPS via ACME HTTP-01) and proxies all traffic to web:3000.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    logging: *default-logging
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

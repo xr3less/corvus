@@ -93,56 +93,100 @@ If you see all of that, you are done. Take the snapshot.
 The apps run from images built by GitHub and pulled from GHCR. This section is the
 deploy order. Follow it top to bottom.
 
+Public address (IP-first, no domain bought yet):
+
+- Host: `13-140-181-113.nip.io` — this name resolves to `13.140.181.113`
+  (dots become dashes). No DNS setup needed.
+- Public URL: `https://13-140-181-113.nip.io`
+- Caddy (in compose as `caddy:2-alpine`) gets a real HTTPS certificate
+  automatically on first request and forwards everything to `web:3000`.
+  The Caddyfile lives at `infra/compose/Caddyfile`. Certificates live in the
+  `caddy_data` volume — never delete it.
+
 ### 7.1 One-time setup (do this once)
 
 1. **Server secrets.** In the GitHub repo: **Settings -> Secrets and variables -> Actions**.
    Add three secrets (no values are stored in the repo):
-   - `DEPLOY_HOST` — your server IP.
+   - `DEPLOY_HOST` — your server IP (`13.140.181.113`).
    - `DEPLOY_USER` — the SSH user (for example `root`, or `corvus`).
    - `DEPLOY_SSH_KEY` — the private key for that user. Paste the whole key, including
      the `-----BEGIN ...` and `-----END ...` lines.
 2. **Put the repo on the server.** In your SSH window:
    `git clone <repo-url> /opt/corvus` (the workflow expects the repo at `/opt/corvus`).
 3. **Create the server `.env`.** `cd /opt/corvus`, then `nano .env`. Copy the keys from
-   `.env.example` and fill the real values (`POSTGRES_*`, `DATABASE_URL`, `APP_URL`,
-   `DISCORD_*`, `GHCR_OWNER`, `TAG`). Save with Ctrl+O, Enter, Ctrl+X.
-4. **Log in to GHCR.** The images are private, so the server must log in once:
+   `.env.example` and fill the real values (`POSTGRES_*`, `DATABASE_URL`,
+   `DISCORD_*`, `GHCR_OWNER`, `TAG`). Set exactly:
+   `APP_URL=https://13-140-181-113.nip.io`
+   Use `https`, no trailing slash. Save with Ctrl+O, Enter, Ctrl+X.
+4. **Log in to GHCR.** The app images are private, so the server must log in once:
    `echo <GITHUB_PAT> | docker login ghcr.io -u <github-username> --password-stdin`
-   (the token needs `read:packages`).
+   (the token needs `read:packages`). Caddy (`caddy:2-alpine`) comes from Docker Hub,
+   so it needs no login.
+5. **Check the firewall.** The setup script already opened ports 22, 80, 443
+   (see section 3, step 5). Check with: `ufw status`
+   You must see 22, 80, and 443 allowed. Port 80 is needed for the certificate.
+   Port 443 is the HTTPS traffic. If `443/udp` is missing, add it for Caddy:
+   `ufw allow 443/udp`
+6. **Discord redirect.** In the Discord Developer Portal, open your app, go to
+   **OAuth2 -> Redirects**, and register exactly:
+   `https://13-140-181-113.nip.io/api/auth/callback`
+   It must match byte-for-byte. The app builds this value as
+   `APP_URL + /api/auth/callback` and sends it twice (login link and code
+   exchange), so a different value fails. Do this before testing login.
 
-### 7.2 First deploy — snapshot -> migrate -> pull -> up
+### 7.2 First deploy — pull -> env -> snapshot -> backup -> migrate -> pull -> up
 
-1. **Snapshot (Contabo).** Take a Contabo snapshot first (see section 4). This is your
+Run these on the server in `/opt/corvus`, in this order:
+
+1. **Get the latest files:**
+   `git -C /opt/corvus pull`
+   (needed whenever `compose.yml` or the `Caddyfile` changes — the deploy
+   workflow does NOT fetch repo files itself).
+2. **Check `.env`:** `nano /opt/corvus/.env`
+   Confirm `APP_URL=https://13-140-181-113.nip.io` and that `POSTGRES_*`,
+   `DATABASE_URL`, `DISCORD_*`, `GHCR_OWNER`, `TAG` are filled.
+3. **Snapshot (Contabo).** Take a Contabo snapshot first (see section 4). This is your
    whole-server save point.
-2. **Database snapshot (pg_dump).** This is your schema rollback point, and it MUST run
+4. **Database snapshot (pg_dump).** This is your schema rollback point, and it MUST run
    before any migration:
    `docker compose --env-file .env -f infra/compose/compose.yml --profile backup run --rm pg-backup`
    It writes `infra/compose/backups/corvus.dump`.
-3. **Migrate (forward-only).** Apply every file in `apps/gateway/drizzle/` once, in
-   number order (`0001`, `0002`, ...). There is no migration-runner script yet, so run
-   them by hand, for example:
+5. **Migrate (forward-only).** Only if a migration is pending. Apply every new file in
+   `apps/gateway/drizzle/` once, in number order (`0001`, `0002`, ...). There is no
+   migration-runner script yet, so run them by hand, for example:
    `for f in apps/gateway/drizzle/*.sql; do docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f - < "$f"; done`
    Rules: never edit an old migration, never write new DDL by hand. If unsure, stop and
-   ask the orchestrator.
-4. **Pull the images:**
-   `docker compose --env-file .env -f infra/compose/compose.yml pull web gateway`
-5. **Start them:**
-   `docker compose --env-file .env -f infra/compose/compose.yml up -d web gateway`
+   ask the orchestrator. Skip this step if nothing is pending.
+6. **Pull the images:**
+   `docker compose --env-file .env -f infra/compose/compose.yml pull web gateway caddy`
+   (`web`/`gateway` come from GHCR, `caddy` from Docker Hub — it pulls on `up` too
+   if you skip it here.)
+7. **Start them:**
+   `docker compose --env-file .env -f infra/compose/compose.yml up -d web gateway caddy`
+   (or plain `up -d` for everything).
 
 After this, normal deploys can run from the GitHub UI: **Actions -> deploy -> Run workflow**.
 The workflow does the CI gates, builds and pushes the images, then runs `pull` + `up` on
-the server over SSH. It does NOT run migrations — those stay an explicit step (7.2.3).
-The workflow also does NOT read the repo from the server, so run `git -C /opt/corvus pull`
-on the server first when `compose.yml` or `.env` changes.
+the server over SSH. It does NOT run migrations — those stay an explicit step (7.2.5).
 
 ### 7.3 Verify the deploy
 
-1. **Health:** `docker compose --env-file .env -f infra/compose/compose.yml ps`
-   `web` should say `healthy` (it health-checks `/`), `gateway` should say `running`.
-2. **Answer:** `curl -f http://localhost:3000/` — a normal page means the web app is up.
-3. **Version:** `docker compose --env-file .env -f infra/compose/compose.yml images`
+1. **Containers:** `docker compose --env-file .env -f infra/compose/compose.yml ps`
+   `caddy` should say `running`, `web` should say `healthy` (it health-checks `/`),
+   `gateway` should say `running`.
+2. **Direct (skip Caddy):** `curl -f http://localhost:3000/` — a normal page means
+   the web app is up.
+3. **Through Caddy (real HTTPS):** `curl -f https://13-140-181-113.nip.io/`
+   The first hit can take seconds while Caddy gets the certificate. A normal page
+   means HTTPS works.
+4. **Caddy log:** `docker logs corvus-caddy-1 --tail 50`
+   Look for `certificate obtained` and no ACME errors. ACME errors almost always mean
+   port 80 is blocked or the hostname is wrong.
+5. **Version:** `docker compose --env-file .env -f infra/compose/compose.yml images`
    shows the tag currently running (`stable`, or the SHA you deployed). To confirm:
    `docker inspect --format '{{.Config.Image}}' $(docker compose --env-file .env -f infra/compose/compose.yml ps -q web)`
+6. **Login:** open `https://13-140-181-113.nip.io/` in a browser and log in with
+   Discord (the redirect from 7.1.6 must be registered first).
 
 Note: there is no `/healthz` route yet; `web`'s healthcheck uses `/` (the cheap static
 route), which is what `ps` reports as `healthy`.
@@ -152,15 +196,20 @@ route), which is what `ps` reports as `healthy`.
 Re-run the deploy workflow with **previous-sha** set to the last good commit SHA. It skips
 the build and re-pulls that image tag on the server.
 Manual equivalent: `TAG=<last-good-sha> docker compose --env-file .env -f infra/compose/compose.yml pull web gateway`
-then `... up -d web gateway`.
+then `... up -d web gateway caddy`.
 
 Migrations are forward-only, so a rollback does NOT undo a schema change. If the bad deploy
-also changed the schema, restore the database from the pg_dump (7.2.2) or the Contabo
-snapshot (7.2.1) instead.
+also changed the schema, restore the database from the pg_dump (7.2.4) or the Contabo
+snapshot (7.2.3) instead.
 
-### 7.5 Still to come (not wired yet)
+### 7.5 What is wired now / still to come
 
-- **HTTPS/TLS.** No reverse proxy is in compose yet, so the app is not served on 443.
-  Follow-up: add a proxy (for example Caddy) that terminates TLS and forwards to
-  `web:3000`, then set `APP_URL` to the real domain.
+- **HTTPS/TLS is wired.** Caddy terminates TLS and forwards to `web:3000`.
+  `APP_URL` is the real public URL (`https://13-140-181-113.nip.io`). The `web`
+  service keeps its `3000:3000` host mapping for now so direct debug (`curl
+localhost:3000`) still works; it can be dropped later.
+- **Custom domain (later).** When a real domain is bought: point it at the server IP,
+  change the hostname in `infra/compose/Caddyfile`, set `APP_URL` to
+  `https://<your-domain>`, and register the new
+  `https://<your-domain>/api/auth/callback` redirect in the Discord portal.
 - **Automatic deploy on push to main** is intentionally OFF until the founder approves it.

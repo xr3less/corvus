@@ -294,7 +294,17 @@ Trigger: writing or reviewing any CSS Module; the reviewer greps `^[a-z*]`.
 
 **Promote to template?** candidate - seen once (Corvus).
 
-### L-021 - A whole-tree hook cannot pass on an initial mega-commit (own-files-clean-first + recorded bypass)
+### L-022 - Windows CRLF checkout breaks the prettier gate on LF-written files (.gitattributes closes it)
+
+- **Date:** 2026-09-18
+- **Cost of learning it:** two failed commits + one debug round (zero user impact, pre-launch)
+- **Category:** process
+
+**What happened.** A wave wrote 5 IP-prep files with LF endings; Windows checked them out as CRLF (`core.autocrlf=true`, no `.gitattributes`), and the pre-commit prettier gate failed on `RUNBOOK.md` + `compose.yml` even though `npm run format` had been green minutes earlier — the gate reads worktree bytes, the earlier check had run before the CRLF round-trip. Unmodified docs files stayed LF and green, which isolated it to checkout conversion, not content.
+
+**The rule now.** From now on every repo carries `.gitattributes` with `* text=auto eol=lf` from the start, and any prettier failure on files the wave didn't semantically touch means: check `git ls-files --eol` first, convert CRLF→LF, re-run the gate — never reformat content to satisfy a line-ending failure. Trigger: prettier red on untouched-shape files, or any Windows checkout.
+
+**Promote to template?** candidate - seen once (Corvus).
 
 - **Date:** 2026-09-15
 - **Cost of learning it:** one failed commit + one debug round (zero user impact, pre-launch)

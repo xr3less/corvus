@@ -2750,3 +2750,26 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: 2 commits, $0 live spend, 4 independent reviews (all PASS). Risk: KI-019 stays open (masked drift, not fixed); the cross-workspace shared-DB ordering fragility is hardened, not removed — a future migration adding another column needs the same parity treatment (FA-004); live-Discord leg + deploy untouched. Still open after this: KI-015, KI-016, KI-017, KI-018, KI-019, KI-024 (partial). Next: first real deploy (KI-018) + live-Discord proof when fleet token/deploy lands.
 
 **Superseded by:** none
+
+### D-135 — IP-first HTTPS: no domain purchase, Caddy + nip.io terminates TLS
+
+- **Date:** 2026-09-18
+- **Decided by:** orchestrator (engineering — founder asked "alan adına şu an gerek var mı?", answer: no)
+- **Door type:** two-way (reversible — hostname swap when a real domain is bought)
+- **Type:** engineering
+
+**Context.** Discord OAuth2 requires an `https` redirect except localhost, and the box had only an IP (`13.140.181.113`) with no domain bought. Options were buy a domain now or serve HTTPS on the IP. `13-140-181-113.nip.io` resolves to the IP with zero DNS setup, and Caddy (`caddy:2-alpine` in compose) gets a real ACME certificate on first request via HTTP-01 and proxies to `web:3000` — so login can work on a real public URL today.
+
+**Options considered.**
+
+1. Buy a domain now — real brand URL, costs money + DNS setup, blocks everything until done.
+2. IP-first via nip.io + Caddy (chosen) — $0, no DNS, real cert, Discord redirect registers byte-exact as `https://13-140-181-113.nip.io/api/auth/callback`; swap hostname later.
+3. Stay on `http://IP:3000` — free but Discord login refuses non-https; dead end.
+
+**Decision.** Option 2. Compose gains a `caddy` service (ports 80/443 + 443/udp, `Caddyfile` at `infra/compose/Caddyfile`, certs in `caddy_data` volume — never delete); RUNBOOK §7 rewritten IP-first (pull → env → snapshot → backup → migrate → pull → up, exact redirect, 443/udp check); `.env.example` + `10_deployment.md` carry the APP_URL pattern. When a real domain is bought: point it at the IP, change the Caddyfile hostname, set `APP_URL=https://<domain>`, register the new redirect — nothing else moves.
+
+**Why.** Business terms: this unblocks the first live login + shareable URL today for $0 and zero waiting, instead of holding the whole launch behind a domain purchase. The swap later is a 3-line config change, not a rebuild.
+
+**Cost & risk.** Cost: 1 commit, $0, typecheck + lint + prettier green on the merged tree. Risk: nip.io is a third-party wildcard DNS (if it ever fails, the swap-to-real-domain step becomes urgent — mitigated: the swap path is documented in RUNBOOK §7.5); Contabo snapshot before first deploy stays mandatory. Still open: KI-015/016/017/018/019/024-partial; next is the first real box deploy + live-Discord proof.
+
+**Superseded by:** none

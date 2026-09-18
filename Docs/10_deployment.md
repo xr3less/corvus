@@ -8,11 +8,11 @@
 
 ## 1. Environments
 
-| Environment | Purpose | URL |
-|---|---|---|
-| Local | Development (Compose subset: PG + gateway + web) | localhost |
-| Box (prod) | Real users — Contabo VPS 4 interim → Hetzner CX23/CX33 on stock return | TBD at domain purchase (APP_URL) |
-| (No staging box V1) | Test guilds + draft simulator cover staging; separate staging pool is V2 | — |
+| Environment         | Purpose                                                                  | URL                                                                            |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Local               | Development (Compose subset: PG + gateway + web)                         | localhost                                                                      |
+| Box (prod)          | Real users — Contabo VPS 4 interim → Hetzner CX23/CX33 on stock return   | IP-first: https://\<server-ip\>.nip.io (APP_URL), then real domain at purchase |
+| (No staging box V1) | Test guilds + draft simulator cover staging; separate staging pool is V2 | —                                                                              |
 
 ---
 
@@ -24,7 +24,7 @@ CI (`ci.yml`): spec-dist build → `tsc --noEmit` → ESLint → Prettier check 
 
 ## 3. Hosting & infrastructure
 
-Interim Contabo VPS 4 Nuremberg (~€5.50/mo, D-020) → Hetzner CX23 (~€6) → CX33 (~€9) as triggers fire. Fixed start ≈ €6/mo; object storage (€6.49) + monitor VPS (~€5) deferred with triggers (D-019). Money math: 100 Pro users ≈ $1,000/mo vs ~€25/mo infra — infra never binds; allowances do.
+Interim Contabo VPS 4 Nuremberg (~~€5.50/mo, D-020) → Hetzner CX23 (~~€6) → CX33 (~~€9) as triggers fire. Fixed start ≈ €6/mo; object storage (€6.49) + monitor VPS (~~€5) deferred with triggers (D-019). Money math: 100 Pro users ≈ $1,000/mo vs ~€25/mo infra — infra never binds; allowances do.
 
 ---
 
