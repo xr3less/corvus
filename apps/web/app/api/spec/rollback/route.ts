@@ -15,7 +15,8 @@
 // 'unscanned' when no scan exists. The guarded UPDATE serializes concurrent
 // moves exactly like publish.
 
-import { getPool, __setPool } from '../../../../lib/db/pool';
+import type { PoolClient } from 'pg';
+import { getPool, mapDbError, __setPool } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { isUuid } from '../../../../lib/editor/drafts';
 import { latestPreflightEnvelope } from '../../../../lib/spec/preflight';
@@ -110,7 +111,11 @@ export async function POST(req: Request): Promise<Response> {
       return error(404, 'not found');
     }
     prodSpecId = owned.rows[0].prod_spec_id;
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not roll back');
   }
   if (prodSpecId === null) {
@@ -139,7 +144,11 @@ export async function POST(req: Request): Promise<Response> {
       return error(404, 'not found');
     }
     target = targetRow.rows[0];
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not roll back');
   }
 
@@ -156,7 +165,11 @@ export async function POST(req: Request): Promise<Response> {
     );
     wasPublished =
       (audited.rowCount ?? 0) > 0 || target.state === 'published' || target.state === 'rolled_back';
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not roll back');
   }
   if (!wasPublished) {
@@ -170,7 +183,11 @@ export async function POST(req: Request): Promise<Response> {
       [botId],
     );
     envelopes = scans.rows.map((scan) => scan.preflight);
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not roll back');
   }
 
@@ -179,8 +196,14 @@ export async function POST(req: Request): Promise<Response> {
   const preflight = latestPreflightEnvelope(envelopes) ?? 'unscanned';
   const detail = JSON.stringify({ version: target.version, preflight });
 
-  const client = await pool.connect().catch(() => null);
-  if (client === null) {
+  let client: PoolClient;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not roll back');
   }
   try {
@@ -200,8 +223,12 @@ export async function POST(req: Request): Promise<Response> {
       [session.accountId, botId, `owner:${session.discordId}`, detail],
     );
     await client.query('COMMIT');
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK').catch(() => undefined);
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not roll back');
   } finally {
     client.release();

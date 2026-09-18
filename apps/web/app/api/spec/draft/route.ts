@@ -1,4 +1,4 @@
-import { getPool, __setPool } from '../../../../lib/db/pool';
+import { getPool, mapDbError, __setPool } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { isEnvelope, parseBotId } from '../../../../lib/editor/drafts';
 
@@ -64,7 +64,11 @@ export async function GET(req: Request): Promise<Response> {
       return error(404, 'not found');
     }
     draftSpecId = owned.rows[0].draft_spec_id;
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not load draft');
   }
   if (draftSpecId === null) {
@@ -87,7 +91,11 @@ export async function GET(req: Request): Promise<Response> {
       { version: found.version, spec: found.spec, state: found.state },
       { status: 200 },
     );
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not load draft');
   }
 }

@@ -18,6 +18,11 @@ export type BuilderPhase = BuilderStep | 'failed';
 
 const TERMINAL_PHASES: readonly BuilderPhase[] = ['live', 'failed'];
 
+// The full allowlist the server may ever report. Anything else (missing,
+// non-string, or an unknown name) is a contract violation, not a phase — it is
+// surfaced as an error instead of freezing the stepper on a blank, dead state.
+const ALL_PHASES: readonly BuilderPhase[] = ['queued', 'generating', 'syncing', 'live', 'failed'];
+
 const STEP_LABELS: Record<BuilderStep, string> = {
   queued: 'Queued',
   generating: 'Generating',
@@ -37,10 +42,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function readPhase(body: unknown): BuilderPhase | null {
-  if (!isRecord(body)) return null;
-  const phase = body['phase'];
-  return typeof phase === 'string' && phase.length > 0 ? (phase as BuilderPhase) : null;
+function isBuilderPhase(value: unknown): value is BuilderPhase {
+  return typeof value === 'string' && (ALL_PHASES as readonly string[]).includes(value);
 }
 
 // The route's error text, used verbatim (never reworded, never hidden).
@@ -93,10 +96,17 @@ export function useBuilderProgress(
         });
         return;
       }
-      const phase = readPhase(body);
-      setState({ phase, detail: isRecord(body) ? body['detail'] : null, error: null });
+      const phaseValue = isRecord(body) ? body['phase'] : undefined;
+      // A 200 carrying a phase outside the allowlist can never be rendered as
+      // progress. Show it as the error it is, and stop — never a blank stepper
+      // that has silently stopped polling (D7).
+      if (!isBuilderPhase(phaseValue)) {
+        setState({ phase: null, detail: null, error: 'Unexpected builder phase' });
+        return;
+      }
+      setState({ phase: phaseValue, detail: isRecord(body) ? body['detail'] : null, error: null });
       // Keep polling only while the phase is genuinely non-terminal.
-      if (phase !== null && !TERMINAL_PHASES.includes(phase)) {
+      if (!TERMINAL_PHASES.includes(phaseValue)) {
         timer = setTimeout(() => {
           void poll();
         }, intervalMs);

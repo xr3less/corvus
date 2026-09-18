@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encryptToken } from '../lib/crypto.js';
 import {
   FULL_PREFLIGHT_INTENTS,
+  PREFLIGHT_LOAD_BOT_SQL,
+  PREFLIGHT_READY_TIMEOUT_MS,
   runPreflightScan,
   type PreflightJob,
   type PreflightResult,
@@ -64,10 +66,40 @@ function fakeConnectedClient(onDestroy: () => void = () => undefined) {
     destroy: async () => {
       onDestroy();
     },
+    // Ready immediately: no clientReady wait is entered and no extra login is
+    // attempted.
+    isReady: () => true,
+    once: () => undefined,
+    off: () => undefined,
     user: { id: 'bot-user-1' },
     guilds: { fetch: async () => fakeGuild() },
     application: { commands: { fetch: async () => ({ size: 3 }) } },
   } as unknown as Client;
+}
+
+// H2: login() resolves once the token is accepted, before Discord’s READY
+// dispatch populates client.user. This fake mirrors that ordering: user is
+// undefined until the clientReady listener fires.
+function fakeLoginResolvedNotReadyClient(): Client {
+  const client = {
+    user: undefined as { id: string } | undefined,
+    login: async () => 'fake-token',
+    destroy: async () => undefined,
+    isReady: () => false,
+    once: (event: string, listener: () => void) => {
+      if (event === 'clientReady') {
+        queueMicrotask(() => {
+          client.user = { id: 'bot-user-1' };
+          listener();
+        });
+      }
+      return client;
+    },
+    off: () => client,
+    guilds: { fetch: async () => fakeGuild() },
+    application: { commands: { fetch: async () => ({ size: 3 }) } },
+  };
+  return client as unknown as Client;
 }
 
 function baseDeps(overrides: Partial<WorkerDeps> = {}): WorkerDeps & {
@@ -113,6 +145,47 @@ describe('preflight worker', () => {
     const result = await runPreflightScan(deps, validJob());
     expect(isSuccess(result)).toBe(true);
     expect(createClient).toHaveBeenCalledTimes(1);
+  });
+
+  // H2: reading client.user straight after login() threw preflight_not_ready
+  // into a retry loop whenever login resolved before READY.
+  it('waits for clientReady when login resolves before the client is ready', async () => {
+    const deps = baseDeps({ createClient: () => fakeLoginResolvedNotReadyClient() });
+
+    const result = await runPreflightScan(deps, validJob());
+
+    expect(isSuccess(result)).toBe(true);
+    expect(deps.saved).toHaveLength(1);
+  });
+
+  it('times out a ready-wait that never resolves and stays transient', async () => {
+    vi.useFakeTimers();
+    try {
+      const neverReady = {
+        login: async () => undefined,
+        destroy: async () => undefined,
+        isReady: () => false,
+        once: () => neverReady,
+        off: () => neverReady,
+        user: undefined,
+        guilds: { fetch: async () => fakeGuild() },
+        application: { commands: { fetch: async () => ({ size: 3 }) } },
+      } as unknown as Client;
+      const deps = baseDeps({ createClient: () => neverReady });
+
+      const promise = runPreflightScan(deps, validJob());
+      const assertion = expect(promise).rejects.toThrow('preflight_transient');
+      await vi.advanceTimersByTimeAsync(PREFLIGHT_READY_TIMEOUT_MS + 1);
+      await assertion;
+      expect(deps.saved).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // M5: a soft-deleted bot must never be logged in.
+  it('bot lookup excludes soft-deleted rows', () => {
+    expect(PREFLIGHT_LOAD_BOT_SQL).toContain('deleted_at IS NULL');
   });
 
   it('login reject - resolves login_failed without throwing', async () => {

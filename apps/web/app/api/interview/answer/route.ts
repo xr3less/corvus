@@ -1,6 +1,6 @@
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { parseSpec } from '@corvus/spec';
-import { getPool, __setPool as setSharedPool } from '../../../../lib/db/pool';
+import { getPool, mapDbError, __setPool as setSharedPool } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { getDefaultProgressStore } from '../../../../lib/interview/progress-store';
 import {
@@ -93,7 +93,11 @@ export async function POST(req: Request): Promise<Response> {
     if (owned.rowCount !== 1) {
       return error(404, 'not found');
     }
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not record answer');
   }
 
@@ -101,7 +105,11 @@ export async function POST(req: Request): Promise<Response> {
   let answered: QuestionId[];
   try {
     answered = await progress.answeredIdsFor(interviewId);
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not record answer');
   }
   const order = checkOrder(answered, questionId);
@@ -110,7 +118,11 @@ export async function POST(req: Request): Promise<Response> {
   }
   try {
     await progress.record(interviewId, questionId, answer.value);
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not record answer');
   }
 
@@ -126,7 +138,11 @@ export async function POST(req: Request): Promise<Response> {
   let entries: { questionId: QuestionId; answer: string }[];
   try {
     entries = await progress.answeredFor(interviewId);
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not mint draft spec');
   }
   const spec = {
@@ -140,7 +156,16 @@ export async function POST(req: Request): Promise<Response> {
   }
   const author = `owner:${session.discordId}`;
 
-  const client = await pool.connect();
+  let client: PoolClient;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
+    return error(500, 'could not mint draft spec');
+  }
   try {
     await client.query('BEGIN');
     const inserted = await client.query<{ id: string }>(
@@ -162,7 +187,11 @@ export async function POST(req: Request): Promise<Response> {
     await progress.reset(interviewId).catch(() => undefined);
     return Response.json({ done: true, draftSpecId, version: 1 }, { status: 200 });
   } catch (queryError) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
+    const mapped = mapDbError(queryError);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     // A second completion of the same interview hits UNIQUE(bot_id, version).
     if ((queryError as { code?: string }).code === '23505') {
       await progress.reset(interviewId).catch(() => undefined);

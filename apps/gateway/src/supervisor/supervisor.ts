@@ -82,6 +82,13 @@ export interface Supervisor {
   registerBot(botId: string): void;
   /** Drops per-bot state (removeBot/shutdown). A late crash is then ignored. */
   forget(botId: string): void;
+  /**
+   * Re-arms a quarantined bot after a successful external recovery (a
+   * gateway.relogin). Clears the quarantine flag without resetting the crash
+   * window, so a live bot is supervised again instead of silently ignored.
+   * No-op when the bot is not quarantined.
+   */
+  clearQuarantine(botId: string): void;
   /** Records one crash and decides: retry with backoff, or quarantine. */
   handleCrash(botId: string, reason: string): Promise<CrashOutcome>;
   /** A successful tick clears the consecutive-crash counter. */
@@ -262,6 +269,15 @@ export function createSupervisor(deps: SupervisorDeps): Supervisor {
     return states.get(botId)?.quarantined ?? false;
   }
 
+  function clearQuarantine(botId: string): void {
+    const state = states.get(botId);
+    if (state === undefined || !state.quarantined) {
+      return;
+    }
+    state.quarantined = false;
+    deps.logger.info({ level: 'info', event: 'bot-quarantine-cleared', botId });
+  }
+
   function nextBackoffMs(botId: string): number | null {
     const state = states.get(botId);
     if (state === undefined || state.quarantined) {
@@ -274,6 +290,7 @@ export function createSupervisor(deps: SupervisorDeps): Supervisor {
   return {
     registerBot,
     forget,
+    clearQuarantine,
     handleCrash,
     handleHealthy,
     quarantineBot,

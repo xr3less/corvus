@@ -3,6 +3,16 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { fetchBots, mapLiveStatus, MOCK_BOTS, readLiveBotRows, resolveBotId } from '@/lib/bots';
 import BotsPage from './page';
 
+/* ?runId= is the real builder run a started build hands back; the progress
+   panel polls it. Absent, the panel shows its honest no-run state. */
+const navState = vi.hoisted(() => ({ runId: null as string | null }));
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: (key: string) => (key === 'runId' ? navState.runId : null),
+  }),
+}));
+
 /* Moved verbatim from the old dashboard ?view=bots branch coverage — the
    bots list is its own page at /dashboard/bots now. */
 /* Model names may never appear in user copy — verified against the rendered text. */
@@ -32,6 +42,7 @@ const FORBIDDEN = [
 let consoleError: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
+  navState.runId = null;
   consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.stubGlobal(
     'fetch',
@@ -309,5 +320,41 @@ describe('bots live-binding helpers (pure)', () => {
     expect(snapshot.isLive).toBe(false);
     expect(snapshot.unauthorized).toBe(true);
     expect(snapshot.bots).toBe(MOCK_BOTS);
+  });
+});
+
+/* KI-014: the BuilderProgress component polled the run row but no dashboard
+   page rendered it. Reproduce-first: these fail while the bots list lacks it. */
+describe('dashboard bots page — builder progress panel', () => {
+  it('repro: builder progress was missing on the bots list — the panel now renders', () => {
+    renderBotsPage();
+    const region = screen.getByRole('region', { name: 'Build progress' });
+    expect(within(region).getByText('No run started')).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('polls the real run when opened with ?runId= and shows the current step', async () => {
+    navState.runId = LIVE_ID;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url.startsWith('/api/builder?runId=')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ phase: 'generating', detail: {} }),
+          });
+        }
+        return Promise.reject(new Error('network disabled in tests'));
+      }),
+    );
+    renderBotsPage();
+
+    expect(await screen.findByText('Generating')).toBeTruthy();
+    const region = screen.getByRole('region', { name: 'Build progress' });
+    expect(within(region).queryByText('No run started')).toBeNull();
+    expect(fetch).toHaveBeenCalledWith(`/api/builder?runId=${LIVE_ID}`);
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

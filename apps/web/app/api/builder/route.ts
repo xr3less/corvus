@@ -10,7 +10,7 @@
 // No billing hook: polling is free.
 
 import { NextResponse } from 'next/server';
-import { getPool } from '../../../lib/db/pool';
+import { DatabaseNotConfiguredError, getPool } from '../../../lib/db/pool';
 import { defaultSessionReader, type SessionReader } from '../../../lib/interview/session-bind';
 
 const RUN_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,6 +29,42 @@ export function __resetSessionReader(): void {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+// Poll responses are an allowlist, never a passthrough. `detail` is worker-owned
+// jsonb and may carry internal diagnostics (raw provider text, a `_builder`
+// provenance marker, per-attempt internals). Only the fields below are public
+// API; everything else is dropped by construction, so a new internal key added
+// to the worker's detail can never leak through this route. A missing or
+// malformed detail degrades to `{}` — the same shape the row defaulted to.
+function allowlistedDetail(phase: unknown, detail: unknown): Record<string, unknown> {
+  if (!isRecord(detail)) {
+    return {};
+  }
+  const out: Record<string, unknown> = {};
+  if (phase === 'live') {
+    for (const key of ['version', 'model', 'stub'] as const) {
+      if (detail[key] !== undefined) {
+        out[key] = detail[key];
+      }
+    }
+    return out;
+  }
+  if (phase === 'failed') {
+    for (const key of ['error', 'step'] as const) {
+      if (detail[key] !== undefined) {
+        out[key] = detail[key];
+      }
+    }
+    // `attempts` is public only as a count; any richer attempts payload stays in.
+    const attempts = detail['attempts'];
+    if (typeof attempts === 'number') {
+      out['attempts'] = attempts;
+    }
+    return out;
+  }
+  // Unknown phase: forward nothing rather than guessing at its internals.
+  return {};
 }
 
 // --- Handler ---
@@ -51,10 +87,12 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   try {
     // JOIN bots so ownership is checked in the same read; a run whose bot is
-    // missing or foreign yields no matching row -> the same 404 as unknown.
+    // missing, soft-deleted, or foreign yields no matching row -> the same 404
+    // as unknown. `b.deleted_at IS NULL` matches the worker's own filter so a
+    // deleted bot's run is never readable.
     const found = await getPool().query(
       'SELECT r.id, r.phase, r.detail, b.account_id FROM builder_runs r ' +
-        'JOIN bots b ON b.id = r.bot_id WHERE r.id = $1 LIMIT 1',
+        'JOIN bots b ON b.id = r.bot_id WHERE r.id = $1 AND b.deleted_at IS NULL LIMIT 1',
       [runId],
     );
     const row: unknown = found.rows[0];
@@ -65,11 +103,14 @@ export async function GET(req: Request): Promise<NextResponse> {
       {
         runId: row['id'],
         phase: row['phase'],
-        detail: row['detail'] ?? {},
+        detail: allowlistedDetail(row['phase'], row['detail']),
       },
       { status: 200 },
     );
-  } catch {
+  } catch (err) {
+    if (err instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json({ error: 'database not configured' }, { status: 500 });
+    }
     return NextResponse.json({ error: 'could not fetch run' }, { status: 500 });
   }
 }

@@ -231,6 +231,11 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   const [fired, setFired] = useState<{ title: string; reason: string }[] | null>(null);
   const [patchNote, setPatchNote] = useState<ActionNote | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [startingBuild, setStartingBuild] = useState(false);
+  const [buildNote, setBuildNote] = useState<ActionNote | null>(null);
+  /* The real run id a started build hands back. While null there is no link —
+     never a fabricated one (KI-014). */
+  const [startedRunId, setStartedRunId] = useState<string | null>(null);
 
   async function refreshDraft(botId: string, signal?: AbortSignal): Promise<number | null> {
     try {
@@ -367,6 +372,9 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
     setSimNote(null);
     setFired(null);
     setPatchNote(null);
+    setBuildNote(null);
+    setStartedRunId(null);
+    setStartingBuild(false);
   }, [bot]);
 
   /* Fetch the live feed only while the Activity tab is showing. The active flag +
@@ -700,6 +708,55 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
       setPatchNote({ text: 'Could not save — check your connection and try again.' });
     } finally {
       setSavingDraft(false);
+    }
+  }
+
+  /* Start a real builder run for this bot, from the text in the composer, then
+     hand back the link to its live progress. A mock bot has no server id, so no
+     run can start — that is said plainly, never faked with a made-up id. */
+  async function runStartBuild(): Promise<void> {
+    if (bot === null || startingBuild) return;
+    const brief = draft.trim();
+    if (brief.length === 0) {
+      setBuildNote({ text: 'Describe the change you want, then start the build.' });
+      return;
+    }
+    if (brief.length > 2000) {
+      setBuildNote({ text: 'That is too long to build from — keep it under 2000 characters.' });
+      return;
+    }
+    if (writeBotId === null) {
+      setBuildNote({ text: notSavedYet('starting a build') });
+      return;
+    }
+    setStartingBuild(true);
+    setBuildNote(null);
+    setStartedRunId(null);
+    try {
+      const response = await fetch('/api/builder/start', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ botId: writeBotId, brief }),
+      });
+      if (response.status === 401) {
+        setBuildNote({ text: LOGGED_OUT_LINE, login: true });
+        return;
+      }
+      const payload = await readJsonSafe(response);
+      const runId = typeof payload.runId === 'string' ? payload.runId : '';
+      if (response.ok && runId.length > 0) {
+        setStartedRunId(runId);
+        return;
+      }
+      if (response.status === 404) {
+        setBuildNote({ text: notSavedYet('starting a build') });
+        return;
+      }
+      setBuildNote({ text: 'Could not start the build — try again.' });
+    } catch {
+      setBuildNote({ text: 'Could not start the build — check your connection and try again.' });
+    } finally {
+      setStartingBuild(false);
     }
   }
 
@@ -1056,6 +1113,14 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
             >
               Save as draft
             </button>
+            <button
+              type="button"
+              className={styles.primaryAction}
+              onClick={() => void runStartBuild()}
+              disabled={startingBuild || draft.trim().length === 0}
+            >
+              {startingBuild ? 'Starting…' : 'Start build'}
+            </button>
           </div>
           {fired !== null ? (
             fired.length > 0 ? (
@@ -1076,6 +1141,13 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
           ) : null}
           {simNote !== null ? <ActionNoteLine note={simNote} /> : null}
           {patchNote !== null ? <ActionNoteLine note={patchNote} /> : null}
+          {buildNote !== null ? <ActionNoteLine note={buildNote} /> : null}
+          {startedRunId !== null ? (
+            <p role="status" className={styles.todaySentence}>
+              Build started.{' '}
+              <a href={`/dashboard?runId=${encodeURIComponent(startedRunId)}`}>Follow the build</a>
+            </p>
+          ) : null}
         </div>
       </div>
     </>

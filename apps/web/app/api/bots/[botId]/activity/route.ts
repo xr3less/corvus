@@ -18,7 +18,7 @@
 // ai_spend `reason`/`credits`) in plain non-coder English — nothing is invented
 // when a column is missing.
 
-import { getPool, __setPool } from '../../../../../lib/db/pool';
+import { getPool, mapDbError, __setPool } from '../../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../../lib/interview/session-bind';
 import { isUuid } from '../../../../../lib/editor/drafts';
 
@@ -252,10 +252,10 @@ export async function GET(
   const pool = getPool();
 
   try {
-    const owned = await pool.query('SELECT 1 FROM bots WHERE id = $1 AND account_id = $2', [
-      botId,
-      session.accountId,
-    ]);
+    const owned = await pool.query(
+      'SELECT 1 FROM bots WHERE id = $1 AND account_id = $2 AND deleted_at IS NULL',
+      [botId, session.accountId],
+    );
     if (owned.rowCount !== 1) {
       return error(404, 'not found');
     }
@@ -281,7 +281,13 @@ export async function GET(
 
     const items = mergeActivity(audit.rows, spend.rows).slice(0, limit.value);
     return Response.json({ items }, { status: 200 });
-  } catch {
+  } catch (err) {
+    // A missing DATABASE_URL is an unconfigured process, not a read failure
+    // (KI-021) — say so instead of a misleading generic message.
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not load activity');
   }
 }

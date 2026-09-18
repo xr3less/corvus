@@ -8,7 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
-import { __setPool } from '../../../../lib/db/pool';
+import { __resetPool, __setPool } from '../../../../lib/db/pool';
 import {
   POST,
   __resetSessionReader,
@@ -312,6 +312,25 @@ describe('publish request shape without a database', () => {
       publishRequest({ botId: '11111111-2222-4333-8444-555555555555', version: 0 }),
     );
     expect(badVersion.status).toBe(422);
+  });
+
+  // KI-021 slice: a valid request whose first read hits the stand-in pool must
+  // name the real cause, never the generic publish failure. Env is deleted +
+  // the pool reset so the real unconfigured-pool path runs.
+  it('returns the canonical honest 500 when the database is not configured', async () => {
+    const saved = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    __resetPool();
+    try {
+      actAs({ accountId: 'acct', discordId: 'disc' });
+      const res = await POST(publishRequest({ botId: '11111111-2222-4333-8444-555555555555' }));
+      expect(res.status).toBe(500);
+      expect(await readJson(res)).toEqual({ error: 'database not configured' });
+    } finally {
+      if (saved === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = saved;
+      __resetPool();
+    }
   });
 });
 

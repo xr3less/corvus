@@ -1,5 +1,6 @@
+import type { PoolClient } from 'pg';
 import { parseSpec } from '@corvus/spec';
-import { getPool, __setPool } from '../../../../lib/db/pool';
+import { getPool, mapDbError, __setPool, type DbErrorResponse } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { validatePatchBody } from '../../../../lib/editor/drafts';
 
@@ -39,7 +40,7 @@ function error(status: number, message: string, extra?: Record<string, unknown>)
 
 async function currentMaxVersion(
   botId: string,
-): Promise<{ ok: true; max: number | null } | { ok: false }> {
+): Promise<{ ok: true; max: number | null } | { ok: false; dbError: DbErrorResponse | null }> {
   try {
     // MAX() over an integer column returns bigint, which pg hands back as a
     // string — coerce before comparing.
@@ -53,11 +54,15 @@ async function currentMaxVersion(
     }
     const max = Number(raw);
     if (!Number.isInteger(max) || max < 1) {
-      return { ok: false };
+      // Corrupt data, not a database misconfiguration: no mapped 500 here.
+      return { ok: false, dbError: null };
     }
     return { ok: true, max };
-  } catch {
-    return { ok: false };
+  } catch (err) {
+    // The cause is carried out of the helper instead of being flattened: a
+    // missing database must not read as "could not save patch" (KI-021). The
+    // shared mapper is the single source of truth for that cause.
+    return { ok: false, dbError: mapDbError(err) };
   }
 }
 
@@ -97,12 +102,19 @@ export async function POST(req: Request): Promise<Response> {
     if (owned.rowCount !== 1) {
       return error(404, 'not found');
     }
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not save patch');
   }
 
   const head = await currentMaxVersion(botId);
   if (!head.ok) {
+    if (head.dbError) {
+      return error(head.dbError.status, head.dbError.error);
+    }
     return error(500, 'could not save patch');
   }
   if (head.max === null) {
@@ -125,8 +137,14 @@ export async function POST(req: Request): Promise<Response> {
   const author = `owner:${session.discordId}`;
   const nextVersion = head.max + 1;
 
-  const client = await pool.connect().catch(() => null);
-  if (client === null) {
+  let client: PoolClient;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not save patch');
   }
   try {
@@ -146,6 +164,10 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ version: nextVersion }, { status: 200 });
   } catch (queryError) {
     await client.query('ROLLBACK').catch(() => undefined);
+    const mapped = mapDbError(queryError);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     // A concurrent patch won the race and took our version number:
     // UNIQUE(bot_id, version) fired. Re-read the true head so the caller can
     // retry without an extra round trip.
@@ -153,6 +175,9 @@ export async function POST(req: Request): Promise<Response> {
       const retry = await currentMaxVersion(botId);
       if (retry.ok && retry.max !== null) {
         return error(409, 'stale base', { currentVersion: retry.max });
+      }
+      if (!retry.ok && retry.dbError) {
+        return error(retry.dbError.status, retry.dbError.error);
       }
       return error(409, 'stale base', { currentVersion: nextVersion });
     }

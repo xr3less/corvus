@@ -6,8 +6,10 @@
    `app/dashboard/page.tsx` — no behavior or copy change. Shared shell
    classes (scroll column, title block, section titles) still live in
    `../page.module.css`; this sheet keeps only the list-exclusive rules. */
-import { useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Activity, Plus } from 'lucide-react';
+import { BuilderProgress } from '@/components/ui/builder-progress';
 import {
   activityFor,
   fetchBots,
@@ -50,10 +52,14 @@ function StatusPill({ status }: { status: BotStatus }) {
   );
 }
 
-export default function BotsPage({ bots: injectedBots }: { bots?: MockBot[] }) {
+function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   const [tab, setTab] = useState<TabFilter>('all');
   const [sort, setSort] = useState<SortMode>('status');
   const [query, setQuery] = useState('');
+
+  /* The run id a started build hands back (?runId=). Absent, BuilderProgress
+     shows its honest "No run started" — never a fabricated step (KI-014). */
+  const runId = useSearchParams().get('runId');
 
   /* Live-first: the caller's own bots when the list can be read, the example
      bots otherwise. A fallback keeps the current (example) render, so only a
@@ -271,7 +277,24 @@ export default function BotsPage({ bots: injectedBots }: { bots?: MockBot[] }) {
             </ul>
           )}
         </section>
+
+        <section id="build-progress" aria-label="Build progress" className={shared.panel}>
+          <div className={shared.panelHead}>
+            <h2 className={shared.panelTitle}>Build progress</h2>
+            <Activity aria-hidden="true" size={16} className={shared.panelIcon} />
+          </div>
+          <p className={shared.cardSub}>Follow your bot from draft to live.</p>
+          <BuilderProgress runId={runId} />
+        </section>
       </div>
     </div>
+  );
+}
+
+export default function BotsPage({ bots }: { bots?: MockBot[] }) {
+  return (
+    <Suspense>
+      <BotsInner bots={bots} />
+    </Suspense>
   );
 }

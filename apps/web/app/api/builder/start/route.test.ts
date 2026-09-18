@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import type { SendOptions } from 'pg-boss';
 import { afterEach, describe, expect, it } from 'vitest';
-import { __setPool, TEST_DATABASE_URL } from '../../../../lib/db/pool';
+import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../../lib/db/pool';
 import type { SessionReader } from '../../../../lib/interview/session-bind';
 import {
   POST,
@@ -52,7 +52,7 @@ interface RunRow {
   detail: unknown;
 }
 
-function fakeDb(config: { owned?: boolean; failInsert?: boolean } = {}): {
+function fakeDb(config: { owned?: boolean; failInsert?: boolean; deleted?: boolean } = {}): {
   pool: Pool;
   runs: Map<string, RunRow>;
   calls: { text: string; params: unknown[] }[];
@@ -85,7 +85,9 @@ function fakeDb(config: { owned?: boolean; failInsert?: boolean } = {}): {
         };
       }
       if (text.includes('FROM bots')) {
-        return { rows: config.owned === false ? [] : [{ id: String(params[0]) }] };
+        // Models the real predicate: a soft-deleted bot is not owned any more.
+        const missing = config.owned === false || config.deleted === true;
+        return { rows: missing ? [] : [{ id: String(params[0]) }] };
       }
       throw new Error(`unexpected query: ${text}`);
     },
@@ -218,6 +220,47 @@ describe('POST /api/builder/start', () => {
     expect(boss.record.startCalls).toBe(0);
   });
 
+  it('returns 404 - never enqueues or bills - for a soft-deleted bot', async () => {
+    const db = fakeDb({ deleted: true });
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(404);
+    expect(await readBody(res)).toEqual({ error: 'bot not found' });
+    expect(db.runs.size).toBe(0);
+    expect(boss.record.startCalls).toBe(0);
+    // The ownership read must carry the same soft-delete predicate the worker
+    // uses, or a deleted bot could still be enqueued and billed.
+    const ownership = db.calls.find((call) => call.text.includes('FROM bots'));
+    expect(ownership?.text).toContain('deleted_at IS NULL');
+  });
+
+  it('fails fast with an honest 500 when DATABASE_URL is unset, never the test DB', async () => {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    try {
+      const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+      expect(res.status).toBe(500);
+      expect(await readBody(res)).toEqual({ error: 'database not configured' });
+      expect(boss.record.startCalls).toBe(0);
+      expect(boss.record.sent).toHaveLength(0);
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
+  });
+
   it('creates a queued run and enqueues it with the locked queue, singleton key and retry options', async () => {
     const db = fakeDb();
     __setPool(db.pool);
@@ -272,9 +315,20 @@ describe('POST /api/builder/start', () => {
     expect(await readBody(generating)).toMatchObject({ runId, phase: 'generating' });
 
     row.phase = 'live';
-    row.detail = { stub: true };
+    // The real worker writes this shape (builder-runs.ts): {version, model,
+    // stub:false}. Asserting the real contract here catches a round-trip that
+    // drops version or model.
+    row.detail = { version: 3, model: 'glm/5-2', stub: false };
     const live = await GET(getRun(runId));
-    expect(await readBody(live)).toMatchObject({ runId, phase: 'live', detail: { stub: true } });
+    const liveBody = await readBody(live);
+    expect(liveBody).toMatchObject({
+      runId,
+      phase: 'live',
+      detail: { version: 3, model: 'glm/5-2', stub: false },
+    });
+    const liveDetail = liveBody.detail as { version?: unknown; model?: unknown };
+    expect(typeof liveDetail.version).toBe('number');
+    expect(typeof liveDetail.model).toBe('string');
   });
 
   it('returns a generic 500 without starting the boss when the run insert fails', async () => {

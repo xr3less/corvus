@@ -20,7 +20,7 @@
 import { NextResponse } from 'next/server';
 import { PgBoss } from 'pg-boss';
 import type { SendOptions } from 'pg-boss';
-import { getPool, TEST_DATABASE_URL } from '../../../../lib/db/pool';
+import { DatabaseNotConfiguredError, getPool, requireDatabaseUrl } from '../../../../lib/db/pool';
 import { defaultSessionReader, type SessionReader } from '../../../../lib/interview/session-bind';
 
 export const BUILDER_QUEUE = 'builder';
@@ -46,8 +46,8 @@ export interface BuilderBoss {
   send(name: string, data: object, options?: SendOptions): Promise<string | null>;
 }
 
-function defaultBossFactory(connectionString: string): BuilderBoss {
-  const boss = new PgBoss({ connectionString });
+function defaultBossFactory(): BuilderBoss {
+  const boss = new PgBoss({ connectionString: requireDatabaseUrl() });
   return {
     start: () => boss.start(),
     stop: () => boss.stop(),
@@ -56,9 +56,9 @@ function defaultBossFactory(connectionString: string): BuilderBoss {
   };
 }
 
-let bossFactory: (connectionString: string) => BuilderBoss = defaultBossFactory;
+let bossFactory: () => BuilderBoss = defaultBossFactory;
 
-export function __setBossFactory(factory: (connectionString: string) => BuilderBoss): void {
+export function __setBossFactory(factory: () => BuilderBoss): void {
   bossFactory = factory;
 }
 
@@ -103,12 +103,18 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   let owned = false;
   try {
+    // Soft-deleted bots are excluded here exactly as the worker excludes them
+    // (builder-runs.ts SELECT_BOT_SQL): a deleted bot must not be enqueued (or
+    // billed) even if its row is still owned by the caller.
     const found = await getPool().query(
-      'SELECT id FROM bots WHERE id = $1 AND account_id = $2 LIMIT 1',
+      'SELECT id FROM bots WHERE id = $1 AND account_id = $2 AND deleted_at IS NULL LIMIT 1',
       [botId, session.accountId],
     );
     owned = found.rows.length > 0;
-  } catch {
+  } catch (err) {
+    if (err instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json({ error: 'database not configured' }, { status: 500 });
+    }
     return NextResponse.json({ error: 'could not start build' }, { status: 500 });
   }
   if (!owned) {
@@ -130,7 +136,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'could not start build' }, { status: 500 });
   }
 
-  const boss = bossFactory(process.env.DATABASE_URL ?? TEST_DATABASE_URL);
+  let boss: BuilderBoss;
+  try {
+    boss = bossFactory();
+  } catch (err) {
+    await markEnqueueFailed(runId);
+    const error =
+      err instanceof DatabaseNotConfiguredError
+        ? 'database not configured'
+        : 'could not start build';
+    return NextResponse.json({ error }, { status: 500 });
+  }
   try {
     await boss.start();
     await boss.createQueue(BUILDER_QUEUE);

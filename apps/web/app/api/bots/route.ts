@@ -10,7 +10,7 @@
 // { error }; falling back to the example bots is the page's deliberate choice,
 // the route itself never invents a row.
 
-import { getPool, __setPool } from '../../../lib/db/pool';
+import { getPool, mapDbError, __setPool } from '../../../lib/db/pool';
 import { defaultSessionReader } from '../../../lib/interview/session-bind';
 
 export interface ListSession {
@@ -64,7 +64,14 @@ export async function GET(req: Request): Promise<Response> {
   try {
     const result = await getPool().query<BotListRow>(LIST_BOTS_SQL, [session.accountId]);
     return Response.json(result.rows, { status: 200 });
-  } catch {
+  } catch (err) {
+    // A missing DATABASE_URL is not a read failure — it is an unconfigured
+    // process, and the caller must be told that plainly (KI-021). One shared
+    // mapping (lib/db/map-db-error.ts) keeps this shape identical everywhere.
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not load bots');
   }
 }

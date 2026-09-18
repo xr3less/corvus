@@ -14,7 +14,7 @@
 import { NextResponse } from 'next/server';
 import { PgBoss } from 'pg-boss';
 import type { JobWithMetadata, SendOptions } from 'pg-boss';
-import { getPool, TEST_DATABASE_URL } from '../../../../lib/db/pool';
+import { DatabaseNotConfiguredError, getPool, requireDatabaseUrl } from '../../../../lib/db/pool';
 import { defaultSessionReader, type SessionReader } from '../../../../lib/interview/session-bind';
 import {
   CAPABILITY_MAP,
@@ -59,8 +59,11 @@ export interface PreflightBoss {
   getJobById(name: string, id: string): Promise<JobWithMetadata | null>;
 }
 
-function defaultBossFactory(connectionString: string): PreflightBoss {
-  const boss = new PgBoss({ connectionString });
+// Mirrors builder-start: the connection string is resolved through
+// requireDatabaseUrl() (never the CI test-database fallback), so a
+// misconfigured process fails fast instead of silently talking to the test DB.
+function defaultBossFactory(): PreflightBoss {
+  const boss = new PgBoss({ connectionString: requireDatabaseUrl() });
   return {
     start: () => boss.start(),
     stop: () => boss.stop(),
@@ -70,9 +73,9 @@ function defaultBossFactory(connectionString: string): PreflightBoss {
   };
 }
 
-let bossFactory: (connectionString: string) => PreflightBoss = defaultBossFactory;
+let bossFactory: () => PreflightBoss = defaultBossFactory;
 
-export function __setBossFactory(factory: (connectionString: string) => PreflightBoss): void {
+export function __setBossFactory(factory: () => PreflightBoss): void {
   bossFactory = factory;
 }
 
@@ -115,12 +118,17 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   let owned = false;
   try {
+    // Soft-deleted bots are excluded here exactly as the worker excludes them:
+    // a deleted bot must not be enqueued even if its row is still owned.
     const found = await getPool().query(
-      'SELECT id FROM bots WHERE id = $1 AND account_id = $2 LIMIT 1',
+      'SELECT id FROM bots WHERE id = $1 AND account_id = $2 AND deleted_at IS NULL LIMIT 1',
       [botId, session.accountId],
     );
     owned = found.rows.length > 0;
-  } catch {
+  } catch (err) {
+    if (err instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json({ error: 'database not configured' }, { status: 500 });
+    }
     return NextResponse.json({ error: 'could not start scan' }, { status: 500 });
   }
   if (!owned) {
@@ -164,7 +172,16 @@ export async function POST(req: Request): Promise<NextResponse> {
   const required: PermissionWithWhy[] = [...seen].map(([perm, why]) => ({ perm, why }));
   const bitfield = capabilityBitfield(caps).toString();
 
-  const boss = bossFactory(process.env.DATABASE_URL ?? TEST_DATABASE_URL);
+  let boss: PreflightBoss;
+  try {
+    boss = bossFactory();
+  } catch (err) {
+    const error =
+      err instanceof DatabaseNotConfiguredError
+        ? 'database not configured'
+        : 'could not start scan';
+    return NextResponse.json({ error }, { status: 500 });
+  }
   try {
     await boss.start();
     // pg-boss v12 does not auto-create queues on send: the write path owns

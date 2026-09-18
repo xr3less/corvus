@@ -3,12 +3,16 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import DashboardPage from './page';
 
 /* The bots list is its own page at /dashboard/bots now. ?view=bots only
-   triggers a redirect there for old back-links. */
+   triggers a redirect there for old back-links. ?runId= is the real builder
+   run a started build hands back; the panel polls it. */
 let mockView: string | null = null;
+let mockRunId: string | null = null;
 const mockReplace = vi.fn();
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => ({ get: (key: string) => (key === 'view' ? mockView : null) }),
+  useSearchParams: () => ({
+    get: (key: string) => (key === 'view' ? mockView : key === 'runId' ? mockRunId : null),
+  }),
   useRouter: () => ({ replace: mockReplace }),
 }));
 
@@ -43,6 +47,7 @@ let consoleError: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   mockView = null;
+  mockRunId = null;
   mockReplace.mockClear();
   consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.stubGlobal(
@@ -204,6 +209,44 @@ describe('dashboard home', () => {
     await waitFor(() => expect(within(liveCard).getByText('2')).toBeTruthy());
     const trialCard = within(overview).getByRole('group', { name: 'On trial (example)' });
     expect(within(trialCard).getByText('0')).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+});
+
+/* KI-014: the BuilderProgress component polled the run row but no dashboard
+   page rendered it. Reproduce-first: these fail while Home lacks the panel. */
+describe('dashboard home — builder progress panel', () => {
+  const RUN_ID = '11111111-2222-4333-8444-555555555555';
+
+  it('repro: builder progress was API-only — Home now renders the panel with an honest no-run state', () => {
+    render(<DashboardPage />);
+    const region = screen.getByRole('region', { name: 'Build progress' });
+    expect(within(region).getByText('No run started')).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('polls the real run when opened with ?runId= and shows the current step', async () => {
+    mockRunId = RUN_ID;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url.startsWith('/api/builder?runId=')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ phase: 'generating', detail: {} }),
+          });
+        }
+        return Promise.reject(new Error('network disabled in tests'));
+      }),
+    );
+    render(<DashboardPage />);
+
+    expect(await screen.findByText('Generating')).toBeTruthy();
+    const region = screen.getByRole('region', { name: 'Build progress' });
+    expect(within(region).queryByText('No run started')).toBeNull();
+    expect(fetch).toHaveBeenCalledWith(`/api/builder?runId=${RUN_ID}`);
     expect(consoleError).not.toHaveBeenCalled();
   });
 });

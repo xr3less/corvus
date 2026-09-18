@@ -6,7 +6,7 @@
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
-import { __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool';
+import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool';
 import type { SessionReader } from '../../../lib/interview/session-bind';
 import { GET, __resetSessionReader, __setSessionReader } from './route';
 
@@ -28,21 +28,28 @@ interface SeededRun {
   phase: string;
   detail: unknown;
   accountId: string;
+  deleted?: boolean;
 }
 
-function fakeDb(rows: SeededRun[]): Pool {
-  return {
-    query: async (_text: string, params: unknown[] = []) => ({
-      rows: rows
-        .filter((row) => row.id === params[0])
-        .map((row) => ({
-          id: row.id,
-          phase: row.phase,
-          detail: row.detail,
-          account_id: row.accountId,
-        })),
-    }),
-  } as unknown as Pool;
+function fakeDb(rows: SeededRun[]): Pool & { queries: string[] } {
+  const queries: string[] = [];
+  const pool = {
+    queries,
+    query: async (text: string, params: unknown[] = []) => {
+      queries.push(text);
+      return {
+        rows: rows
+          .filter((row) => row.id === params[0] && row.deleted !== true)
+          .map((row) => ({
+            id: row.id,
+            phase: row.phase,
+            detail: row.detail,
+            account_id: row.accountId,
+          })),
+      };
+    },
+  } as unknown as Pool & { queries: string[] };
+  return pool;
 }
 
 function failingDb(): Pool {
@@ -100,20 +107,192 @@ describe('GET /api/builder', () => {
     expect(await readBody(res)).toEqual({ error: 'run not found' });
   });
 
-  it('passes the run phase and detail through for an owned run', async () => {
+  it('returns 404 for a run whose bot has been soft-deleted', async () => {
+    const pool = fakeDb([
+      { id: RUN_ID, phase: 'live', detail: {}, accountId: 'acct-1', deleted: true },
+    ]);
+    __setPool(pool);
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(404);
+    expect(await readBody(res)).toEqual({ error: 'run not found' });
+    // The JOIN must exclude soft-deleted bots exactly as the worker does.
+    expect(pool.queries[0]).toContain('b.deleted_at IS NULL');
+  });
+
+  it('fails fast with an honest 500 when DATABASE_URL is unset, never the test DB', async () => {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    __setSessionReader(SIGNED_IN);
+
+    try {
+      const res = await GET(getRun(RUN_ID));
+
+      expect(res.status).toBe(500);
+      expect(await readBody(res)).toEqual({ error: 'database not configured' });
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
+  });
+
+  it('passes the run phase and real live detail through for an owned run', async () => {
+    // The worker's real live detail (builder-runs.ts): {version, model,
+    // stub:false}. The round trip must not drop version or model.
     __setPool(
-      fakeDb([{ id: RUN_ID, phase: 'syncing', detail: { stub: true }, accountId: 'acct-1' }]),
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'live',
+          detail: { version: 3, model: 'glm/5-2', stub: false },
+          accountId: 'acct-1',
+        },
+      ]),
     );
     __setSessionReader(SIGNED_IN);
 
     const res = await GET(getRun(RUN_ID));
 
     expect(res.status).toBe(200);
-    expect(await readBody(res)).toEqual({
+    const body = await readBody(res);
+    expect(body).toMatchObject({
       runId: RUN_ID,
-      phase: 'syncing',
-      detail: { stub: true },
+      phase: 'live',
+      detail: { version: 3, model: 'glm/5-2', stub: false },
     });
+    const detail = body.detail as { version?: unknown; model?: unknown };
+    expect(typeof detail.version).toBe('number');
+    expect(typeof detail.model).toBe('string');
+  });
+
+  it('passes through only version/model/stub for a live run, dropping extra detail keys', async () => {
+    __setPool(
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'live',
+          detail: {
+            version: 4,
+            model: 'glm/5-2',
+            stub: true,
+            rawPreview: 'secret provider text',
+            _builder: { internal: true },
+          },
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.detail).toEqual({ version: 4, model: 'glm/5-2', stub: true });
+    const detail = body.detail as Record<string, unknown>;
+    expect('rawPreview' in detail).toBe(false);
+    expect('_builder' in detail).toBe(false);
+  });
+
+  it('strips rawPreview and _builder from a failed run while keeping error/step/attempts', async () => {
+    __setPool(
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'failed',
+          detail: {
+            error: 'builder crashed',
+            step: 'generate',
+            attempts: 3,
+            rawPreview: 'raw model output',
+            _builder: { provenance: 'internal' },
+          },
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.detail).toEqual({ error: 'builder crashed', step: 'generate', attempts: 3 });
+    const detail = body.detail as Record<string, unknown>;
+    expect('rawPreview' in detail).toBe(false);
+    expect('_builder' in detail).toBe(false);
+    expect(typeof detail.attempts).toBe('number');
+  });
+
+  it('drops a non-numeric attempts payload instead of forwarding its internals', async () => {
+    __setPool(
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'failed',
+          detail: {
+            error: 'builder crashed',
+            attempts: { count: 2, rawPreview: 'raw model output' },
+          },
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.detail).toEqual({ error: 'builder crashed' });
+  });
+
+  it('forwards no detail at all for an unknown phase', async () => {
+    __setPool(
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'generating',
+          detail: { rawPreview: 'raw model output', _builder: { internal: true } },
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.phase).toBe('generating');
+    expect(body.detail).toEqual({});
+  });
+
+  it('degrades malformed or missing detail to an empty object', async () => {
+    __setPool(
+      fakeDb([
+        { id: RUN_ID, phase: 'live', detail: 'not-json', accountId: 'acct-1' },
+        {
+          id: '33333333-4444-4555-8666-777777777777',
+          phase: 'live',
+          detail: null,
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const malformed = await GET(getRun(RUN_ID));
+    const missing = await GET(getRun('33333333-4444-4555-8666-777777777777'));
+
+    expect(malformed.status).toBe(200);
+    expect(missing.status).toBe(200);
+    expect((await readBody(malformed)).detail).toEqual({});
+    expect((await readBody(missing)).detail).toEqual({});
   });
 
   it('returns a generic 500 when the poll query fails', async () => {

@@ -208,6 +208,25 @@ describe('boot', () => {
     expect(mocks.poolEnd).toHaveBeenCalledTimes(1);
   });
 
+  // M4: a throw from the first stop must not skip the remaining shutdown legs.
+  it('attempts every shutdown leg when the first stop throws, and reports the first error', async () => {
+    const gateway = makeGateway();
+    const worker = makeWorkerHandle();
+    const builderWorker = makeWorkerHandle();
+    worker.stop.mockRejectedValueOnce(new Error('worker stop failed'));
+    mocks.createGateway.mockReturnValue(gateway);
+    mocks.startPreflightWorker.mockResolvedValue(worker);
+    mocks.startBuilderWorker.mockResolvedValue(builderWorker);
+
+    const booted = await boot({ DATABASE_URL: DB_URL });
+    await expect(booted.shutdown()).rejects.toThrow('worker stop failed');
+
+    expect(worker.stop).toHaveBeenCalledTimes(1);
+    expect(builderWorker.stop).toHaveBeenCalledTimes(1);
+    expect(gateway.shutdown).toHaveBeenCalledTimes(1);
+    expect(mocks.poolEnd).toHaveBeenCalledTimes(1);
+  });
+
   it('closes the pool and rejects when the worker cannot boot', async () => {
     mocks.createGateway.mockReturnValue(makeGateway());
     mocks.startPreflightWorker.mockRejectedValue(new Error('pg-boss is down'));
@@ -222,6 +241,32 @@ describe('boot', () => {
     expect(mocks.createGateway).not.toHaveBeenCalled();
     expect(mocks.startPreflightWorker).not.toHaveBeenCalled();
     expect(mocks.poolConstructed).toBe(0);
+  });
+});
+
+// SHUTDOWN THROW CONTRACT (boot layer). The canonical text is on
+// Gateway.shutdown in gateway.ts; this asserts the referencing half. `stopping`
+// memoizes the first call's promise, so a failed pass re-rejects with the same
+// error and no shutdown leg is ever retried.
+describe('boot shutdown throw contract', () => {
+  it('re-rejects with the same error on a repeated shutdown() and never retries a leg', async () => {
+    const gateway = makeGateway();
+    const worker = makeWorkerHandle();
+    const builderWorker = makeWorkerHandle();
+    worker.stop.mockRejectedValue(new Error('worker stop failed'));
+    mocks.createGateway.mockReturnValue(gateway);
+    mocks.startPreflightWorker.mockResolvedValue(worker);
+    mocks.startBuilderWorker.mockResolvedValue(builderWorker);
+
+    const booted = await boot({ DATABASE_URL: DB_URL });
+    await expect(booted.shutdown()).rejects.toThrow('worker stop failed');
+    // The remembered rejection is the only outcome on repeat: no leg re-runs.
+    await expect(booted.shutdown()).rejects.toThrow('worker stop failed');
+
+    expect(worker.stop).toHaveBeenCalledTimes(1);
+    expect(builderWorker.stop).toHaveBeenCalledTimes(1);
+    expect(gateway.shutdown).toHaveBeenCalledTimes(1);
+    expect(mocks.poolEnd).toHaveBeenCalledTimes(1);
   });
 });
 

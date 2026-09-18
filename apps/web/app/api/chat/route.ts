@@ -16,7 +16,7 @@ import { chatStream } from '@/lib/ai/stream';
 import type { StreamEvent } from '@/lib/ai/stream';
 import { LANES } from '@/lib/ai/lanes';
 import { recordSpend, USD_PER_CREDIT } from '@/lib/ai/cost';
-import { getPool, __setPool } from '@/lib/db/pool';
+import { getPool, mapDbError, __setPool } from '@/lib/db/pool';
 import { isUuid } from '@/lib/editor/drafts';
 import { defaultSessionReader } from '@/lib/interview/session-bind';
 
@@ -175,7 +175,18 @@ async function recordChatSpend(
       refId: refId ?? undefined,
     });
   } catch (error) {
-    console.error('chat: failed to record ai_spend', error);
+    // The client's reply is already delivered and must never be broken by a
+    // ledger failure (see above), so this is deliberately not a status code.
+    // The one thing that must not be swallowed is the CAUSE: an unconfigured
+    // database is an ops misconfiguration, not a provider/ledger fault, and the
+    // log has to name it as such (KI-021). The shared mapper is the single
+    // source of truth for that cause; its `error` literal is reused verbatim so
+    // the emitted log line is unchanged.
+    const mapped = mapDbError(error);
+    const message = mapped
+      ? `chat: cannot record ai_spend - ${mapped.error}`
+      : 'chat: failed to record ai_spend';
+    console.error(message, error);
   }
 }
 

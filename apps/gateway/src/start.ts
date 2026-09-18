@@ -219,6 +219,18 @@ export async function boot(env: NodeJS.ProcessEnv = process.env): Promise<Booted
   logger.info({ level: 'info', event: 'worker-started', botId: SYSTEM_BOT_ID });
   logger.info({ level: 'info', event: 'builder-worker-started', botId: SYSTEM_BOT_ID });
 
+  // Boot-layer half of the SHUTDOWN THROW CONTRACT. The canonical text lives
+  // on Gateway.shutdown in gateway.ts; this is the reference, not a second
+  // definition (KI-023).
+  //
+  // `stopping` memoizes the first call's promise, so boot shutdown is
+  // single-shot and NOT retryable: every leg (worker stop, builder-worker
+  // stop, gateway shutdown, pool end) runs at most once across any number of
+  // calls. A first pass that threw re-rejects with the SAME error on every
+  // later call — the failure is remembered, never retried — and a first pass
+  // that succeeded resolves every later call. The inner gateway.shutdown()
+  // latches and resolves early on a repeat, which is what keeps each leg here
+  // running exactly once.
   let stopping: Promise<void> | null = null;
 
   function shutdown(): Promise<void> {
@@ -227,13 +239,33 @@ export async function boot(env: NodeJS.ProcessEnv = process.env): Promise<Booted
     }
     stopping = (async () => {
       // Stop pulling new scans first, then flush the store and disconnect
-      // every bot. The pool is always closed, even if one step throws.
+      // every bot. Each leg runs even if an earlier one throws — a failed
+      // worker stop must never save the bots from being disconnected or skip
+      // the pool close. The first error is rethrown after every leg has had
+      // its attempt.
+      const errors: unknown[] = [];
       try {
         await worker.stop();
+      } catch (error) {
+        errors.push(error);
+      }
+      try {
         await builderWorker.stop();
+      } catch (error) {
+        errors.push(error);
+      }
+      try {
         await gateway.shutdown();
-      } finally {
+      } catch (error) {
+        errors.push(error);
+      }
+      try {
         await pool.end();
+      } catch (error) {
+        errors.push(error);
+      }
+      if (errors.length > 0) {
+        throw errors[0];
       }
     })();
     return stopping;

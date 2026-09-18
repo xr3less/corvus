@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import type { JobWithMetadata, SendOptions } from 'pg-boss';
 import { afterEach, describe, expect, it } from 'vitest';
-import { __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool';
+import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool';
 import type { SessionReader } from '../../../lib/interview/session-bind';
 import {
   CAPABILITY_MAP,
@@ -56,7 +56,10 @@ afterEach(() => {
 
 // --- Fakes ---
 
-function stubPool(rows: { id: string }[]): {
+function stubPool(
+  rows: { id: string }[],
+  config: { deleted?: boolean } = {},
+): {
   pool: Pool;
   calls: { text: string; params: unknown[] }[];
 } {
@@ -64,6 +67,11 @@ function stubPool(rows: { id: string }[]): {
   const pool = {
     query: async (text: string, params: unknown[]) => {
       calls.push({ text, params });
+      // Model the real predicate: a soft-deleted bot disappears from the result
+      // only because the ownership SQL carries AND deleted_at IS NULL.
+      if (config.deleted && text.includes('deleted_at IS NULL')) {
+        return { rows: [] };
+      }
       return { rows };
     },
   } as unknown as Pool;
@@ -76,14 +84,13 @@ interface FetchFixture {
 }
 
 function stubBoss(config: { send?: string | null | Error; job?: FetchFixture | null }): {
-  factory: (connectionString: string) => StartBoss;
+  factory: () => StartBoss;
   record: {
     startCalls: number;
     stopCalls: number;
     createdQueues: string[];
     sent: { name: string; data: unknown; options: unknown }[];
     fetched: { name: string; id: string }[];
-    connectionStrings: string[];
   };
 } {
   const record = {
@@ -92,10 +99,8 @@ function stubBoss(config: { send?: string | null | Error; job?: FetchFixture | n
     createdQueues: [] as string[],
     sent: [] as { name: string; data: unknown; options: unknown }[],
     fetched: [] as { name: string; id: string }[],
-    connectionStrings: [] as string[],
   };
-  const factory = (connectionString: string): StartBoss => {
-    record.connectionStrings.push(connectionString);
+  const factory = (): StartBoss => {
     return {
       start: async () => {
         record.startCalls += 1;
@@ -132,7 +137,7 @@ function stubBoss(config: { send?: string | null | Error; job?: FetchFixture | n
 }
 
 function statusBossFor(job: FetchFixture | null): {
-  factory: (connectionString: string) => StatusBoss;
+  factory: () => StatusBoss;
   record: { startCalls: number; stopCalls: number };
 } {
   const record = { startCalls: 0, stopCalls: 0 };
@@ -237,6 +242,25 @@ describe('POST /api/preflight/start', () => {
     expect(boss.record.startCalls).toBe(0);
   });
 
+  it('returns 404 - never enqueues - for a soft-deleted bot', async () => {
+    const owned = stubPool([{ id: BOT }], { deleted: true });
+    __setPool(owned.pool);
+    const boss = stubBoss({});
+    setStartBoss(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    const res = await POST(postStart({ botId: BOT, guildId: GUILD, capabilities: ['welcome'] }));
+
+    expect(res.status).toBe(404);
+    expect(await readBody(res)).toEqual({ error: 'bot not found' });
+    expect(boss.record.startCalls).toBe(0);
+    expect(boss.record.sent).toHaveLength(0);
+    // The ownership read must carry the same soft-delete predicate the worker
+    // uses, or a deleted bot could still be enqueued (builder-start parity).
+    const ownership = owned.calls.find((call) => call.text.includes('FROM bots'));
+    expect(ownership?.text).toContain('deleted_at IS NULL');
+  });
+
   it('binds the ownership read to the session account id', async () => {
     const owned = stubPool([]);
     __setPool(owned.pool);
@@ -321,7 +345,6 @@ describe('POST /api/preflight/start', () => {
       expireInSeconds: 3600,
       deleteAfterSeconds: 604800,
     });
-    expect(boss.record.connectionStrings[0]).toContain('postgres');
   });
 
   it('derives required from the requested capabilities, not a fixed set', async () => {
@@ -389,6 +412,28 @@ describe('POST /api/preflight/start', () => {
     expect(res.status).toBe(500);
     expect(await readBody(res)).toEqual({ error: 'could not start scan' });
     expect(boss.record.stopCalls).toBe(1);
+  });
+
+  it('fails fast with an honest 500 when DATABASE_URL is unset, never the test DB', async () => {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    const boss = stubBoss({});
+    setStartBoss(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    try {
+      const res = await POST(postStart({ botId: BOT, guildId: GUILD, capabilities: ['welcome'] }));
+
+      expect(res.status).toBe(500);
+      expect(await readBody(res)).toEqual({ error: 'database not configured' });
+      expect(boss.record.startCalls).toBe(0);
+      expect(boss.record.sent).toHaveLength(0);
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
   });
 });
 
@@ -503,6 +548,25 @@ describe('GET /api/preflight', () => {
     expect(res.status).toBe(500);
     expect(await readBody(res)).toEqual({ error: 'could not fetch scan' });
   });
+
+  it('fails fast with an honest 500 when DATABASE_URL is unset, never the test DB', async () => {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    resetStatusBoss();
+    setStatusReader(SIGNED_IN);
+
+    try {
+      const res = await GET(getStatus(randomUUID()));
+
+      expect(res.status).toBe(500);
+      expect(await readBody(res)).toEqual({ error: 'database not configured' });
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
+  });
 });
 
 // --- Live PG/boss paths: run when reachable, LOUD skip otherwise ---
@@ -552,10 +616,19 @@ describe('live PG/boss paths (loud skip when unreachable)', () => {
       console.warn(`[preflight.test] PG unreachable at ${liveUrl} - skipping live boss test`);
       return;
     }
+    // The route no longer silently falls back to TEST_DATABASE_URL, so a live
+    // run that opted into the fixture URL passes it explicitly for the duration.
+    const original = process.env.DATABASE_URL;
+    process.env.DATABASE_URL = liveUrl;
     resetStatusBoss();
     setStatusReader(SIGNED_IN);
-    const res = await GET(getStatus(randomUUID()));
-    expect(res.status).toBe(404);
-    expect(await readBody(res)).toEqual({ error: 'scan not found' });
+    try {
+      const res = await GET(getStatus(randomUUID()));
+      expect(res.status).toBe(404);
+      expect(await readBody(res)).toEqual({ error: 'scan not found' });
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+    }
   });
 });

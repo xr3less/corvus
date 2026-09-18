@@ -1,5 +1,5 @@
 import type { Pool } from 'pg';
-import { getPool, __setPool as setSharedPool } from '../../../../lib/db/pool';
+import { getPool, mapDbError, __setPool as setSharedPool } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { firstQuestion, validateBotName } from '../../../../lib/interview/tree';
 
@@ -71,7 +71,11 @@ export async function POST(req: Request): Promise<Response> {
       [session.accountId, name.value],
     );
     interviewId = result.rows[0].id;
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not start interview');
   }
 

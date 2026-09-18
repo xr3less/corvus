@@ -13,7 +13,8 @@
 // (any guild — worst guild wins). Any Red row refuses the move. No scan at
 // all is allowed and recorded as the audit note 'unscanned'.
 
-import { getPool, __setPool } from '../../../../lib/db/pool';
+import type { PoolClient } from 'pg';
+import { getPool, mapDbError, __setPool } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { isUuid } from '../../../../lib/editor/drafts';
 import { detectRedFailing, latestPreflightEnvelope } from '../../../../lib/spec/preflight';
@@ -116,7 +117,11 @@ export async function POST(req: Request): Promise<Response> {
       return error(404, 'not found');
     }
     pointers = owned.rows[0];
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not publish');
   }
 
@@ -144,7 +149,11 @@ export async function POST(req: Request): Promise<Response> {
       }
       target = row.rows[0];
     }
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not publish');
   }
 
@@ -155,7 +164,11 @@ export async function POST(req: Request): Promise<Response> {
       [botId],
     );
     envelopes = scans.rows.map((scan) => scan.preflight);
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not publish');
   }
 
@@ -167,8 +180,14 @@ export async function POST(req: Request): Promise<Response> {
   const preflight = latestPreflightEnvelope(envelopes) ?? 'unscanned';
   const detail = JSON.stringify({ version: target.version, preflight });
 
-  const client = await pool.connect().catch(() => null);
-  if (client === null) {
+  let client: PoolClient;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not publish');
   }
   try {
@@ -188,8 +207,12 @@ export async function POST(req: Request): Promise<Response> {
       [session.accountId, botId, `owner:${session.discordId}`, detail],
     );
     await client.query('COMMIT');
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK').catch(() => undefined);
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not publish');
   } finally {
     client.release();

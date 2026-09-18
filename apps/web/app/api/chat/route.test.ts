@@ -12,6 +12,7 @@ const { chatStreamMock } = vi.hoisted(() => ({ chatStreamMock: vi.fn() }));
 vi.mock('@/lib/ai/stream', () => ({ chatStream: chatStreamMock }));
 
 import { USD_PER_CREDIT } from '@/lib/ai/cost';
+import { __resetPool } from '@/lib/db/pool';
 import {
   POST,
   __resetSessionReader,
@@ -360,6 +361,42 @@ describe('ai_spend persistence (mocked persona lane)', () => {
     expect(spend.calls).toHaveLength(1);
     expect(logged).toHaveBeenCalled();
     logged.mockRestore();
+  });
+
+  it('names the real cause when the ledger fails because the database is not configured', async () => {
+    chatStreamMock.mockImplementation(() =>
+      (async function* () {
+        yield { t: 'content', text: 'Hello' };
+        yield { t: 'done', credits: 0.075 };
+      })(),
+    );
+    actAs(SESSION);
+    // Real unconfigured-pool path: unset DATABASE_URL and drop the cached pool
+    // so getPool() hands back the stand-in whose query rejects with
+    // DatabaseNotConfiguredError.
+    const saved = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    __resetPool();
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const res = await POST(chatRequest({ message: 'hi' }));
+      // The reply still streams: the ledger write is post-stream by design and
+      // must never break the client. Only the server log is made honest.
+      expect(res.status).toBe(200);
+      expect(await readFrames(res)).toEqual([
+        { t: 'content', text: 'Hello' },
+        { t: 'done', credits: 0.075 },
+      ]);
+      expect(logged).toHaveBeenCalledWith(
+        'chat: cannot record ai_spend - database not configured',
+        expect.anything(),
+      );
+    } finally {
+      if (saved === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = saved;
+      __resetPool();
+      logged.mockRestore();
+    }
   });
 
   it('writes nothing when unauthenticated', async () => {

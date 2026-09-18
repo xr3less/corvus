@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 import { parseSpec } from '@corvus/spec';
-import { getPool, __setPool as setSharedPool } from '../../../../../lib/db/pool';
+import { getPool, mapDbError, __setPool as setSharedPool } from '../../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../../lib/interview/session-bind';
 import { buildInvite, isCapability, type Capability } from '../../../../../lib/invite/permissions';
 import { validateBotName } from '../../../../../lib/interview/tree';
@@ -96,6 +96,8 @@ export async function POST(
   const pool = getPool();
   let template: TemplateRow;
   try {
+    // NOTE: `templates` has no `deleted_at` column, so no soft-delete
+    // predicate is added to this read.
     const found = await pool.query<TemplateRow>(
       `SELECT slug, name, category, capabilities, perms_needed, forks, semver, source_spec
        FROM templates WHERE slug = $1`,
@@ -105,7 +107,13 @@ export async function POST(
       return error(404, 'not found');
     }
     template = found.rows[0];
-  } catch {
+  } catch (err) {
+    // A missing DATABASE_URL is an unconfigured process, not a fork failure
+    // (KI-021) — return the honest canonical shape.
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not fork');
   }
 
@@ -168,8 +176,13 @@ export async function POST(
     await client.query('COMMIT');
     const inviteUrl = buildInvite({ clientId, capabilities }).url;
     return Response.json({ botId, draftSpecId, version: 1, inviteUrl }, { status: 200 });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    // Same honest mapping as the pre-transaction read (KI-021).
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not fork');
   } finally {
     client.release();

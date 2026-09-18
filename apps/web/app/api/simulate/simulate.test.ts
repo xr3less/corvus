@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
+import { __resetPool } from '../../../lib/db/pool';
 import {
   POST as postSimulate,
   __resetSessionReader,
@@ -465,6 +466,34 @@ describe('simulate route static safety proof', () => {
     expect(text.indexOf("from 'discord")).toBe(-1);
     expect(text.indexOf('from "discord')).toBe(-1);
     expect(text.indexOf('process.env')).toBe(-1);
+  });
+});
+
+// KI-021 slice: the stand-in pool rejects every query with
+// DatabaseNotConfiguredError; the route must name that honestly instead of the
+// generic simulation failure. Env is deleted + the pool reset so the real
+// unconfigured-pool path runs.
+describe('simulate route fails honestly when the database is not configured', () => {
+  let savedUrl: string | undefined;
+
+  beforeEach(() => {
+    savedUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    __resetPool();
+    actAs(owner);
+  });
+
+  afterEach(() => {
+    if (savedUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = savedUrl;
+    __resetPool();
+    __resetSessionReader();
+  });
+
+  it('returns the canonical honest 500, never a misleading one', async () => {
+    const res = await postSimulate(postRequest(simBody(BOT_ID, goodEvent())));
+    expect(res.status).toBe(500);
+    expect(await readJson(res)).toEqual({ error: 'database not configured' });
   });
 });
 

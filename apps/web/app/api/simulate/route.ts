@@ -7,7 +7,7 @@
 // failures read as 404 (never 403), and the SessionReader seam is identical
 // to the interview/spec routes (injectable holder, fail-closed default).
 import { parseSpec, simulateDraft, type SimEvent } from '@corvus/spec';
-import { getPool, __setPool } from '../../../lib/db/pool';
+import { getPool, mapDbError, __setPool } from '../../../lib/db/pool';
 import { defaultSessionReader } from '../../../lib/interview/session-bind';
 
 export interface SimulateSession {
@@ -172,7 +172,11 @@ export async function POST(req: Request): Promise<Response> {
       return error(404, 'not found');
     }
     draftSpecId = owned.rows[0].draft_spec_id;
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not run simulation');
   }
   if (draftSpecId === null) {
@@ -196,7 +200,11 @@ export async function POST(req: Request): Promise<Response> {
     }
     const fired = simulateDraft(spec, event);
     return Response.json({ version: found.version, fired }, { status: 200 });
-  } catch {
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
     return error(500, 'could not run simulation');
   }
 }

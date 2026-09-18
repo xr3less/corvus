@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 import { PgBoss } from 'pg-boss';
 import type { JobWithMetadata, SendOptions } from 'pg-boss';
-import { TEST_DATABASE_URL } from '../../../lib/db/pool';
+import { DatabaseNotConfiguredError, requireDatabaseUrl } from '../../../lib/db/pool';
 import { defaultSessionReader, type SessionReader } from '../../../lib/interview/session-bind';
 
 export const PREFLIGHT_QUEUE = 'preflight';
@@ -42,8 +42,11 @@ export interface PreflightBoss {
   getJobById(name: string, id: string): Promise<JobWithMetadata | null>;
 }
 
-function defaultBossFactory(connectionString: string): PreflightBoss {
-  const boss = new PgBoss({ connectionString });
+// Mirrors builder-start: the connection string is resolved through
+// requireDatabaseUrl() (never the CI test-database fallback), so a
+// misconfigured process fails fast instead of silently talking to the test DB.
+function defaultBossFactory(): PreflightBoss {
+  const boss = new PgBoss({ connectionString: requireDatabaseUrl() });
   return {
     start: () => boss.start(),
     stop: () => boss.stop(),
@@ -53,9 +56,9 @@ function defaultBossFactory(connectionString: string): PreflightBoss {
   };
 }
 
-let bossFactory: (connectionString: string) => PreflightBoss = defaultBossFactory;
+let bossFactory: () => PreflightBoss = defaultBossFactory;
 
-export function __setBossFactory(factory: (connectionString: string) => PreflightBoss): void {
+export function __setBossFactory(factory: () => PreflightBoss): void {
   bossFactory = factory;
 }
 
@@ -81,7 +84,16 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'scan not found' }, { status: 404 });
   }
 
-  const boss = bossFactory(process.env.DATABASE_URL ?? TEST_DATABASE_URL);
+  let boss: PreflightBoss;
+  try {
+    boss = bossFactory();
+  } catch (err) {
+    const error =
+      err instanceof DatabaseNotConfiguredError
+        ? 'database not configured'
+        : 'could not fetch scan';
+    return NextResponse.json({ error }, { status: 500 });
+  }
   try {
     await boss.start();
     const job = await boss.getJobById(PREFLIGHT_QUEUE, jobId);

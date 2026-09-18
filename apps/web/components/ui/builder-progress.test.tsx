@@ -99,6 +99,54 @@ describe('BuilderProgress', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('surfaces an error instead of freezing blank when a 200 has no usable phase', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ detail: {} }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByRole('alert').textContent).toBe('Unexpected builder phase');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats an unknown phase name outside the allowlist as an error', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ phase: 'teleporting' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByRole('alert').textContent).toBe('Unexpected builder phase');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows honest text for the terminal failed phase and stops polling', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ phase: 'failed', detail: {} }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByRole('status').textContent).toBe('Build failed');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the honest empty state without any run and never polls', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

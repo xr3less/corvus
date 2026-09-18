@@ -6,7 +6,13 @@
 
 ---
 
-## Current state — 2026-09-15 (EOD)
+## Current state — 2026-09-18 (seam-close wave D-130)
+
+KI-020 tavan indi (katmanlı kota trial/Pro/Studio/Scale + tur başına 3 faturalı deneme + deftere göre devam; prod çözücüsü henüz bağlı değil — KI-025), KI-021 kapandı (33 dal tek `mapDbError` aracına + havuz önbellek düzeltmesi), KI-014 kapandı (dashboard + bot listesi ilerlemeyi gösteriyor, detayda başlat→`?runId` linki; yeni-sayfa akışı KI-027), gateway sözleşmeleri mühürlendi (KI-022/KI-023). Kapılar yeşil (typecheck 4/4, gateway 211, web 494, ai 92). Wiro canlı-doğrulandı (grok selam ~$0.0001). Kutu TCP:22 açık ama anahtarsız girilemiyor — canlı-PG kutuda değil CI'da koşacak (KI-028). Açık: KI-015/017/024 (canlı PG/Discord), KI-025/026/027/028.
+
+## Previous — 2026-09-16 (motor-hardening wave)
+
+Motor tarandı + güçlendirildi (D-129): 3 denetçi ajan (builder + gateway + pro-repo benchmark) → 6 düzeltme ajanı → 4 dikiş-düzeltmesi → 1 tersine incelemeci. Builder artık sahte-başarı/çift-fatura/kayıp-defter üretemiyor, 3 denemeli onarım + bütçe kapısı var; web'de sahte-DB tuzağı kapandı; gateway kopmaları yakalıyor + bot durum makinesi var. Birleştirilmiş kapılar yeşil (gateway 201, web 466, ai 91, spec 56). Canlı PG/Discord kanıtı + yabancı-baştan-sana testi hâlâ açık. Evrak borcu: KI-020…KI-024 (incelemeciden kalan orta/düşük bulgular).
 
 All debts closed except 6 tracked opens (KI-014…KI-019). Today: debt wave (D-126) + supervisor on duty (D-127) + builder real model call via @corvus/ai (D-128, live-proven $0.0035/spec) + first commits (d8dcafa, 1248ccc, 13ad664 — tree clean) + full doc audit (stale claims fixed, 06/07/08/05 trued). Merged: typecheck clean, ai 34 + gateway 162 + web 451 green, 0 failed. Next: dashboard progress wiring (KI-014), then demo window — on founder go. Doc audit 2026-09-15 — 12 findings fixed (list in D-128 wave notes).
 

@@ -8,7 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
-import { __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool';
+import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool';
 import {
   GET,
   LIST_BOTS_SQL,
@@ -248,6 +248,27 @@ describe('GET /api/bots against a fake pool', () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: 'could not load bots' });
+  });
+});
+
+// --- Missing DATABASE_URL maps honestly (KI-021) ----------------------------
+
+describe('GET /api/bots with DATABASE_URL absent', () => {
+  it('answers the canonical database-not-configured 500, never a misleading one', async () => {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    actAs(OWNER);
+    try {
+      const res = await GET(listRequest());
+
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: 'database not configured' });
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
   });
 });
 

@@ -2628,6 +2628,21 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 
 ### D-128 — Builder calls the real model: @corvus/ai shared lanes, metered brief-to-draft
 
+### D-129 — Motor-hardening wave: audit + fix + seam-close (founder-ordered)
+
+- **Date:** 2026-09-16
+- **Decided by:** founder (scope: all engines) + orchestrator (method: audit → fix → adversarial review → seam-close)
+- **Door type:** two-way (reversible — additive hardening, contracts preserved: phase names, live detail shape, status codes/error strings unchanged)
+- **Type:** engineering
+
+**Context.** Founder judged the engine insufficient and ordered a deep scan against professional AI repos, then real improvement, not a report-only review. Three audit agents mapped builder + gateway + benchmarks (vercel/ai, promptfoo, llm-cost-guard, discord-hybrid-sharding, discord-multiclient, DBI-patterns-only/GPL-flagged).
+
+**Decision.** Fixed in disjoint-scope waves, all reviewer-checked, merged gates green (typecheck x4 clean; gateway 201, web 466, ai 91, spec 56): builder worker — orphaned-queued, blind-phase fake-live, retry double-bill, bot_gone ledger hole closed; validation retry+repair (3 attempts, rawPreview internal); budget pre-check (54-credit pre-authorization, trial allowance default) + cost spans; web — missing-DATABASE_URL fails fast (test-DB fallback removed, builder + preflight), poll detail allowlisted (rawPreview/_builder never reach client), soft-delete predicates everywhere; gateway — shardError/shardDisconnect/invalidated boundary, ClientReady wait, relogin clear-quarantine + half-client destroy, all-legs shutdown, createQueue-before-work, per-bot status machine + onLifecycle + non-rejecting startAll; ai — budget.ts + cost spans + golden-brief eval (parseSpec parity, now under src/eval/ and typechecked). Open product questions (not code): boss-retry re-billing ceiling (~12x worst case) and tier-aware allowances need founder rule; recorded as KI-020…KI-024 with the reviewer's remaining MED/LOW seams.
+
+**Why.** Every fixed defect was a silent-wrong shape (fake success, fake free, fake blank) — the class that green gates cannot see. Benchmark steals were reimplemented as ideas (licenses respected; GPL code never copied).
+
+**Cost & risk.** Cost: 11 agent rounds, $0 live spend (all hermetic; no PG/Discord reachable). Risk: new SQL (spent-sum, phase CASE) + ready-wait + budget gate are fake-pool proven only — first live PG run + first fleet-token run must confirm before strangers (carries KI-015/KI-017).
+
 - **Date:** 2026-09-15
 - **Decided by:** orchestrator (two-way engineering; founder ordered the real call, the method is technical)
 - **Door type:** two-way (reversible — additive package + worker logic, shims keep every consumer path stable)
@@ -2640,5 +2655,22 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Why.** One lane definition means the next price/model change edits one table, not two. The probe-first fixes (prompt shape, 400 cause) cost $0.004 instead of a blind rewrite round.
 
 **Cost & risk.** Cost: 1 build + 1 fix + 1 micro-fix + 1 review, ~$0.004 live spend. Risk: sync write path proven on fake pool only (no PG here — CI service proves it live); concurrent runs race on MAX(version)+1 (loser fails sync_failed, no partial write); draft pointer is last-writer-wins (single-owner V1, noted).
+
+**Superseded by:** none
+
+### D-130 — Seam-close wave: KI-020 ceiling + KI-021 consolidation + KI-014 wiring + live-probe (founder-delegated)
+
+- **Date:** 2026-09-18
+- **Decided by:** founder (unlimited agents + secrets + "mühendislik sende, devam" — KI-020 default approved by delegation) + orchestrator (method + defaults)
+- **Door type:** two-way (reversible — config defaults + additive wiring; tier source migration still open as KI-025)
+- **Type:** engineering
+
+**Context.** D-129 left reviewer seams KI-020…KI-024 + KI-014 open. Founder supplied wiro key/secret + box access file, ordered no more technical questions, delegated engineering. First wave (5 read-only maps) confirmed disjoint scopes + fresh benchmark repos (trigger.dev, langfuse, agent-budget, sapphire, shiver, devcodes-shards, pg-boss fromDrizzle, drizzle-policy — all MIT/Apache, ideas only).
+
+**Decision.** (1) KI-020 with the recommended default: tier table trial100/pro2000/studio6000/scale20000, 3 billable calls/run ceiling, ledger-count resume (boss re-execution never re-bills), beyond-ceiling fails as `budget_exceeded`. (2) KI-021: 33 inline sites → shared `mapDbError`; stand-in pool never cached. (3) KI-014: progress rendered on `/dashboard` + `/dashboard/bots` via `?runId=`; start→link lives on the detail page (the creation page cannot mint a bot id — KI-027). (4) KI-022/023: exports + single-shot shutdown contract, tested. (5) Live probe by orchestrator: wiro chat hello OK (~$0.0001, grok lane, cost field present); box :22 reachable but no key on machine (password never tried over CLI); local Docker daemon down → live-PG runs in CI (KI-028). Merged gates: typecheck 4/4, gateway 211, web 494, ai 92.
+
+**Why.** Every item is the silent-wrong class (fake free, fake blank, fake success) that green gates cannot see. Defaults are the cheapest reversible close; the irreversible parts (tier migration, unique constraint, box key) stay open as KI-025/026/028, never improvised.
+
+**Cost & risk.** Cost: 8 agent rounds + ~$0.0001 live spend. Risk: ceiling + tier table fake-pool proven only until CI live run; prod resolves trial until KI-025; one crash-window re-bill remains until KI-026.
 
 **Superseded by:** none

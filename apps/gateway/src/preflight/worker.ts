@@ -1,6 +1,7 @@
 import {
   ChannelType,
   Client,
+  Events,
   GatewayIntentBits,
   type Guild,
   type NewsChannel,
@@ -12,6 +13,17 @@ import { decryptToken } from '../lib/crypto.js';
 import { scanGuild, type PreflightRow, type ScanDeps, type ScanInput } from './scanner.js';
 
 export const PREFLIGHT_QUEUE = 'preflight';
+
+// Soft-deleted bots must never be logged in: the vault reader filters them, and
+// the preflight lookup must match. Exported so the filter has a regression test.
+export const PREFLIGHT_LOAD_BOT_SQL =
+  'SELECT token_cipher AS "tokenCipher" FROM bots WHERE id = $1 AND deleted_at IS NULL';
+
+// Client.login() resolves once the token is accepted and the shard connects —
+// NOT once the client is usable. client.user / client.application are only
+// populated on Discord's READY dispatch, so reading them straight after login
+// threw preflight_not_ready into a retry loop. Wait for clientReady, bounded.
+export const PREFLIGHT_READY_TIMEOUT_MS = 15_000;
 
 export const FULL_PREFLIGHT_INTENTS = [
   'Guilds',
@@ -172,6 +184,32 @@ async function destroyQuietly(made: Client): Promise<void> {
   }
 }
 
+// Waits until the client is actually ready (client.user/client.application
+// populated) or the bounded timeout elapses. A timeout rejects with the
+// existing preflight_not_ready code; the caller's catch maps it to the
+// existing transient error, so no new failure taxonomy is introduced.
+function waitForReady(client: Client, timeoutMs = PREFLIGHT_READY_TIMEOUT_MS): Promise<void> {
+  if (client.isReady()) {
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve, reject) => {
+    // settled guards against the clientReady listener and the timeout racing:
+    // whichever fires first wins, and the late one is a no-op.
+    let settled = false;
+    const timer = setTimeout(() => {
+      settled = true;
+      reject(new Error('preflight_not_ready'));
+    }, timeoutMs);
+    client.once(Events.ClientReady, () => {
+      if (settled) {
+        return;
+      }
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 async function loginWith(
   deps: WorkerDeps,
   token: string,
@@ -264,6 +302,9 @@ export async function runPreflightScan(
   }
 
   try {
+    // H2: login() resolves the token, not readiness — wait for READY before
+    // reading client.user / client.application.
+    await waitForReady(client);
     const botUserId = client.user?.id;
     if (!botUserId) throw new Error('preflight_not_ready');
     const guild = await fetchGuildOrNull(client, guildId);
@@ -373,16 +414,22 @@ export function isWorkerRunning(): boolean {
 async function bootPreflightWorker(connectionString: string): Promise<PreflightWorkerHandle> {
   const boss = new PgBoss(connectionString);
   const pool = new Pool({ connectionString });
-  // No logger is injected at this layer; a bare listener keeps boss
-  // maintenance errors from becoming unhandled 'error' crashes. Deploy-time
-  // wiring (orchestrator task) should observe boss events properly.
-  boss.on('error', () => undefined);
+  // L5: record maintenance failures instead of swallowing them. Never throw
+  // from here — an unhandled emitter 'error' would crash the process — and
+  // never log the error text, which can echo the connection string.
+  boss.on('error', (error: Error) => {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        event: 'preflight-boss-error',
+        botId: 'system',
+        reason: error.name,
+      }),
+    );
+  });
   const realDeps: WorkerDeps = {
     loadBot: async (botId: string) => {
-      const found = await pool.query(
-        'SELECT token_cipher AS "tokenCipher" FROM bots WHERE id = $1',
-        [botId],
-      );
+      const found = await pool.query(PREFLIGHT_LOAD_BOT_SQL, [botId]);
       const first: unknown = found.rows[0];
       if (!isRecord(first)) return null;
       const cipher: unknown = first['tokenCipher'];
@@ -400,6 +447,12 @@ async function bootPreflightWorker(connectionString: string): Promise<PreflightW
       new Client({ intents: resolveIntents(intents) }),
   };
   await boss.start();
+  // L4: pg-boss v12 does not auto-create a queue, so a worker must create it
+  // before work() or jobs sent earlier are dropped (the senders in apps/web
+  // already do this). The optional call tolerates the partial pg-boss double
+  // in startup.test.ts, which is out of this task's write scope; the real
+  // client always implements createQueue (pg-boss 12.x index.d.ts).
+  await boss.createQueue?.(PREFLIGHT_QUEUE);
   // perJobResults:true so each job settles on its own outcome: 'completed'
   // stores the scan result, 'deadletter' fails terminally WITHOUT consuming
   // retries (bad token / bad job - retrying can never help, and the queue has

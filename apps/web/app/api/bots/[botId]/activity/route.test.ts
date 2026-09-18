@@ -9,7 +9,7 @@
 import { readFile } from 'node:fs/promises';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
-import { __setPool } from '../../../../../lib/db/pool';
+import { __resetPool, __setPool } from '../../../../../lib/db/pool';
 import {
   GET,
   __resetSessionReader,
@@ -445,6 +445,27 @@ describe('activity route against a fake pool', () => {
     });
     expect(items[1].text).toBe('Published v12');
     expect(items[2].text).toBe('Rolled back to v11');
+  });
+});
+
+// --- Missing DATABASE_URL maps honestly (KI-021) ----------------------------
+
+describe('activity with DATABASE_URL absent', () => {
+  it('answers the canonical database-not-configured 500, never a misleading one', async () => {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    actAs(OWNER);
+    try {
+      const res = await GET(activityRequest(BOT), contextFor(BOT));
+
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: 'database not configured' });
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
   });
 });
 

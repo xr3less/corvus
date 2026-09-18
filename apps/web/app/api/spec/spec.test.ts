@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
+import { __resetPool } from '../../../lib/db/pool';
 import {
   GET as getDraft,
   __resetSessionReader as resetDraftReader,
@@ -153,6 +154,43 @@ describe('spec routes without a session', () => {
   it('patch returns 401 when unauthenticated', async () => {
     const res = await postPatch(postRequest(patchBody('00000000-0000-0000-0000-000000000000')));
     expect(res.status).toBe(401);
+  });
+});
+
+// KI-021 slice: with DATABASE_URL unset the shared pool's every read rejects
+// with DatabaseNotConfiguredError. Both spec editor reads/writes must report
+// that honestly instead of their generic load/save failure. Env is deleted +
+// the pool reset so the real unconfigured-pool path runs.
+describe('spec routes fail honestly when the database is not configured', () => {
+  const BOT = '11111111-2222-4333-8444-555555555555';
+  const owner: EditorSession = { accountId: 'acct-1', discordId: 'disc-1' };
+  let savedUrl: string | undefined;
+
+  beforeEach(() => {
+    savedUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    __resetPool();
+    actAs(owner);
+  });
+
+  afterEach(() => {
+    if (savedUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = savedUrl;
+    __resetPool();
+    resetDraftReader();
+    resetPatchReader();
+  });
+
+  it('draft returns the canonical honest 500, never a misleading one', async () => {
+    const res = await getDraft(getRequest(BOT));
+    expect(res.status).toBe(500);
+    expect(await readJson(res)).toEqual({ error: 'database not configured' });
+  });
+
+  it('patch returns the canonical honest 500, never a misleading one', async () => {
+    const res = await postPatch(postRequest(patchBody(BOT)));
+    expect(res.status).toBe(500);
+    expect(await readJson(res)).toEqual({ error: 'database not configured' });
   });
 });
 

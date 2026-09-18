@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
-import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
+import { __resetPool } from '../../../lib/db/pool';
+import { __resetProgressStore } from '../../../lib/interview/progress-store';
 import { interviewProgress } from '../../../lib/interview/tree';
 import {
   POST as startInterview,
@@ -128,6 +130,53 @@ describe('interview routes without a session', () => {
       }),
     );
     expect(res.status).toBe(401);
+  });
+});
+
+// KI-021 slice: when DATABASE_URL is unset the shared pool is the stand-in
+// whose every method rejects with DatabaseNotConfiguredError. Both interview
+// routes must answer with the canonical honest 500 shape, not their generic
+// "something went wrong" message. Env is deleted + the pool reset so the REAL
+// unconfigured-pool path is exercised (never a hand-fed error instance).
+describe('interview routes fail honestly when the database is not configured', () => {
+  const owner: InterviewSession = { accountId: 'acct-1', discordId: 'disc-1' };
+  let savedUrl: string | undefined;
+
+  beforeEach(() => {
+    savedUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    __resetPool();
+    __resetProgressStore();
+    actAs(owner);
+  });
+
+  afterEach(() => {
+    if (savedUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = savedUrl;
+    __resetPool();
+    __resetProgressStore();
+    resetStartReader();
+    resetAnswerReader();
+  });
+
+  it('start returns the canonical honest 500, never a misleading one', async () => {
+    const res = await startInterview(
+      jsonRequest('/api/interview/start', { botName: 'Study Hall' }),
+    );
+    expect(res.status).toBe(500);
+    expect(await readJson(res)).toEqual({ error: 'database not configured' });
+  });
+
+  it('answer returns the canonical honest 500, never a misleading one', async () => {
+    const res = await answerInterview(
+      jsonRequest('/api/interview/answer', {
+        interviewId: '00000000-0000-0000-0000-000000000000',
+        questionId: 'purpose',
+        answer: 'study',
+      }),
+    );
+    expect(res.status).toBe(500);
+    expect(await readJson(res)).toEqual({ error: 'database not configured' });
   });
 });
 

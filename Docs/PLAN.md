@@ -4,7 +4,7 @@
 
 > The single source of truth for what's done and what's next. Tick boxes as work completes; keep current. Additive only — don't reorder phases without founder approval. Per `GLOBAL_RULES.md §3`, nothing is built that isn't planned here first.
 
-**Last updated:** 2026-09-15 (EOD: D-127 supervisor wiring + D-128 builder model call, both reviewer-PASS; first commits d8dcafa/1248ccc/13ad664; full doc audit — 06/07/08/05 trued, KI-014…KI-019 opened, L-020/L-021; ai 34 + gateway 162 + web 451 green)
+**Last updated:** 2026-09-18 (seam-close wave D-130: KI-020 ceiling + tier table, KI-021 33-site consolidation + pool no-cache, KI-014 progress wiring + runId link, gateway KI-022/023 contracts; wiro live-proven ~$0.0001; box key-auth missing → live-PG via CI as KI-028; merged typecheck 4/4 clean, gateway 211 + web 494 + ai 92 green)
 
 ---
 
@@ -115,6 +115,7 @@ At the **end of every phase**, run the doc audit (`Governance/DOC_AUDIT.md`) so 
 - [x] Rail instant everywhere 2026-09-14 (bare Suspense out, 3 hypotheses falsified, build-verified; D-125, L-019; 5/5 routes inline, 436 green)
 - [x] Rail font unified 2026-09-14 (rail owns Geist import; same typeface all routes; 437 green)
 - [x] Debt wave 2026-09-15 (D-126, 6 parallel agents + 2 fix agents, disjoint scopes): KI-006 privacy/terms routes + footer links; KI-011 /pryzm de-quarantined (clone-pryzm 69 files deleted); KI-010 closed via dashboard live binding (GET /api/bots + live-first lib/bots.ts with mock fallback); V1-7 progress backend; V1-9 supervisor; deploy pipeline ready (compose web+gateway, deploy.yml gates→GHCR→SSH, both Dockerfiles built+run-proven). Merged: typecheck clean, touched-files lint clean, gateway 143 + web 483 green.
+- [x] Motor-hardening wave 2026-09-16 (D-129: 3 audit agents + 6 fix agents + 4 seam-fix agents + 1 adversarial reviewer, disjoint scopes): builder worker orphan/fake-live/double-bill/ledger-hole closed + validation retry/repair (3 attempts) + budget pre-check; web fail-fast on missing DB + builder poll allowlist + preflight parity; gateway shard-disconnect boundary + ready-wait + status machine/startAll; ai budget/spans + golden-brief eval under src/eval. Merged: typecheck clean x4, gateway 201 + web 466 + ai 91 + spec 56 green.
 - [ ] Deploy to a shareable URL (pipeline ready 2026-09-15 — needs domain/APP_URL + server secrets + first real SSH run; no auto-deploy on push until founder approves)
 - [ ] D-027 scheduling (approved 2026-09-08, additive — order unchanged): TRACK 1 = V1-8 backend wave (waves A→B→C); TRACK 2 = frontend primitives + 3 mock screens in parallel (taste gate per 04)
 - [x] Wave A done 2026-09-09 (skeleton + spec v0 + UI primitives; merged `npm run ci` green 3x, D-028) — Wave B armed (T-db, T-store, T-gateway, T-screens)

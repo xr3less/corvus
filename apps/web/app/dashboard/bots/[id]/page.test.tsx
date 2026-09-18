@@ -862,6 +862,112 @@ describe('bot detail wiring', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });
+
+  /* KI-014: a started build had no path to the progress panel — the real run
+     id now travels into the dashboard's ?runId= link. Reproduce-first: these
+     fail while the detail page has no build-start action. */
+  async function typeBrief(text: string): Promise<void> {
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt input' }));
+    const textarea = screen.getByLabelText('Prompt') as HTMLTextAreaElement;
+    await waitFor(() => expect(document.activeElement).toBe(textarea));
+    fireEvent.change(textarea, { target: { value: text } });
+  }
+
+  it('starts a build and links to the live progress with the real run id', async () => {
+    const calls: ApiCall[] = [];
+    const liveId = '11111111-2222-4333-8444-555555555555';
+    const runId = '99999999-8888-4777-8666-555555555555';
+    stubApi(
+      [
+        {
+          match: (url) => url === '/api/bots',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => [{ id: liveId, name: 'Live Study', status: 'live' }],
+          }),
+        },
+        { match: (url) => url.startsWith('/api/spec/draft'), respond: () => draftPayload(5) },
+        {
+          match: (url) => url === '/api/builder/start',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => ({ runId, phase: 'queued' }),
+          }),
+        },
+      ],
+      calls,
+    );
+    renderDetail(liveId);
+    expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
+    await typeBrief('Add a welcome rule');
+    fireEvent.click(screen.getByRole('button', { name: 'Start build' }));
+
+    const link = await screen.findByRole('link', { name: 'Follow the build' });
+    expect(link.getAttribute('href')).toBe(`/dashboard?runId=${runId}`);
+    const starts = apiCallsTo(calls, '/api/builder/start');
+    expect(starts).toHaveLength(1);
+    expect(starts[0]?.init?.method).toBe('POST');
+    expect(bodyOf(starts[0])).toEqual({ botId: liveId, brief: 'Add a welcome rule' });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a mock bot cannot start a build and says so without a fake link', async () => {
+    const calls: ApiCall[] = [];
+    stubApi(
+      [
+        {
+          match: (url) => url.startsWith('/api/spec/draft'),
+          respond: () => ({ ok: false, status: 404, json: async () => ({}) }),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await typeBrief('Add a welcome rule');
+    fireEvent.click(screen.getByRole('button', { name: 'Start build' }));
+
+    await screen.findByText(/not saved on the server yet/);
+    expect(screen.queryByRole('link', { name: 'Follow the build' })).toBeNull();
+    expect(apiCallsTo(calls, '/api/builder/start')).toHaveLength(0);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a failed start shows the honest error and never a fake link', async () => {
+    const calls: ApiCall[] = [];
+    const liveId = '11111111-2222-4333-8444-555555555555';
+    stubApi(
+      [
+        {
+          match: (url) => url === '/api/bots',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => [{ id: liveId, name: 'Live Study', status: 'live' }],
+          }),
+        },
+        { match: (url) => url.startsWith('/api/spec/draft'), respond: () => draftPayload(5) },
+        {
+          match: (url) => url === '/api/builder/start',
+          respond: () => ({
+            ok: false,
+            status: 500,
+            json: async () => ({ error: 'could not start build' }),
+          }),
+        },
+      ],
+      calls,
+    );
+    renderDetail(liveId);
+    expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
+    await typeBrief('Add a welcome rule');
+    fireEvent.click(screen.getByRole('button', { name: 'Start build' }));
+
+    await screen.findByText('Could not start the build — try again.');
+    expect(screen.queryByRole('link', { name: 'Follow the build' })).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
 });
 
 describe('bot detail chat stream', () => {

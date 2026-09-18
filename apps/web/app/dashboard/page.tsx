@@ -7,6 +7,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Activity, Bot, Coins, FlaskConical, Server, ShieldCheck } from 'lucide-react';
+import { BuilderProgress } from '@/components/ui/builder-progress';
 import {
   activityFor,
   CREDITS_TOTAL,
@@ -49,6 +50,10 @@ const PREFLIGHT_ROWS: { id: string; tone: 'pass' | 'warn'; text: string }[] = [
 function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  /* The run id a started build hands back (?runId=). Absent, BuilderProgress
+     shows its honest "No run started" — never a fabricated step (KI-014). */
+  const runId = searchParams.get('runId');
 
   /* Backward compat: old back-links pointed at ?view=bots; the list is a
      real page now, so send those arrivals over. */
@@ -135,6 +140,15 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
               </li>
             ))}
           </ol>
+        </section>
+
+        <section id="build-progress" aria-label="Build progress" className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h2 className={styles.panelTitle}>Build progress</h2>
+            <Activity aria-hidden="true" size={16} className={styles.panelIcon} />
+          </div>
+          <p className={styles.cardSub}>Follow your bot from draft to live.</p>
+          <BuilderProgress runId={runId} />
         </section>
 
         <section aria-label="Overview" className={styles.statRow}>

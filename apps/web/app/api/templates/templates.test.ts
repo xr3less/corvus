@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
-import { TEST_DATABASE_URL, __setPool } from '../../../lib/db/pool';
+import { TEST_DATABASE_URL, __resetPool, __setPool } from '../../../lib/db/pool';
 import {
   ADMINISTRATOR_BIT,
   CAPABILITY_MAP,
@@ -200,6 +200,56 @@ describe('template routes without session or database', () => {
       expect(match).not.toBeNull();
       expect(BigInt(match?.[1] ?? '0') & ADMINISTRATOR_BIT).toBe(0n);
       expect(match?.[1]).not.toBe('8');
+    }
+  });
+});
+
+// --- Missing DATABASE_URL maps honestly (KI-021) ----------------------------
+
+describe('template routes with DATABASE_URL absent', () => {
+  async function withNoDatabase(fn: () => Promise<void>): Promise<void> {
+    const original = process.env.DATABASE_URL;
+    __resetPool();
+    delete process.env.DATABASE_URL;
+    try {
+      await fn();
+    } finally {
+      if (original === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = original;
+      __resetPool();
+    }
+  }
+
+  it('list answers the canonical database-not-configured 500', async () => {
+    await withNoDatabase(async () => {
+      const res = await listTemplates();
+      expect(res.status).toBe(500);
+      expect(await readJson(res)).toEqual({ error: 'database not configured' });
+    });
+  });
+
+  it('detail answers the canonical database-not-configured 500', async () => {
+    await withNoDatabase(async () => {
+      const res = await getTemplate(new Request('http://localhost/api/templates/tfork-alpha'), {
+        params: Promise.resolve({ slug: 'tfork-alpha' }),
+      });
+      expect(res.status).toBe(500);
+      expect(await readJson(res)).toEqual({ error: 'database not configured' });
+    });
+  });
+
+  it('fork answers the canonical database-not-configured 500', async () => {
+    setForkReader({ getSession: async () => session });
+    try {
+      await withNoDatabase(async () => {
+        const res = await forkTemplate(postFork('tfork-alpha', {}), {
+          params: Promise.resolve({ slug: 'tfork-alpha' }),
+        });
+        expect(res.status).toBe(500);
+        expect(await readJson(res)).toEqual({ error: 'database not configured' });
+      });
+    } finally {
+      resetForkReader();
     }
   });
 });
