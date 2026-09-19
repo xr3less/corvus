@@ -2,18 +2,20 @@
 
 ## Status: DRAFT (filled 2026-09-07 — auth locked D-006-adjacent, billing locked D-009/D-011/D-013/D-014)
 
+> **DRIFT (2026-09-19, KI-031 / KI-030 / KI-033 / KI-016):** §1 auth (Discord OAuth + cookie sessions) is **built**. §3–5 money path is **not**: no Creem wiring, no `credit_ledger` / `subscriptions` tables, no checkout, no trial clock, no DPA page. `support@corvus.ai` is an assumption. Landing still sells the unpaid plans (KI-030). Detail: `Teknik_Borc/KI-031_docs-stale.md`, `Teknik_Borc/KI-030_honesty.md`, `Teknik_Borc/KI-033_trial-unenforced.md`.
+
 > Login + money. Standalone and simple; nothing clever before validation.
 
 ---
 
 ## 1. Authentication
 
-| Aspect | Choice | Why |
-|---|---|---|
-| Method | Discord OAuth2 only (V1) | Only identity our users all have; one click; no passwords to breach. Recovery email attached at signup for lockout/account-loss cases |
-| Session handling | HttpOnly secure cookie sessions, server-side store (Postgres); 30-day rolling | No JWT-in-localStorage; revocation is a DB row; OAuth state + interview progress durable since V1-2 (KI-002) |
-| Password/secret storage | No passwords exist. Bot tokens AES-256-GCM envelope-encrypted, per-bot, never logged; decrypt only in owning shard | Token custody is the product's trust core (D-006) |
-| Team access (V1 minimal) | Owner-only until V1-2+ (Editor matrix deferred — one invite row exists in no table yet; tracked in PLAN) | Full matrix (viewer/audit) is V2 |
+| Aspect                   | Choice                                                                                                             | Why                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Method                   | Discord OAuth2 only (V1)                                                                                           | Only identity our users all have; one click; no passwords to breach. Recovery email attached at signup for lockout/account-loss cases |
+| Session handling         | HttpOnly secure cookie sessions, server-side store (Postgres); 30-day rolling                                      | No JWT-in-localStorage; revocation is a DB row; OAuth state + interview progress durable since V1-2 (KI-002)                          |
+| Password/secret storage  | No passwords exist. Bot tokens AES-256-GCM envelope-encrypted, per-bot, never logged; decrypt only in owning shard | Token custody is the product's trust core (D-006)                                                                                     |
+| Team access (V1 minimal) | Owner-only until V1-2+ (Editor matrix deferred — one invite row exists in no table yet; tracked in PLAN)           | Full matrix (viewer/audit) is V2                                                                                                      |
 
 ---
 
@@ -25,11 +27,11 @@ Bot-level: owner > editor > viewer (V2 full). Server-level: Corvus never needs D
 
 ## 3. Billing
 
-| Aspect | Choice | Why |
-|---|---|---|
-| Provider | Creem.io Merchant-of-Record, Test Mode until review passes (D-014; brother holds the account) | TR payout works; subs+packs+trials+webhooks cover the ledger; ~$0.79 per $10 charge priced into tiers |
-| What's billed | Subscriptions (Pro $10, Studio $29) + $5 refill packs (1000 cr, 90d) | No meter, no surprise bills; credits are the single value metric |
-| Free tier / trial | 3-day full-Pro trial, 1 bot, 100 credits, NO card (D-011, app-owned per D-034 — no Creem object exists until the paid-upgrade checkout; Creem-managed trials require a card); day 4 pay-or-sleep, 12-mo data keep, wake on upgrade | Strictly easier than the competitor's card-wall + auto-charge + deletion threat |
+| Aspect            | Choice                                                                                                                                                                                                                             | Why                                                                                                   |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Provider          | Creem.io Merchant-of-Record, Test Mode until review passes (D-014; brother holds the account)                                                                                                                                      | TR payout works; subs+packs+trials+webhooks cover the ledger; ~$0.79 per $10 charge priced into tiers |
+| What's billed     | Subscriptions (Pro $10, Studio $29) + $5 refill packs (1000 cr, 90d)                                                                                                                                                               | No meter, no surprise bills; credits are the single value metric                                      |
+| Free tier / trial | 3-day full-Pro trial, 1 bot, 100 credits, NO card (D-011, app-owned per D-034 — no Creem object exists until the paid-upgrade checkout; Creem-managed trials require a card); day 4 pay-or-sleep, 12-mo data keep, wake on upgrade | Strictly easier than the competitor's card-wall + auto-charge + deletion threat                       |
 
 ---
 

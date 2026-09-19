@@ -6,7 +6,24 @@
 
 ---
 
-## Current state — 2026-09-18 (KI-025/026/027 dalgası DONE, CI yeşil 12/12)
+## Current state — 2026-09-19 morning (FIRST DEPLOY LIVE — new-chat handoff)
+
+**Canlı adres (yabancılara paylaşma — KI-030 açık):** `https://13-140-181-113.nip.io/`
+
+Kutu gece ilk kez ayağa kalktı: HTTPS 200, Let's Encrypt sertifika doğrulaması 0, giriş 307 Discord'a byte-tam callback. Rapor: `Agent Reports/2026-09-18-2343_box-deploy-001_CREATE_first-deploy.md`. Yeni sohbet tek dosyadan başlar: `Agent Reports/2026-09-19-0800_orchestrator_SPEC_new-chat-handoff.md`.
+
+**Dürüst artıklar (kutuda uygulama VAR, iş bitmedi):**
+
+- HEAD hâlâ `b5c9833`. Gece dalgası **commitlenmedi** (Docker COPY, parked 404, compose 5432 kapatması, Caddy deploy.yml, yaşayan evrak, `Teknik_Borc/`, `Agent Reports/`).
+- Canlı kutu hâlâ eski compose: Postgres **5432 internete açık**, web **:3000 düz HTTP**. Repoda 5432 kapatıldı (compose-036); kutu recreate edilmedi.
+- KI-032: `.env.example` hâlâ `ENCRYPTION_KEY` yazmıyor (kutuda 64-hex anahtar var).
+- KI-030 dürüstlük, KI-031 numaralı gövde, KI-033 deneme saati — hiçbiri yazılmadı.
+- KI-018 kapanmaz: dağıtım git'ten tekrar üretilemiyor (kutu Dockerfile yaması sadece kutuda; repo imajı yerel Docker kapalı olduğu için bu sabah kanıtlanmadı).
+- Kurucu tıkları: Discord redirect URI + Contabo snapshot.
+
+Önceki banner ("kutuda uygulama yok") **yanlıştı** — o cümle yeni sohbeti yanıltırdı, silindi.
+
+## Previous — 2026-09-18 (KI-025/026/027 dalgası DONE, CI yeşil 12/12)
 
 KI-025/026/027 dalgası bitti ve CI yeşil: `fab15c6` için `35382829514` numaralı koşu **SUCCESS** — 12/12 adım (gerçek `postgres:17` üzerinde testler dahil). Neler açıldı: (1) katman kaynağı bağlı — hesaplara `tier` sütunu + açılışta çözümleyici, ödeyen kullanıcı artık deneme kotasına sıkışmıyor (KI-025); (2) defter çift-faturaya kapalı — `(ref_id,reason,attempt)` tekilliği + çöküşte sessiz-geç, aynı çağrı iki kez ücretlenemez (KI-026); (3) yeni sayfa artık bot basıp inşayı başlatabiliyor — ilk mesajda mint + "Build this bot" → `?runId=` linki (KI-027). Dalga commit'i `ac17d4b` (19 dosya, 4 bağımsız incelemeden PASS); CI'daki ilk kırmızı test-altyapı sorunuydu (paylaşımlı-DB sıralaması, FA-004), ürün koduna dokunmadan `fab15c6` ile kapandı (11 test dosyası). Temiz-DB yerel koşu çıkış 0: gateway 233 + web 546 + ai 94 + spec 56. Açık: KI-015/016/017/018/019/024(kısmi). Sırada: ilk gerçek dağıtım (KI-018) + canlı-Discord kanıtı (filo jetonu/dağıtım gelince).
 
@@ -37,13 +54,13 @@ New-bot creation is now a ChatGPT-style chat (D-107): the circled "Your draft" c
 
 ## At a glance
 
-| Dimension        | State                                                                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docs system      | set up (v1.3.0, all 11 docs filled 2026-09-07)                                                                                                                       |
-| Strategy locked? | yes — tiers/credits/trial/ICP/scope + K2/K3 + Scale caps (D-032/D-033)                                                                                               |
-| Building?        | UI bindings landed 2026-09-14 (gallery fork/list, detail publish/rollback/preflight/simulate/draft, interview, logout; D-124 wave) — next V1-7 async progress + V1-9 |
-| Deployed?        | box live (provisioned), no app yet                                                                                                                                   |
-| Validated?       | category yes (competitor revenue); Corvus execution — trial funnel will tell                                                                                         |
+| Dimension        | State                                                                                                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docs system      | set up (v1.3.0, all 11 docs filled 2026-09-07)                                                                                                                    |
+| Strategy locked? | yes — tiers/credits/trial/ICP/scope + K2/K3 + Scale caps (D-032/D-033)                                                                                            |
+| Building?        | First deploy LIVE. Next: commit dirty wave → KI-032 example key → box redeploy (close 5432) → KI-030 honesty before strangers.                                    |
+| Deployed?        | YES at `https://13-140-181-113.nip.io/` (HTTPS, cert, login 307). NOT reproducible from committed repo yet (KI-018 stays Open). Box still publishes 5432 + :3000. |
+| Validated?       | category yes (competitor revenue); Corvus execution — trial funnel will tell                                                                                      |
 
 ---
 
@@ -51,6 +68,12 @@ New-bot creation is now a ChatGPT-style chat (D-107): the circled "Your draft" c
 
 > Keep the last ~10 meaningful changes. Older history lives in `DECISIONS.md`.
 
+- 2026-09-19 morning — New-chat handoff: living docs trued (this banner, KNOWN_ISSUES KI-018/029/034 amended, PLAN shareable-URL ticked with residuals, D-136, L-023/L-024). Single start file: `Agent Reports/2026-09-19-0800_orchestrator_SPEC_new-chat-handoff.md`. No product code, no commit.
+- 2026-09-19 night — FIRST DEPLOY LIVE (D-136): `https://13-140-181-113.nip.io/` 200 + Let's Encrypt + login 307. Box Dockerfiles patched in `/opt/corvus` only. Repo follow-ups uncommitted (Docker COPY, parked `notFound()`, compose-036 closes 5432 in git not on box). Do not share the URL (KI-030).
+- 2026-09-19 — Teknik borç klasörü + drift damgaları: `Docs/Teknik_Borc/` (KI-029…KI-034 dosyaları); 02/04/05/06/07/08/09/10 tepesine DRIFT banner; L-021 başlığı restore; D-128 boş gövde notu. KI-031 hâlâ açık (gövde yeniden yazılmadı).
+- 2026-09-19 — Docs-vs-code audit (report `Agent Reports/2026-09-19-0023_orchestrator_REVIEW_docs-code-audit.md`): docs stale vs HEAD `b5c9833`; filed KI-029…KI-034; no product code.
+- 2026-09-18 — KI-025/026/027 wave DONE (D-134): `ac17d4b` + `fab15c6`, CI `35382829514` 12/12; tier column + ledger unique + new-page mint.
+- 2026-09-18 — IP-first HTTPS (D-135): Caddy via `13-140-181-113.nip.io`, commit `b5c9833` on origin.
 - 2026-09-18 — CI GREEN (D-133): first green CI run on the repo — `35347389002` on `e3bea9a`, 12/12 steps including Test on real `postgres:17` (KI-028 resolved; KI-024's CI leg proven). Fix wave `6c9e059`→`2dcffd5`→`1b2c03e`→`933a488`→`e3bea9a`; local re-verification gateway 218/218 + web 538/538, root run 904 tests exit 0.
 - 2026-09-15 — Debt wave DONE (D-126): KI-006 (/privacy + /terms, footer-linked) + KI-010 (dashboard live-bound, GET /api/bots) + KI-011 (/pryzm self-contained, clone-pryzm 69 files deleted) closed; V1-7 progress backend + V1-9 supervisor built; deploy pipeline ready (Dockerfiles built + run-proven). Merged typecheck clean, gateway 143 + web 483 green, 0 failed.
 - 2026-09-15 — Supervisor on duty (D-127): Gateway.relogin + start.ts wiring (audit/restart-via-vault), preservation test mutation-proven, reviewer PASS; gateway 151 + web 483 green.

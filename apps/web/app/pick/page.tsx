@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { VARIANTS } from './variants';
 import './pick.css';
 
@@ -16,6 +17,13 @@ const STORAGE_KEY = 'pick:input:round1';
 const VOTE_ENDPOINT = '/api/pick/vote';
 
 export default function PickPage(): ReactElement {
+  // Parked route (KI-034): direct URLs 404 in production; dev is untouched.
+  // notFound() throws, so it is safe before the hooks below — it either throws
+  // on every render (production) or never runs (dev/test).
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   const [picked, setPicked] = useState<readonly string[]>([]);
 
   useEffect(() => {

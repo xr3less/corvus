@@ -1,6 +1,8 @@
 # 04 — Design Language
 
-## Status: DRAFT (lead snapshot 2026-09-11 — measured truth of `/pryzm`, the unlocked lead per D-061. Values below are read off `apps/web/app/pryzm/pryzm.module.css` + `page.tsx`, not invented. Method locked D-068: founder curates pixels, AI ports 1:1, no generated taste.)
+## Status: DRAFT (lead snapshot 2026-09-11 — `/pryzm` tokens below are historical)
+
+> **DRIFT (2026-09-19, KI-031):** production `/` is the Antigravity port (D-120), not `/pryzm`. `/pryzm` is parked, unlinked, unguarded (KI-034). Values below were measured off the Pryzm CSS — they are not the live homepage. Method (D-068: founder curates pixels) still stands. Detail: `Teknik_Borc/KI-031_docs-stale.md` + `Teknik_Borc/KI-034_parked-routes.md`.
 
 > The visual and tonal system: colors, type, spacing, components, voice. Per `GLOBAL_RULES.md §3.4`, the design direction must be settled before the build starts. The Reviewer gate compares built UI against this doc (and any screenshots in `Screenshots/`).
 
@@ -22,26 +24,26 @@
 
 > Dark single-field (D-045 + D-071): page reads as ONE continuous `#000` from nav to footer (all 4 bands resolve to the bg token); cards/panels keep their contrast. Light theme is dead unless the founder reopens it (D-067).
 
-| Token | Value | Use |
-|---|---|---|
-| `color-bg` | `#000000` (`--pryzm-bg`) | Page + section bands (single field, D-071) |
-| `color-surface` | `#0B0B0D` | Raised surfaces |
-| `color-surface-2` | `#141417` | Inner blocks |
-| `color-card` | `#16161B` | Cards (stats, quick-create box) |
-| `color-panel` | `#101014` | Dashboard mock panel |
-| `color-text` | `#FAFAFA` | Headings, primary button text-inverse |
-| `color-body` | `#D4D1D9`-family / `#D4D4D8` | Hero-adjacent body |
-| `color-muted` | `#A1A1AA` | Sub copy, captions, trial line, chips |
-| `color-faint` | `#71717A` | `(example)` markers, faintest labels |
-| `color-border` | `rgb(255 255 255 / 0.08–0.09)` | Hairlines, card/panel edges |
-| `color-border-strong` | `rgb(255 255 255 / 0.15)` | Badge shell, ghost-button border, dividers |
-| `color-primary` | `#FAFAFA` fill, `#0A0A0B` text | Hero primary button: 40px height, **8px radius**, 500 weight (NOT a pill — mined hero-3, D-070) |
-| `color-ghost` | transparent + strong border | Hero secondary button, same 40px/8px metrics |
-| `color-accent` | `#2DD4BF` | Teal dot (badge) + focus ring (`2px` outline, `3px` offset) — never fills |
-| `color-success` | `#22C55E` | Online pills, pre-flight pass |
-| `color-warning` | `#F59E0B` | Yellow pre-flight rows, soft-cap notices |
-| `color-error` | `#FF7B72` | Red rows, destructive actions |
-| Forbidden | neon, purple-blue gradients, heavy glassmorphism, light themes | Panel glow ALLOWED: white radial `0.1` alpha, `blur(50px)`, static only + bottom mask fade on preview |
+| Token                 | Value                                                          | Use                                                                                                   |
+| --------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `color-bg`            | `#000000` (`--pryzm-bg`)                                       | Page + section bands (single field, D-071)                                                            |
+| `color-surface`       | `#0B0B0D`                                                      | Raised surfaces                                                                                       |
+| `color-surface-2`     | `#141417`                                                      | Inner blocks                                                                                          |
+| `color-card`          | `#16161B`                                                      | Cards (stats, quick-create box)                                                                       |
+| `color-panel`         | `#101014`                                                      | Dashboard mock panel                                                                                  |
+| `color-text`          | `#FAFAFA`                                                      | Headings, primary button text-inverse                                                                 |
+| `color-body`          | `#D4D1D9`-family / `#D4D4D8`                                   | Hero-adjacent body                                                                                    |
+| `color-muted`         | `#A1A1AA`                                                      | Sub copy, captions, trial line, chips                                                                 |
+| `color-faint`         | `#71717A`                                                      | `(example)` markers, faintest labels                                                                  |
+| `color-border`        | `rgb(255 255 255 / 0.08–0.09)`                                 | Hairlines, card/panel edges                                                                           |
+| `color-border-strong` | `rgb(255 255 255 / 0.15)`                                      | Badge shell, ghost-button border, dividers                                                            |
+| `color-primary`       | `#FAFAFA` fill, `#0A0A0B` text                                 | Hero primary button: 40px height, **8px radius**, 500 weight (NOT a pill — mined hero-3, D-070)       |
+| `color-ghost`         | transparent + strong border                                    | Hero secondary button, same 40px/8px metrics                                                          |
+| `color-accent`        | `#2DD4BF`                                                      | Teal dot (badge) + focus ring (`2px` outline, `3px` offset) — never fills                             |
+| `color-success`       | `#22C55E`                                                      | Online pills, pre-flight pass                                                                         |
+| `color-warning`       | `#F59E0B`                                                      | Yellow pre-flight rows, soft-cap notices                                                              |
+| `color-error`         | `#FF7B72`                                                      | Red rows, destructive actions                                                                         |
+| Forbidden             | neon, purple-blue gradients, heavy glassmorphism, light themes | Panel glow ALLOWED: white radial `0.1` alpha, `blur(50px)`, static only + bottom mask fade on preview |
 
 ---
 

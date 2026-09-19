@@ -2,6 +2,8 @@
 
 ## Status: DRAFT (filled 2026-09-07 — path locked D-018, box live D-020)
 
+> **DRIFT (2026-09-19, KI-031 / KI-029 / KI-018 / KI-032):** **AMENDED morning:** app **is live** at `https://13-140-181-113.nip.io/` (D-136). KI-018 stays Open — not reproducible from committed git. HEAD `b5c9833` Dockerfiles omit `packages/ai` (KI-029); worktree copies them, uncommitted, local docker-build unproven. `ci.yml` is typecheck/lint/format/test — no eval merge-gate, no GHCR push. Kuma is not in compose. `pg-backup` exists unscheduled. Dual-key rotation is docs-only. `ENCRYPTION_KEY` is missing from `.env.example` (KI-032; box `.env` already has a 64-hex key). `start.ts` already boots preflight **and** builder workers. Live box still publishes 5432 + :3000 until recreate. Do not share the URL (KI-030). Detail: `Teknik_Borc/00_INDEX.md` + handoff `Agent Reports/2026-09-19-0800_orchestrator_SPEC_new-chat-handoff.md`.
+
 > How Corvus ships. "Deployed" is not "validated" — a live URL starts learning. First public launch coordinates with the founder (one-way-ish door).
 
 ---

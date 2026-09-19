@@ -306,6 +306,8 @@ Trigger: writing or reviewing any CSS Module; the reviewer greps `^[a-z*]`.
 
 **Promote to template?** candidate - seen once (Corvus).
 
+### L-021 - Initial-commit hook: format only what you touched, bypass with a recorded reason, file pre-existing drift (do not obey a red hook blindly)
+
 - **Date:** 2026-09-15
 - **Cost of learning it:** one failed commit + one debug round (zero user impact, pre-launch)
 - **Category:** process
@@ -315,3 +317,27 @@ Trigger: writing or reviewing any CSS Module; the reviewer greps `^[a-z*]`.
 **The rule now.** From now on the initial commit goes: (1) prettier --write only the files this wave touched, (2) commit with --no-verify AND the reason recorded in the commit message, (3) pre-existing drift filed as its own issue (KI-019), never silently absorbed. A bypass with a recorded reason beats a red hook everyone learns to ignore. Trigger: any commit over ~50 files, and any hook failure on files the wave didn't touch.
 
 **Promote to template?** candidate - seen once (Corvus).
+
+### L-023 — A live URL is not a git-reproducible deploy (KI-018 stays open)
+
+- **Date:** 2026-09-19
+- **Cost of learning it:** one night of on-box Dockerfile patching; the committed tree at `b5c9833` still cannot rebuild the images
+- **Category:** engineering
+
+**What happened.** First box `docker build` failed because Dockerfiles last touched at the initial commit never COPY `@corvus/ai` (added D-128) or gateway `@corvus/spec`. The box agent patched `/opt/corvus` only, got HTTPS 200, and escalated. Calling KI-018 “done” because the URL loads would have taught the next chat to skip the rebuild — `origin/master` would fail the same COPY.
+
+**The rule now.** From now on “deployed” has two ticks, both named in PROJECT_STATUS: (1) a human completed the flow on the live URL, (2) `git checkout <the tag> && docker build` from a clean tree produces that same running image. A box-local patch is an incident, not a close. Trigger: any first-deploy or hotfix applied on the server.
+
+**Promote to template?** candidate — seen once (Corvus). Compounds L-001 (deployed ≠ validated) with the git-reproducible dimension.
+
+### L-024 — Docker published ports bypass the host firewall (ufw is not the instrument)
+
+- **Date:** 2026-09-19
+- **Cost of learning it:** off-box TCP 5432 handshake against a box that had ufw denying 5432
+- **Category:** engineering
+
+**What happened.** Compose published `5432:5432` and `3000:3000`. Docker inserts iptables DNAT that runs before ufw. Independent review connected to Postgres from off-box; `curl http://IP:3000/` returned the same 104130-byte landing as HTTPS, skipping Caddy. The RUNBOOK’s “ufw allow 80/443” story was true and irrelevant to those two ports.
+
+**The rule now.** From now on a published `ports:` line is treated as internet-facing regardless of ufw. Close 5432 in compose (done repo-side compose-036 — live box still open until recreate). Do not claim “the firewall covers it.” Trigger: writing or reviewing any `ports:` mapping; prove with an off-box connect, not `ufw status`.
+
+**Promote to template?** candidate — seen once (Corvus).

@@ -2628,6 +2628,8 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 
 ### D-128 — Builder calls the real model: @corvus/ai shared lanes, metered brief-to-draft
 
+> **DRIFT (2026-09-19, KI-031):** this heading was empty; the 2026-09-15 body was spliced under D-129 (after the 2026-09-16 motor-hardening write-up). The D-128 body is the dated `2026-09-15` block currently sitting under D-129. Do not treat D-129 as the builder-real-model decision. Detail: `Teknik_Borc/KI-031_docs-stale.md`.
+
 ### D-129 — Motor-hardening wave: audit + fix + seam-close (founder-ordered)
 
 - **Date:** 2026-09-16
@@ -2771,5 +2773,28 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Why.** Business terms: this unblocks the first live login + shareable URL today for $0 and zero waiting, instead of holding the whole launch behind a domain purchase. The swap later is a 3-line config change, not a rebuild.
 
 **Cost & risk.** Cost: 1 commit, $0, typecheck + lint + prettier green on the merged tree. Risk: nip.io is a third-party wildcard DNS (if it ever fails, the swap-to-real-domain step becomes urgent — mitigated: the swap path is documented in RUNBOOK §7.5); Contabo snapshot before first deploy stays mandatory. Still open: KI-015/016/017/018/019/024-partial; next is the first real box deploy + live-Discord proof.
+
+**Superseded by:** none
+
+### D-136 — First box deploy is LIVE on nip.io; KI-018 stays open until git-reproducible
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — overnight standing order; founder: continue without asking, secrets on Desktop)
+- **Door type:** two-way (reversible — hostname swap when a real domain is bought; box is rented compute)
+- **Type:** engineering
+
+**Context.** D-135 unblocked HTTPS without a domain. Overnight the box was cloned at `b5c9833`, `/opt/corvus/.env` written 0600 (values never logged), images built on-box after the locked Dockerfiles failed (KI-029: missing `@corvus/ai` / gateway `@corvus/spec` COPY), compose brought up web+gateway+caddy+postgres. Independent review: `https://13-140-181-113.nip.io/` 200, Let's Encrypt CN match, login 307 with byte-exact callback, HTTP 80 → 308 HTTPS. Two residuals proven the same night: off-box TCP 5432 handshake (Docker iptables bypasses ufw), plaintext `http://IP:3000` still published.
+
+**Options considered.**
+
+1. Call KI-018 closed because a human can open the URL — rejected: the running tree is a box-local patch plus an uncommitted worktree; the next rebuild from `origin/master` would fail the same COPY defect.
+2. Keep KI-018 Open until a commit+push+rebuild from those Dockerfiles + postgres recreated without published 5432 (chosen).
+3. Delay the first deploy until the repo Dockerfiles were committed — rejected by the overnight order; the founder needed a live URL, and the box patch was the only way through KI-029 that night.
+
+**Decision.** Option 2. Live URL is real. “Deployed” in PROJECT_STATUS means the process is up, not that strangers may use it (KI-030) and not that git can recreate it. Repo follow-ups written overnight and still uncommitted as of 2026-09-19 morning: Docker COPY, parked `notFound()` guards, compose-036 (5432 unpublished in git), deploy.yml/RUNBOOK caddy. `.env.example` ENCRYPTION_KEY still missing (KI-032). Founder still owns Discord portal redirect + Contabo snapshot.
+
+**Why.** Business terms: a shareable HTTPS URL unblocks the Discord login click and any later demo, at $0 extra. Pretending the issue is closed would teach the next chat to skip the rebuild — and the next rebuild from git would fail. Honesty about “live vs reproducible” is cheaper than a second all-nighter.
+
+**Cost & risk.** Cost: one night of SSH + on-box image builds. Risk: public 5432 until recreate (mitigated: strong generated password, but still close it); nip.io third-party DNS (swap path in RUNBOOK §7.5); uncommitted wave can be lost if anyone git-restores — forbidden while dirty.
 
 **Superseded by:** none

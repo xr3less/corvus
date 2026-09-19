@@ -195,7 +195,7 @@ route), which is what `ps` reports as `healthy`.
 
 Re-run the deploy workflow with **previous-sha** set to the last good commit SHA. It skips
 the build and re-pulls that image tag on the server.
-Manual equivalent: `TAG=<last-good-sha> docker compose --env-file .env -f infra/compose/compose.yml pull web gateway`
+Manual equivalent: `TAG=<last-good-sha> docker compose --env-file .env -f infra/compose/compose.yml pull web gateway caddy`
 then `... up -d web gateway caddy`.
 
 Migrations are forward-only, so a rollback does NOT undo a schema change. If the bad deploy

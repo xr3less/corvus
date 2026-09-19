@@ -2,6 +2,8 @@
 
 ## Status: DRAFT (filled 2026-09-07, stack locked D-018)
 
+> **DRIFT (2026-09-19, KI-031):** “gateway reads recipes” overstates — specs are stored, not interpreted at runtime. Diagram still shows Hetzner CX33 + Flash-via-OpenRouter + Creem webhooks + Kuma on `/healthz`. Hosting is Contabo interim. Live builder lane is wiro `glm/5-2`. No `/healthz` in code. Compose Postgres is `postgres:17-alpine` (CI `postgres:17`), not `17.11-bookworm`. Detail: `Teknik_Borc/KI-031_docs-stale.md`.
+
 > How the system is built and how the pieces fit. Tech-stack choices are mostly two-way doors (the AI decides and records in `DECISIONS.md`), EXCEPT anything with a recurring cost or hard-to-reverse lock-in — those are founder decisions (`GLOBAL_RULES.md §6`). Explain the system to the founder in plain terms; keep the technical depth here.
 
 ---

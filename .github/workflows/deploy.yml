@@ -146,6 +146,6 @@ jobs:
             set -e
             cd /opt/corvus
             export TAG="${DEPLOY_TAG:?DEPLOY_TAG was not passed to the remote script}"
-            docker compose --env-file .env -f infra/compose/compose.yml pull web gateway
-            docker compose --env-file .env -f infra/compose/compose.yml up -d web gateway
+            docker compose --env-file .env -f infra/compose/compose.yml pull web gateway caddy
+            docker compose --env-file .env -f infra/compose/compose.yml up -d web gateway caddy
             docker compose --env-file .env -f infra/compose/compose.yml ps

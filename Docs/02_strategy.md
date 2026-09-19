@@ -1,6 +1,8 @@
 # 02 — Strategy
 
-## Status: DRAFT (filled 2026-09-07, pending founder read; K2/K3 + Scale caps still to sign)
+## Status: DRAFT (filled 2026-09-07, pending founder read)
+
+> **DRIFT (2026-09-19, KI-031):** the old status line said “K2/K3 + Scale caps still to sign”. Those are **LOCKED** (K2/K3 D-032, Scale caps D-033). Do not re-open them from this banner. Detail: `Teknik_Borc/KI-031_docs-stale.md`.
 
 > Target customer, pricing, positioning, kill criteria, scope locks. When CANONICAL, this doc is second only to `GLOBAL_RULES.md` in authority. All entries here are product/business decisions — the founder decides; the AI recommends.
 
@@ -26,12 +28,12 @@ For non-coder Discord owners drowning in rented bots, Corvus is the AI bot-build
 
 > LOCKED v1 tiers (D-009, 2026-09-07). No per-token meter visible to users — pooled allowances + refill packs instead.
 >
-> | Tier | Price | Bots / servers | AI allowance (pooled) |
-> |---|---|---|---|
-> | Free trial (NO CARD — signup with Discord only, card asked ONLY at paid upgrade) | $0 for 3 days | 1 bot / 1 server, full Pro features | 100 credits / 3 days (token-indexed: run ≈ 1.1 cr, msg ≈ 0.075 cr); day 4: pay or bot sleeps (data 12 mo, wake on upgrade, NEVER deleted) |
-> | Pro | $10/mo | 2 bots / up to 5 servers | 2000 credits/mo (~1800 builds or ~26k replies) |
-> | Studio | $29/mo | 8 bots / up to 100 servers (HARD CAP — no unlimited: resale/abuse overload risk) | 6000 credits/mo |
-> | Scale $100 | $100/mo (POST-LAUNCH — caps locked D-033, not at launch) | 20 bots / 200 servers | 20,000 credits/mo, hard cutoff, no rollover |
+> | Tier                                                                             | Price                                                    | Bots / servers                                                                   | AI allowance (pooled)                                                                                                                     |
+> | -------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+> | Free trial (NO CARD — signup with Discord only, card asked ONLY at paid upgrade) | $0 for 3 days                                            | 1 bot / 1 server, full Pro features                                              | 100 credits / 3 days (token-indexed: run ≈ 1.1 cr, msg ≈ 0.075 cr); day 4: pay or bot sleeps (data 12 mo, wake on upgrade, NEVER deleted) |
+> | Pro                                                                              | $10/mo                                                   | 2 bots / up to 5 servers                                                         | 2000 credits/mo (~1800 builds or ~26k replies)                                                                                            |
+> | Studio                                                                           | $29/mo                                                   | 8 bots / up to 100 servers (HARD CAP — no unlimited: resale/abuse overload risk) | 6000 credits/mo                                                                                                                           |
+> | Scale $100                                                                       | $100/mo (POST-LAUNCH — caps locked D-033, not at launch) | 20 bots / 200 servers                                                            | 20,000 credits/mo, hard cutoff, no rollover                                                                                               |
 >
 > Refills: $5 pack = 1000 credits (90-day expiry). Soft-cap: AI pauses, bot stays online — never surprise bills. Trial end falls back to sleep (12-mo data keep, wake on upgrade). Anti-farming: 1 trial per Discord account + rate limits. Credits pegged to token cost (formula moves if model price moves); dashboard shows human translations ("≈1800 builds"), never raw tokens. Trial is app-owned: no Creem subscription exists during the trial (Creem-managed trials require a card — verified D-034); the card is collected only at the paid-upgrade checkout.
 > Credits burn ONLY on AI work: builder runs (≈1.1 cr) + AI persona/chat replies (≈0.075 cr) + image gen. Normal bot actions (welcome messages, reaction roles, automod kicks, XP, tickets, logs) cost ZERO credits — no AI call involved. Same split as the competitor (their templates/running free; only builder + persona + image metered).
@@ -62,6 +64,6 @@ For non-coder Discord owners drowning in rented bots, Corvus is the AI bot-build
 
 ## 6. Competitive landscape
 
-> Research record (2026-09-07): full teardown in `Marketing/vibebot-deep-research-2026-09-07.md`. Benchmark = Vibebot (vibebot.gg, Feb 2026, ~$1,666 MRR / 175 subs, Lite $5 / Pro $10). Closest comps: BotGhost (flat $10/mo, yearly $5 eff.), Nexus getnexus.me (flat €5/15 srv), Kite ($0 open source), BotNinja ($5/bot), MEE6 ($11.99/server), Dyno (~$4.99), Carl-bot ($7.99). Founder decision on wedge/scope still open — do NOT treat this note as locked strategy.
+> Research record (2026-09-07): full teardown in `Marketing/vibebot-deep-research-2026-09-07.md`. Benchmark = Vibebot (vibebot.gg, Feb 2026, ~~$1,666 MRR / 175 subs, Lite $5 / Pro $10). Closest comps: BotGhost (flat $10/mo, yearly $5 eff.), Nexus getnexus.me (flat €5/15 srv), Kite ($0 open source), BotNinja ($5/bot), MEE6 ($11.99/server), Dyno (~~$4.99), Carl-bot ($7.99). Founder decision on wedge/scope still open — do NOT treat this note as locked strategy.
 
 > One reason to pick us: the bot is yours (own app, free export, sleep-not-delete) and manageable without code (panel interview, simulator, pre-flight, rollback) — vs rented preset features per server. Evidence file: `Marketing/vibebot-deep-research-2026-09-07.md`.

@@ -2,6 +2,8 @@
 
 ## Status: DRAFT (filled 2026-09-07, locked D-006/D-007)
 
+> **DRIFT (2026-09-19, KI-031):** §1 glance is the worst lie in the docs — it still describes Discord.js codegen + a sandbox gate. Runtime is spec-as-data (D-012): builder writes fenced JSON, `parseSpec` stores it, sandbox is not built, gateway does **not** interpret `prod_spec` yet. Stage 2 body is closer to truth than the glance. Do not implement from §1. Detail: `Teknik_Borc/KI-031_docs-stale.md`.
+
 > The heart of the product: the main workflow that turns a user's input into the output they value, step by step. (Rename this doc to match the product if helpful, but keep the `08` number.) Document each stage so a reader without code access understands exactly how the product works end to end.
 
 ---

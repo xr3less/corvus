@@ -4,7 +4,8 @@
 #
 # Build context is the REPO ROOT (see .github/workflows/deploy.yml `build` job),
 # because this is an npm-workspaces monorepo: the app depends on the shared
-# @corvus/spec workspace package, which must be compiled before `next build`.
+# @corvus/spec and @corvus/ai workspace packages, both of which must be compiled
+# before `next build` (web resolves them through their package.json "exports").
 #
 # Pattern: Next.js standalone output (next.config.js sets output: 'standalone').
 # Reference followed: https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile
@@ -21,13 +22,21 @@ COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/gateway/package.json apps/gateway/package.json
 COPY packages/spec/package.json packages/spec/package.json
+COPY packages/ai/package.json packages/ai/package.json
 RUN npm ci
 
-# Shared contract package (@corvus/spec) — web imports its compiled dist.
+# Shared workspace packages — web imports their compiled dist:
+#   @corvus/spec -> app/api/{interview,simulate,spec,templates} + dashboard (parseSpec, simulateDraft, explain)
+#   @corvus/ai   -> apps/web/lib/ai/{lanes,router,cost,builder-prompt}.ts re-export shims
+# Both are needed: `npm ci` links node_modules/@corvus/* to these paths, and Node
+# resolves the `main`/`exports` entries at build and at runtime.
 COPY tsconfig.base.json ./
 COPY packages/spec/package.json packages/spec/package.json
 COPY packages/spec/tsconfig.json packages/spec/tsconfig.json
 COPY packages/spec/src packages/spec/src
+COPY packages/ai/package.json packages/ai/package.json
+COPY packages/ai/tsconfig.json packages/ai/tsconfig.json
+COPY packages/ai/src packages/ai/src
 
 # @corvus/web sources — explicit paths only, never the whole directory.
 COPY apps/web/package.json apps/web/package.json
@@ -40,7 +49,10 @@ COPY apps/web/components apps/web/components
 COPY apps/web/lib apps/web/lib
 COPY apps/web/public apps/web/public
 
+# Order matters: @corvus/ai's sources import @corvus/spec, so spec's dist must
+# exist before ai is type-checked/emitted.
 RUN npm run build --workspace @corvus/spec \
+ && npm run build --workspace @corvus/ai \
  && npm run build --workspace @corvus/web
 
 # --- runner: minimal traced server ---------------------------------------------

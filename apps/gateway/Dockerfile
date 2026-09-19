@@ -20,12 +20,28 @@ COPY package.json package-lock.json ./
 COPY apps/gateway/package.json apps/gateway/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/spec/package.json packages/spec/package.json
+COPY packages/ai/package.json packages/ai/package.json
 RUN npm ci
 
+# `npm ci` linked node_modules/@corvus/* to these workspace paths; the gateway now
+# imports BOTH (@corvus/ai for chat/router/tier helpers, @corvus/spec for parseSpec),
+# and those entries resolve through their package.json `exports` — so the sources,
+# the tsconfigs and the emitted dist all have to be here.
 COPY tsconfig.base.json ./
 COPY apps/gateway/tsconfig.json apps/gateway/tsconfig.json
 COPY apps/gateway/src apps/gateway/src
-RUN npm run build --workspace @corvus/gateway \
+COPY packages/spec/package.json packages/spec/package.json
+COPY packages/spec/tsconfig.json packages/spec/tsconfig.json
+COPY packages/spec/src packages/spec/src
+COPY packages/ai/package.json packages/ai/package.json
+COPY packages/ai/tsconfig.json packages/ai/tsconfig.json
+COPY packages/ai/src packages/ai/src
+
+# Order matters: @corvus/ai's sources import @corvus/spec, so spec's dist must
+# exist before ai is type-checked/emitted.
+RUN npm run build --workspace @corvus/spec \
+ && npm run build --workspace @corvus/ai \
+ && npm run build --workspace @corvus/gateway \
  && npm prune --omit=dev \
  && npm cache clean --force
 
@@ -34,7 +50,10 @@ FROM node:24-bookworm-slim AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Keep the workspace shape so the node_modules/@corvus/* links resolve.
+# Keep the workspace shape so the node_modules/@corvus/* links resolve. The
+# links are symlinks to these directories, and Node reads each package's
+# package.json `exports` at require time — so both dists and both manifests
+# must land here, not just the gateway's.
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/package-lock.json ./package-lock.json
 COPY --from=build /app/node_modules ./node_modules
@@ -42,6 +61,9 @@ COPY --from=build /app/apps/gateway/package.json ./apps/gateway/package.json
 COPY --from=build /app/apps/gateway/dist ./apps/gateway/dist
 COPY --from=build /app/apps/web/package.json ./apps/web/package.json
 COPY --from=build /app/packages/spec/package.json ./packages/spec/package.json
+COPY --from=build /app/packages/spec/dist ./packages/spec/dist
+COPY --from=build /app/packages/ai/package.json ./packages/ai/package.json
+COPY --from=build /app/packages/ai/dist ./packages/ai/dist
 
 USER node
 # compose.yml overrides `command` with `npm start`; both resolve to dist/start.js.

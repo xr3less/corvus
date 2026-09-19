@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ReactElement } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { VARIANTS } from '../variants';
 import '../pick.css';
 
@@ -36,6 +37,12 @@ async function readVotes(): Promise<Votes> {
 }
 
 export default async function PickResultsPage(): Promise<ReactElement> {
+  // Parked route (KI-034): direct URLs 404 in production; dev is untouched.
+  // Guarded before readVotes() so production never touches the votes file.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   const votes = await readVotes();
   const total = Object.values(votes).reduce((sum, value) => sum + value, 0);
 

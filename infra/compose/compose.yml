@@ -23,8 +23,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-corvus}
-    ports:
-      - '5432:5432'
+    # No published ports: reachable only inside the compose network via the service name (postgres:5432). Never re-add a public mapping — Docker's iptables rules bypass ufw, so a published 5432 is internet-facing regardless of firewall state.
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

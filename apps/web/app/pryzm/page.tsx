@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import type { CSSProperties } from 'react';
 import styles from './pryzm.module.css';
 import { PryzmEffects } from './islands';
@@ -271,6 +272,11 @@ const PRICING_PLANS: PricingPlan[] = [
 ];
 
 export default function PryzmPage() {
+  // Parked route (KI-034): direct URLs 404 in production; dev is untouched.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   return (
     <div className={styles.page}>
       <PryzmEffects />

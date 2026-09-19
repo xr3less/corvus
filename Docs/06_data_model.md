@@ -2,6 +2,8 @@
 
 ## Status: DRAFT (filled 2026-09-07, Drizzle + Postgres 17 per D-018)
 
+> **DRIFT (2026-09-19, KI-031):** `credit_ledger` and `subscriptions` are documented as schema — **tables do not exist**. `accounts.tier` (0008) and `ai_spend.attempt` (0009) **do** exist and are missing here. FK claims on `bots.account_id` / spec pointers are wrong. Drizzle is a type catalog; runtime is raw `pg` Pool; migrations are hand-written SQL. §3 later admits ledger does not exist (self-contradiction). Detail: `Teknik_Borc/KI-031_docs-stale.md`.
+
 > The shape of the data: the "warehouse" layout. Conventions: `snake_case` tables/columns, `id uuid PK default gen_random_uuid()`, `created_at/updated_at timestamptz`, soft-delete via `deleted_at` (tokens hard-deleted ≤30d per retention). Spec JSON lives in `JSONB`, validated by `packages/spec` zod schemas — DB checks structure, app checks meaning.
 
 ---
