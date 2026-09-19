@@ -1,6 +1,12 @@
 # KI-032 — `ENCRYPTION_KEY` used in code, missing from `.env.example`
 
-## Status: OPEN (P1 — fixed locally in `4aed2ff`, unpushed; box already has a key)
+## Status: RESOLVED 2026-09-19 (fix `4aed2ff`, pushed to origin as `3213e37`)
+
+## Resolved
+
+`.env.example` lists `ENCRYPTION_KEY=` with shape-only comments (64 hex OR base64 that decodes to exactly 32 bytes; never a value) + WIRO note reworded. Verified pushed: local `master` == `origin/master` at `3213e37`. Box `/opt/corvus/.env` already held a generated 64-hex key (value never pasted anywhere). Dual-key rotation stays a later task unless the founder orders it.
+
+## History (open state, kept for the trail)
 
 - `apps/gateway/src/lib/crypto.ts` requires a 32-byte key (AES-256-GCM, AAD = bot id). Accepts 64 hex **or** base64 that decodes to exactly 32 bytes.
 - `.env.example` **now lists `ENCRYPTION_KEY=`** with shape-only comments (never a value). WIRO note reworded (WIRO_* already listed under V1-2; only CREEM_* still pending).

@@ -2798,3 +2798,20 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: one night of SSH + on-box image builds. Risk: public 5432 until recreate (mitigated: strong generated password, but still close it); nip.io third-party DNS (swap path in RUNBOOK §7.5); uncommitted wave can be lost if anyone git-restores — forbidden while dirty.
 
 **Superseded by:** none
+
+### D-137 — Dirty wave + KI-032 pushed to origin; box rebuild still pending
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — overnight standing order; founder pushed via `! git push`)
+- **Door type:** one-way record (push is out; box rebuild is the remaining work)
+- **Type:** engineering
+
+**Context.** Morning wave sat committed-but-unpushed (`54918cd` 32 files + `4aed2ff` KI-032 + `3213e37` docs). Orchestrator push was denied twice by the auto-mode classifier (transient per its own message); founder ran `! git push origin master` → `b5c9833..3213e37`, local `master` == `origin/master` at `3213e37`, tree clean.
+
+**Decision.** Record the push as the close of KI-032 (fix `4aed2ff`: `.env.example` shape-only `ENCRYPTION_KEY=` + WIRO note reworded, no value) and as partial close of KI-029/KI-034/KI-018 (all pushed, box not rebuilt). Next: box rebuild from these Dockerfiles + postgres recreate without published 5432 (Contabo snapshot first) — still needs box access.
+
+**Why.** Business terms: git now tells the truth about the box fix, so the next rebuild can come from the repo instead of a box-local patch. The live box is unchanged until the rebuild — 5432 + :3000 still public, parked routes still 200 on the live image.
+
+**Cost & risk.** Cost: $0, one founder command. Risk: pushed docs reference commits the box does not run yet — mitigated by keeping KI-018/KI-029/KI-034 Open until the rebuild lands.
+
+**Superseded by:** none

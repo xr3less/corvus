@@ -4,7 +4,7 @@
 
 > The single source of truth for what's done and what's next. Tick boxes as work completes; keep current. Additive only — don't reorder phases without founder approval. Per `GLOBAL_RULES.md §3`, nothing is built that isn't planned here first.
 
-**Last updated:** 2026-09-19 midday (commits `54918cd` + `4aed2ff` local — dirty wave + KI-032 done, push denied twice by auto-mode classifier, needs founder `!` push; box NOT redeployed yet). First deploy LIVE at `https://13-140-181-113.nip.io/` (D-136). KI-018 stays Open (committed locally, not pushed, not rebuilt on box). KI-032 code-committed. KI-030/031/033 untouched. Do not share the URL.
+**Last updated:** 2026-09-19 midday (push DONE `b5c9833..3213e37` master→origin via founder `! git push` — wave `54918cd` + KI-032 `4aed2ff` + docs `3213e37` all on origin; box NOT redeployed yet). First deploy LIVE at `https://13-140-181-113.nip.io/` (D-136). KI-018 stays Open (pushed, not rebuilt on box). KI-032 fixed + pushed. KI-030/031/033 untouched. Do not share the URL.
 
 ---
 
@@ -125,7 +125,8 @@ At the **end of every phase**, run the doc audit (`Governance/DOC_AUDIT.md`) so 
 - [x] compose-036 DONE 2026-09-19 (postgres `ports:` removed from `infra/compose/compose.yml`, `config` exit 0 + differential-render proof; report `Agent Reports/2026-09-19-0045_compose-036_FIX_close-postgres.md`). Box-side exposure closes only on redeploy.
 - [x] New-chat docs fill DONE 2026-09-19 morning (founder: fill done-vs-not-done before opening a new chat). Living files trued; numbered 01–10 bodies still stale (KI-031). Handoff: `Agent Reports/2026-09-19-0800_orchestrator_SPEC_new-chat-handoff.md`. Next chat order: commit dirty wave → KI-032 `.env.example` → box redeploy (close 5432) → KI-030 honesty. Do not share the URL.
 - [x] Commit dirty wave DONE 2026-09-19 midday (`54918cd`: 32 files — Dockerfiles ai copy KI-029, compose-036 close 5432, deploy.yml caddy, parked guards KI-034, RUNBOOK, living docs, Teknik_Borc KI-029-034 + handoff spec; prettier-fixed 16 files; pre-commit typecheck+eslint+prettier all green).
-- [x] KI-032 `.env.example` DONE 2026-09-19 midday (`4aed2ff`: `ENCRYPTION_KEY=` shape-only entry + WIRO note reworded; no value). Push to origin/master DENIED twice by auto-mode classifier (transient per its own message) — needs founder `! git push`. Box NOT redeployed (5432 + :3000 still live, image still pre-guard).
+- [x] KI-032 `.env.example` DONE 2026-09-19 midday (`4aed2ff`: `ENCRYPTION_KEY=` shape-only entry + WIRO note reworded; no value). Pushed to origin/master via founder `! git push` (`b5c9833..3213e37`). Box NOT redeployed (5432 + :3000 still live, image still pre-guard).
+- [x] Push to origin DONE 2026-09-19 midday (founder `! git push origin master`: `b5c9833..3213e37`; local `master` == `origin/master` at `3213e37`; tree clean). Next: box rebuild from these Dockerfiles + postgres recreate without published 5432 (needs Contabo snapshot first + box access).
 - [ ] D-027 scheduling (approved 2026-09-08, additive — order unchanged): TRACK 1 = V1-8 backend wave (waves A→B→C); TRACK 2 = frontend primitives + 3 mock screens in parallel (taste gate per 04)
 - [x] Wave A done 2026-09-09 (skeleton + spec v0 + UI primitives; merged `npm run ci` green 3x, D-028) — Wave B armed (T-db, T-store, T-gateway, T-screens)
 - [x] Wave B done 2026-09-09 (db schema + store + gateway core + 3 mock screens; merged `npm run ci` green 3x, 44/44 tests; reviewers PASS backend 0110 + frontend 0111; D-029) — Wave C done (T-blockers 4/4 on live PG; merged ci green 2x with DB, 48/48; D-030)

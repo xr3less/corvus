@@ -1,8 +1,8 @@
 # KI-034 — Unguarded parked routes would ship on first deploy
 
-## Status: OPEN (P1 — source guarded, live image not rebuilt)
+## Status: OPEN (P1 — source guarded + pushed in `54918cd`, live image not rebuilt)
 
-`next.config.js` still has no rewrite/block. **Worktree** pages now `notFound()` when `NODE_ENV==='production'`. Live box image was built before the guards — those URLs still 200 until rebuild. Uncommitted.
+Committed + pushed 2026-09-19 midday (`b5c9833..3213e37` master→origin via founder `! git push`). **Worktree** pages now `notFound()` when `NODE_ENV==='production'`. Live box image was built before the guards — those URLs still 200 until rebuild.
 
 | Route                    | What it is                                                                                    | Prod guard?                                                                                  |
 | ------------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
