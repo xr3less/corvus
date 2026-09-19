@@ -2939,3 +2939,20 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: ~$0.0012 for 1 live run (18 live runs today total ≈ $0.045). Risk: none new — measurement only, fixtures cleaned, services healthy throughout, repo untouched (HEAD `5c6c134`). Next: Phase 2c (tidy commit → KI-030 → KI-033 → KI-031 → Discord redirect click).
 
 **Superseded by:** none
+
+### D-144 — KI-030 honesty pass DONE (founder-authorized wave, 2026-09-19 night)
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder: `Tamam, bu planın güzel; bu planı uygulayacağız.`)
+- **Door type:** two-way (reversible — copy-only + empty-state logic, no API/gateway/infra change)
+- **Type:** engineering
+
+**Context.** KI-030 (`Docs/Teknik_Borc/KI-030_honesty.md`): strangers saw paid/live promises the product cannot keep — trial CTAs to nowhere, fake Pro pill + hardcoded 82/100 credits, silent mock fallbacks, Publish reading as live Discord, billing contract for a nonexistent system. Spec `Docs/2026-09-19-2001_orchestrator_SPEC_ki030-honesty.md` split it into 5 disjoint-scope agents (landing / rail+home / bots-detail / gallery / legal) with byte-level copy locks.
+
+**Result.** 5 agents delivered (ki030-c has no report file — its agent died after editing; work verified via reviewer + fix wave). Independent reviewer PARTIAL: pages honest, tests/format not (3 stale test files, `layout.test.tsx`, prettier on 3 pages, home residuals). Fix wave SUCCESS (`Docs/2026-09-19-2015_ki030-fix_MODIFY_review-findings.md`) closed every finding. One last red was pre-existing jsdom canvas noise, fixed test-only (`Docs/2026-09-19-2127_ki030-fix-canvas_FIX_canvas-noise.md`). Merged gates, run by the orchestrator on the merged tree 2026-09-19 21:39: vitest 10 files **132/132**, `tsc` clean, eslint 20 files clean, prettier 20 files clean, secrecy clean (no token-shaped values). Change scope exact: 21 files + 8 doc reports, no API/gateway/packages/infra/manifest changes. Known residual: composer cost lines (`About 1.1 credits per change · platform failures retry free.`) unmarked by design decision in wave — credits are metered server-side on real runs; revisit in KI-033 if the trial clock lands differently.
+
+**Why.** Business terms: a stranger can no longer pay for — or even see — a promise the product cannot keep. Paid buttons say "coming soon", empty accounts say "empty", saved versions never say "live". Nothing about what the product DOES changed — only what it CLAIMS.
+
+**Cost & risk.** Cost: $0 code change. Risk: none new — copy + empty states only; the `fetchBots()` failure contract (`[]`) and all exports preserved, so live-data paths keep working untouched. Next: KI-033 wording → KI-031 bodies → founder Discord redirect click.
+
+**Superseded by:** none

@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import NewBotPage from './page';
 
 const CREATION_TITLE = 'What will your bot do today?';
-const CREATION_SUB = 'Describe it in plain words — we draft it, you test it, then it goes live.';
+const CREATION_SUB =
+  'Describe it in plain words — we draft it, you test the draft, then you save a version. Going live on Discord isn’t wired yet.';
 const MODEL_NAMES = ['Sonnet', 'GPT', 'Gemini', 'GLM', 'grok'];
 
 const FORBIDDEN = [

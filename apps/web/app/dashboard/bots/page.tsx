@@ -11,13 +11,10 @@ import { useSearchParams } from 'next/navigation';
 import { Activity, Plus } from 'lucide-react';
 import { BuilderProgress } from '@/components/ui/builder-progress';
 import {
-  activityFor,
   fetchBots,
   formatCount,
-  MOCK_BOTS,
   STATUS_LABEL,
   STATUS_RANK,
-  type BotSource,
   type BotStatus,
   type BotsSnapshot,
   type MockBot,
@@ -61,16 +58,16 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
      shows its honest "No run started" — never a fabricated step (KI-014). */
   const runId = useSearchParams().get('runId');
 
-  /* Live-first: the caller's own bots when the list can be read, the example
-     bots otherwise. A fallback keeps the current (example) render, so only a
-     real live answer swaps the data — and the source mark rides along. */
+  /* KI-030: empty, not example — the list shows only the caller's real rows.
+     fetchBots() returns [] when the list cannot be read, so a failure renders
+     the honest empty state below, never mock bots as the account's own. */
   const [liveSnapshot, setLiveSnapshot] = useState<BotsSnapshot | null>(null);
   useEffect(() => {
     if (injectedBots !== undefined) return;
     const controller = new AbortController();
     let active = true;
     void fetchBots(controller.signal).then((snapshot) => {
-      if (active && snapshot.isLive) setLiveSnapshot(snapshot);
+      if (active) setLiveSnapshot(snapshot);
     });
     return () => {
       active = false;
@@ -78,9 +75,7 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
     };
   }, [injectedBots]);
 
-  const bots = liveSnapshot?.bots ?? injectedBots ?? MOCK_BOTS;
-  const source: BotSource = liveSnapshot?.isLive === true ? 'live' : 'mock';
-  const live = source === 'live';
+  const bots = injectedBots ?? liveSnapshot?.bots ?? [];
 
   const liveCount = bots.filter((bot) => bot.status === 'online').length;
   const trialCount = bots.filter((bot) => bot.status === 'trial').length;
@@ -117,17 +112,15 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
           <p className={shared.pageSub}>Describe one and it lands here.</p>
         </header>
 
-        <section
-          id="bots"
-          aria-label={live ? 'Your bots' : 'Your bots (example)'}
-          className={shared.section}
-        >
+        <section id="bots" aria-label="Your bots" className={shared.section}>
           <div className={styles.sectionHead}>
             <div className={shared.titleRow}>
               <div className={styles.headLead}>
                 <h2 className={shared.sectionTitle}>Your bots</h2>
                 <p className={styles.countsLine}>
-                  Live {liveCount} / Trial {trialCount} / Off {offCount}
+                  {bots.length === 0
+                    ? 'No data yet'
+                    : `Live ${liveCount} / Trial ${trialCount} / Off ${offCount}`}
                 </p>
               </div>
               <a href="/dashboard/new" className={`${styles.primaryAction} ${styles.newBotButton}`}>
@@ -187,9 +180,9 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
             <div className={styles.empty}>
               {bots.length === 0 ? (
                 <>
-                  <p className={styles.emptyText}>No bots yet — Connect your first server</p>
-                  <a href="/dashboard#get-started" className={styles.primaryAction}>
-                    Connect a server
+                  <p className={styles.emptyText}>No bots yet — describe your first bot.</p>
+                  <a href="/dashboard/new" className={styles.primaryAction}>
+                    Describe your first bot
                   </a>
                 </>
               ) : (
@@ -211,9 +204,10 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
           ) : (
             <ul aria-label="Bot cards" className={styles.botGrid}>
               {filtered.map((bot) => {
-                /* Live rows have no server-side activity or counts: the line
-                   is omitted rather than filled with a fabricated example. */
-                const last = live ? null : activityFor(bot)[0];
+                /* Real rows render real numbers only. Rows that carry
+                   server-backed members/servers counts show them; otherwise the
+                   line is omitted rather than filled with a fabricated example
+                   (KI-030). */
                 const counts =
                   bot.members !== undefined && bot.servers !== undefined
                     ? `${formatCount(bot.members, 'member', 'members')} · ${formatCount(
@@ -239,13 +233,7 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
                         </span>
                         <span className={styles.botGridTitleRow}>
                           <span className={styles.botGridName}>{bot.name}</span>
-                          {last !== null ? (
-                            <span className={styles.botGridTime}>{last.time}</span>
-                          ) : null}
                         </span>
-                        {last !== null ? (
-                          <span className={styles.botGridLast}>{last.text}</span>
-                        ) : null}
                         <span className={styles.botGridPillRow}>
                           <StatusPill status={bot.status} />
                           {counts !== null ? (
@@ -283,7 +271,7 @@ function BotsInner({ bots: injectedBots }: { bots?: MockBot[] }) {
             <h2 className={shared.panelTitle}>Build progress</h2>
             <Activity aria-hidden="true" size={16} className={shared.panelIcon} />
           </div>
-          <p className={shared.cardSub}>Follow your bot from draft to live.</p>
+          <p className={shared.cardSub}>Follow your bot from draft to saved version.</p>
           <BuilderProgress runId={runId} />
         </section>
       </div>

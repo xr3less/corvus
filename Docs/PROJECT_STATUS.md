@@ -19,7 +19,7 @@ Bot yapma motoru bu akşam gerçekten çalıştı. Kısa anahtar adayı kutuya t
 - Grab kurulumu + 7 rapor bu bilgisayarda kayıtsız duruyor — bir sonraki kayda binecek, itilmedi.
 - `:3000` düz HTTP hâlâ yayında (bilinen artık); GHCR `:stable` itilmedi (kutu yerel yapımla çalışıyor); yedekleme yardımcısı takılıyor (elle yedek alındı).
 - Retry satırları birikiyor (001/002 işleri `retry`de; zararsız, `run_gone`, 7 günde silinir; 003 `completed`).
-- KI-030 dürüstlük, KI-031 numaralı gövde, KI-033 deneme saati — hiçbiri yazılmadı.
+- KI-030 dürüstlük DONE (D-144, bu gece): 132/132 test + tip + lint + format temiz, yabancı artık ödenemeyen söz görmüyor. KI-031 gövdeler + KI-033 deneme saati — yazılmadı, sırada.
 - KI-018 kapanmaz: Discord giriş bağlantısı kaydı (kurucu tıkı) + `lint`/`format` kanıtı kaldı.
 - KI-034 kapanmaz: `07` haritası hâlâ eski sayfa adını yazıyor (KI-031 işi).
 

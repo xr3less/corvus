@@ -1,9 +1,9 @@
 'use client';
 
-/* Bot detail page (D-118): header, mock actions, Overview/Activity/Pre-flight
+/* Bot detail page (D-118): header, actions, Overview/Activity/Pre-flight
    tabs, and the AI composer with a live thread. Unknown ids get an honest
-   empty state, never a guessed bot. Bots and specs are mock until backend
-   binding lands; the explainer and the activity feed run live over them. */
+   empty state, never a guessed bot. KI-030: empty, not example — no mock
+   bots, specs, activity, or pre-flight rows are presented as real data. */
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { explain } from '@corvus/spec';
@@ -13,12 +13,8 @@ import { ChatAssistantRow } from '@/components/ui/chat-thread';
 import { useChatStream } from '@/components/ui/use-chat-stream';
 import threadStyles from '@/components/ui/chat-thread.module.css';
 import {
-  activityFor,
   fetchBots,
   formatActivityTime,
-  mockSpecFor,
-  MOCK_BOTS,
-  PREFLIGHT_ROWS,
   resolveBotId,
   TRIAL_DEAL,
   type BotStatus,
@@ -49,7 +45,8 @@ function validTab(value: string | null): DetailTab {
 const SUGGESTIONS = ['Welcome message', 'Moderation rule', 'XP rewards'];
 
 /* loading — request in flight; live — API rows; empty — API said none;
-   error — 401/network/anything else, so the labeled examples are shown. */
+   error — 401/network/anything else, so an honest empty state is shown
+   (KI-030: never example rows passed off as the account's data). */
 type ActivityState =
   | { status: 'loading' }
   | { status: 'live'; items: LiveActivityItem[] }
@@ -67,8 +64,8 @@ const PREFLIGHT_POLL_MS = 1000;
 const PREFLIGHT_TIMEOUT_MS = 60000;
 const GUILD_ID_RE = /^\d{17,20}$/;
 
-/* Mock ids are not on the server yet, so every write answers 404 — the UI
-   says that honestly instead of faking a success. */
+/* Local-only ids are not on the server, so every write answers 404 — the UI
+     says that honestly instead of faking a success. */
 function notSavedYet(action: string): string {
   return `This bot is not saved on the server yet, so ${action} is unavailable.`;
 }
@@ -157,8 +154,9 @@ function StatusPill({ status }: { status: BotStatus }) {
   );
 }
 
-/* Where the bot lookup stands. A mock id is already known locally; a server id
-   (uuid) needs GET /api/bots, which may be loading, found, or unauthorized. */
+/* A server id is fetched; a mock key is local-only and never stands in as
+   real data. An injected list (tests) is authoritative and never fetched
+   over. */
 type ListState =
   { status: 'ready'; bots: MockBot[] } | { status: 'loading' } | { status: 'unauthorized' };
 
@@ -167,11 +165,12 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   const id = typeof routeParams?.id === 'string' ? routeParams.id : '';
   const serverId = resolveBotId(id);
 
-  /* A server id is fetched; a mock key is already in MOCK_BOTS. An injected
-     list (tests) is authoritative and never fetched over. */
+  /* KI-030: empty, not example — an injected list (tests) is authoritative;
+     otherwise a server id is fetched and anything else is an unknown id
+     (honest empty state), never a mock bot presented as real. */
   const [list, setList] = useState<ListState>(() => {
     if (injectedBots !== undefined) return { status: 'ready', bots: injectedBots };
-    if (serverId === null) return { status: 'ready', bots: MOCK_BOTS };
+    if (serverId === null) return { status: 'ready', bots: [] };
     return { status: 'loading' };
   });
   const [lookupNonce, setLookupNonce] = useState(0);
@@ -211,8 +210,8 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   const [activity, setActivity] = useState<ActivityState>({ status: 'loading' });
 
   /* Wired controls: versions and behaviors come from GET draft when the
-     server has this bot; otherwise everything stays on the mock fallback and
-     every write degrades to its honest error line. */
+     server has this bot; otherwise there is no draft and every write degrades
+     to its honest error line. */
   const [draftVersion, setDraftVersion] = useState<number | null>(null);
   const [draftBehaviors, setDraftBehaviors] = useState<unknown[] | null>(null);
   const [publishNote, setPublishNote] = useState<ActionNote | null>(null);
@@ -338,15 +337,17 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   }
 
   /* The real explainer runs over the loaded draft when the server has one —
-     the sentences are derived live, not stored. Otherwise it runs over the
-     bot's mock spec; an unknown bot yields explain()'s own fallback line. */
+     the sentences are derived live, not stored. With no draft loaded there is
+     no spec to describe, so the overview renders its honest empty state —
+     never mock specs passed off as real (KI-030). */
   const explainerSentences = useMemo(() => {
     if (bot === null) return [];
-    if (draftBehaviors === null) return explain(mockSpecFor(bot.id));
+    if (draftBehaviors === null) return [];
     return explain({ version: 1, behaviors: draftBehaviors });
   }, [bot, draftBehaviors]);
 
-  /* Load the draft on mount; a miss keeps the mock fallback silently. */
+  /* Load the draft on mount; a miss leaves no draft — the overview and
+     writes stay honest about it. */
   useEffect(() => {
     if (bot === null) return;
     const controller = new AbortController();
@@ -429,7 +430,10 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
       if (response.ok) {
         const published = typeof payload.version === 'number' ? payload.version : version;
         setPublishNote({
-          text: published === null ? 'Published.' : `Published v${published}.`,
+          text:
+            published === null
+              ? 'Version saved. Your bot isn’t live on Discord yet.'
+              : `Version ${published} saved. Your bot isn’t live on Discord yet.`,
         });
         return;
       }
@@ -438,8 +442,8 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
         setPublishNote({
           text:
             failing.length > 0
-              ? `Publish blocked — failing checks: ${failing.join(', ')}. Fix them and run the scan again.`
-              : 'Publish blocked — a pre-flight check is failing. Fix it and run the scan again.',
+              ? `Save blocked — failing checks: ${failing.join(', ')}. Fix them and run the scan again.`
+              : 'Save blocked — a pre-flight check is failing. Fix it and run the scan again.',
         });
         return;
       }
@@ -447,7 +451,7 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
         setPublishNote({ text: 'Someone changed the draft — loading the latest version.' });
         const fresh = await refreshDraft(botId);
         if (fresh !== null) {
-          setPublishNote({ text: `Loaded v${fresh} — press Publish to retry.` });
+          setPublishNote({ text: `Loaded v${fresh} — press Save version to retry.` });
         }
         return;
       }
@@ -460,9 +464,9 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
         });
         return;
       }
-      setPublishNote({ text: 'Could not publish — try again.' });
+      setPublishNote({ text: 'Could not save — try again.' });
     } catch {
-      setPublishNote({ text: 'Could not publish — check your connection and try again.' });
+      setPublishNote({ text: 'Could not save — check your connection and try again.' });
     } finally {
       setPublishing(false);
     }
@@ -712,8 +716,8 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   }
 
   /* Start a real builder run for this bot, from the text in the composer, then
-     hand back the link to its live progress. A mock bot has no server id, so no
-     run can start — that is said plainly, never faked with a made-up id. */
+     hand back the link to its live progress. A local-only bot has no server
+     id, so no run can start — that is said plainly, never faked. */
   async function runStartBuild(): Promise<void> {
     if (bot === null || startingBuild) return;
     const brief = draft.trim();
@@ -880,7 +884,7 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
                 onClick={() => void runPublish()}
                 disabled={publishing}
               >
-                Publish
+                Save version
               </button>
               <button
                 type="button"
@@ -910,7 +914,7 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Open install link
+                      Open install link (shared test app — your own bot install isn’t wired yet)
                     </a>
                     {inviteWhys.length > 0 ? (
                       <ul className={styles.activityList}>
@@ -952,24 +956,27 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
             className={styles.detailPanel}
           >
             {detailTab === 'overview' ? (
-              <section aria-label="What this bot does (example)" className={styles.card}>
+              <section aria-label="What this bot does" className={styles.card}>
                 <h2 className={styles.cardTitle}>What this bot does</h2>
-                <ul className={styles.activityList}>
-                  {explainerSentences.map((sentence, index) => (
-                    <li key={`${bot.id}-sentence-${index}`} className={styles.activityRow}>
-                      <span className={styles.activityText}>{sentence}</span>
-                    </li>
-                  ))}
-                </ul>
+                {explainerSentences.length > 0 ? (
+                  <ul className={styles.activityList}>
+                    {explainerSentences.map((sentence, index) => (
+                      <li key={`${bot.id}-sentence-${index}`} className={styles.activityRow}>
+                        <span className={styles.activityText}>{sentence}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className={styles.todaySentence}>
+                    No description yet — the saved draft will describe it here.
+                  </p>
+                )}
               </section>
             ) : null}
             {detailTab === 'activity' ? (
               <section aria-label="Recent activity" className={styles.card}>
                 <div className={styles.panelHead}>
                   <h2 className={styles.cardTitle}>Recent activity</h2>
-                  {activity.status === 'error' ? (
-                    <span className={styles.exampleBadge}>Example</span>
-                  ) : null}
                 </div>
                 {activity.status === 'loading' ? (
                   <p className={styles.todaySentence}>Loading live activity…</p>
@@ -991,17 +998,9 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
                 ) : activity.status === 'empty' ? (
                   <p className={styles.todaySentence}>No activity yet.</p>
                 ) : (
-                  <ul className={styles.activityList}>
-                    {activityFor(bot).map((item) => (
-                      <li key={item.id} className={styles.activityRow}>
-                        <span className={styles.activityText}>
-                          {item.text}
-                          <span className={styles.activityTime}>{item.suffix}</span>
-                        </span>
-                        <span className={styles.activityTime}>{item.time}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className={styles.todaySentence}>
+                    Could not load activity — check your connection and try again.
+                  </p>
                 )}
               </section>
             ) : null}
@@ -1009,9 +1008,6 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
               <section aria-label="Pre-flight" className={styles.card}>
                 <div className={styles.panelHead}>
                   <h2 className={styles.cardTitle}>Pre-flight</h2>
-                  {scan.status === 'idle' ? (
-                    <span className={styles.exampleBadge}>Example</span>
-                  ) : null}
                 </div>
                 {scan.status === 'live' ? (
                   <>
@@ -1030,19 +1026,11 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
                       ))}
                     </ul>
                   </>
-                ) : (
-                  <ul className={styles.activityList}>
-                    {PREFLIGHT_ROWS.map((row) => (
-                      <li key={row.id} className={styles.preflightRow}>
-                        <span
-                          aria-hidden="true"
-                          className={`${styles.preDot} ${row.tone === 'pass' ? styles.prePass : styles.preWarn}`}
-                        />
-                        {row.text}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                ) : scan.status === 'idle' ? (
+                  <p className={styles.todaySentence}>
+                    No scan yet — enter a server ID and run a scan.
+                  </p>
+                ) : null}
                 <div className={styles.actionRow}>
                   <Input
                     id="preflight-guild"

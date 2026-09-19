@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MOCK_BOTS, type MockBot } from '@/lib/bots';
 import BotDetailPage from './page';
 
 /* The route id comes from useParams; tests steer it per case. */
@@ -11,8 +12,16 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ get: (key: string) => (key === 'tab' ? mockTab : null) }),
 }));
 
-const TRIAL_LINE = 'Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.';
+const TRIAL_LINE = 'Free while in preview — limits not enforced yet.';
 const COST_NOTE = 'About 1.1 credits per change · platform failures retry free.';
+
+/* KI-030: the detail page is empty-not-example, so every mock-id render needs
+   an injected list — tests steered to real page behavior, never mock ghosts. */
+function botById(id: string): MockBot {
+  const bot = MOCK_BOTS.find((entry) => entry.id === id);
+  if (bot === undefined) throw new Error(`unknown fixture bot: ${id}`);
+  return bot;
+}
 const MODEL_NAMES = ['Sonnet', 'GPT', 'Gemini', 'GLM', 'grok'];
 
 const FORBIDDEN = [
@@ -87,9 +96,12 @@ function frame(data: Record<string, unknown>): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
-function renderDetail(id: string) {
+function renderDetail(id: string, bots?: MockBot[]) {
   mockRouteId = id;
-  return render(<BotDetailPage />);
+  /* No injected list + mock id = honest unknown-id empty by design. Tests that
+     exercise a bot pass the injected fixture list explicitly. */
+  const injected = bots ?? (id.startsWith('bot-') ? [botById(id)] : undefined);
+  return render(injected === undefined ? <BotDetailPage /> : <BotDetailPage bots={injected} />);
 }
 
 /* Fill and submit the detail composer (expanding the collapsed input first). */
@@ -142,9 +154,9 @@ describe('bot detail page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('shows the mock action row and one-card detail tabs', () => {
+  it('shows the wired action row and one-card detail tabs', () => {
     renderDetail('bot-3');
-    for (const label of ['Open', 'Continue interview', 'Publish', 'Rollback']) {
+    for (const label of ['Open', 'Continue interview', 'Save version', 'Rollback']) {
       expect(screen.getByRole('button', { name: label })).toBeTruthy();
     }
     expect(screen.getByRole('tab', { name: 'Overview' }).getAttribute('aria-selected')).toBe(
@@ -163,7 +175,8 @@ describe('bot detail page', () => {
         'true',
       );
       expect(screen.getByRole('region', { name: 'Recent activity' })).toBeTruthy();
-      await screen.findByText('Example');
+      /* KI-030: error feed is honest — no labeled examples passed off as data. */
+      await screen.findByText('Could not load activity — check your connection and try again.');
     } finally {
       mockTab = null;
     }
@@ -172,19 +185,19 @@ describe('bot detail page', () => {
 
   it('shows exactly one detail card at a time', async () => {
     renderDetail('bot-3');
-    expect(screen.getByRole('region', { name: 'What this bot does (example)' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'What this bot does' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Recent activity' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Pre-flight' })).toBeNull();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
     expect(screen.getByRole('region', { name: 'Recent activity' })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'What this bot does (example)' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'What this bot does' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Pre-flight' })).toBeNull();
-    await screen.findByText('Example');
+    await screen.findByText('Could not load activity — check your connection and try again.');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Pre-flight' }));
     expect(screen.getByRole('region', { name: 'Pre-flight' })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'What this bot does (example)' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'What this bot does' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Recent activity' })).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -372,19 +385,14 @@ describe('bot detail page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('renders the live explainer sentences for each bot', () => {
-    const { unmount } = renderDetail('bot-1');
-    const study = screen.getByRole('region', { name: 'What this bot does (example)' });
+  it('renders the honest overview fallback with no saved draft', () => {
+    renderDetail('bot-1');
+    const study = screen.getByRole('region', { name: 'What this bot does' });
     expect(within(study).getByRole('heading', { name: 'What this bot does' })).toBeTruthy();
-    expect(study.textContent).toContain('Welcomes new members in #welcome.');
-    expect(study.textContent).toContain('Gives 15 XP per message.');
-    expect(study.textContent).toContain('Warns rule-breakers 3 times, then mutes them.');
-    unmount();
-
-    renderDetail('bot-2');
-    expect(
-      screen.getByRole('region', { name: 'What this bot does (example)' }).textContent,
-    ).toContain('Welcomes new members.');
+    /* KI-030: no mock specs — the overview says so until a draft is saved. */
+    expect(study.textContent).toContain(
+      'No description yet — the saved draft will describe it here.',
+    );
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -426,27 +434,27 @@ describe('bot detail page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('falls back to labeled examples when the feed is unauthorized', async () => {
+  it('shows the honest error when the feed is unauthorized', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }),
     );
     renderDetail('bot-3');
     fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    await screen.findByText('Example');
+    /* KI-030: no example rows passed off as the account's activity. */
+    await screen.findByText('Could not load activity — check your connection and try again.');
     const region = screen.getByRole('region', { name: 'Recent activity' });
-    expect(region.textContent).toContain('Published Night Market mods v12');
-    expect(region.textContent).toContain('Rolled back Night Market mods to v11');
+    expect(region.textContent).not.toContain('Published');
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('falls back to labeled examples when the request rejects', async () => {
+  it('shows the honest error when the request rejects', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
     renderDetail('bot-2');
     fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    await screen.findByText('Example');
-    expect(screen.getByRole('region', { name: 'Recent activity' }).textContent).toContain(
-      'Published Draft Arena v12',
+    await screen.findByText('Could not load activity — check your connection and try again.');
+    expect(screen.getByRole('region', { name: 'Recent activity' }).textContent).not.toContain(
+      'Published',
     );
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -535,7 +543,7 @@ describe('bot detail wiring', () => {
     return calls.filter((call) => call.url === url);
   }
 
-  it('loads the draft on mount and posts the draft version on Publish', async () => {
+  it('loads the draft on mount and posts the draft version on Save version', async () => {
     const calls: ApiCall[] = [];
     stubApi(
       [
@@ -550,8 +558,9 @@ describe('bot detail wiring', () => {
     renderDetail('bot-3');
     await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    await screen.findByText('Published v5.');
+    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    /* KI-030 locked copy: Version N saved — never "Published vN". */
+    await screen.findByText(/Version 5 saved\. Your bot isn’t live on Discord yet\./);
     const publish = apiCallsTo(calls, '/api/spec/publish');
     expect(publish).toHaveLength(1);
     expect(publish[0]?.init?.method).toBe('POST');
@@ -560,7 +569,7 @@ describe('bot detail wiring', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('Publish names the failing checks on a preflight-red 409', async () => {
+  it('Save version names the failing checks on a preflight-red 409', async () => {
     const calls: ApiCall[] = [];
     stubApi(
       [
@@ -577,12 +586,12 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText(/failing checks: permissions/);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('Publish 401 shows logged-out with a login link', async () => {
+  it('Save version 401 shows logged-out with a login link', async () => {
     const calls: ApiCall[] = [];
     stubApi(
       [
@@ -595,14 +604,14 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText(/You are logged out/);
     const login = screen.getByRole('link', { name: 'Log in' });
     expect(login.getAttribute('href')).toBe('/api/auth/login');
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('Publish 404 stays honest instead of faking success', async () => {
+  it('Save version 404 stays honest instead of faking success', async () => {
     const calls: ApiCall[] = [];
     stubApi(
       [
@@ -618,8 +627,9 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText(/not saved on the server yet/);
+    expect(screen.queryByText(/Version .* saved/)).toBeNull();
     expect(screen.queryByText(/Published v/)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -673,7 +683,9 @@ describe('bot detail wiring', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
     await screen.findByText('preparing invite…');
 
-    const link = await screen.findByRole('link', { name: 'Open install link' });
+    const link = await screen.findByRole('link', {
+      name: 'Open install link (shared test app — your own bot install isn’t wired yet)',
+    });
     expect(link.getAttribute('href')).toBe('https://discord.com/oauth2/authorize?client_id=123');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(screen.getByText('Send Messages — greetings')).toBeTruthy();
@@ -833,8 +845,8 @@ describe('bot detail wiring', () => {
     await waitFor(() =>
       expect(apiCallsTo(calls, `/api/spec/draft?botId=${liveId}`)).toHaveLength(1),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    await screen.findByText('Published v5.');
+    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    await screen.findByText(/Version 5 saved\. Your bot isn’t live on Discord yet\./);
     const publish = apiCallsTo(calls, '/api/spec/publish');
     /* A real server id is passed through unchanged on writes. */
     expect(bodyOf(publish[0])).toEqual({ botId: liveId, version: 5 });

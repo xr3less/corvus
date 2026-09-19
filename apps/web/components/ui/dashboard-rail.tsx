@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Geist } from 'next/font/google';
 import { Activity, Bot, Home, LayoutTemplate, Settings, ShieldCheck } from 'lucide-react';
-import { CREDITS_TOTAL, CREDITS_USED } from '@/lib/bots';
 import styles from './dashboard-rail.module.css';
 
 interface RailLink {
@@ -29,7 +28,6 @@ export function DashboardRail() {
     pathname.startsWith('/dashboard/new');
   const isHomeActive = pathname === '/dashboard';
   const isTemplatesActive = pathname === '/gallery' || pathname.startsWith('/gallery/');
-  const creditsLeft = CREDITS_TOTAL - CREDITS_USED;
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -61,7 +59,6 @@ export function DashboardRail() {
           M
         </span>
         <span className={styles.workspaceName}>My server</span>
-        <span className={styles.proPill}>Pro</span>
       </div>
       <ul className={styles.navList}>
         {links.map((item) => (
@@ -80,19 +77,6 @@ export function DashboardRail() {
         ))}
       </ul>
       <div className={styles.railFoot}>
-        <p className={styles.creditsLine}>
-          Credits {CREDITS_USED}/{CREDITS_TOTAL} · {creditsLeft} left
-        </p>
-        <div
-          role="progressbar"
-          aria-label="Credits"
-          aria-valuenow={CREDITS_USED}
-          aria-valuemin={0}
-          aria-valuemax={CREDITS_TOTAL}
-          className={styles.meterTrack}
-        >
-          <div className={styles.meterFill} />
-        </div>
         <button
           type="button"
           disabled

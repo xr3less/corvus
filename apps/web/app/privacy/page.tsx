@@ -76,9 +76,9 @@ export default function PrivacyPolicyPage() {
             <h2 className={styles.h2}>What we never keep</h2>
             <ul className={styles.list}>
               <li>
-                <span className={styles.strong}>No card numbers.</span> Payments run through Creem,
-                the company that takes the payment and holds your card details. Your card never
-                reaches us.
+                <span className={styles.strong}>No card numbers.</span> Payments will run through
+                Creem when billing ships — it isn&apos;t live yet. When it does, Creem will take the
+                payment and hold your card details, so your card never reaches us.
               </li>
               <li>
                 <span className={styles.strong}>No Discord password.</span> You sign in through
@@ -114,8 +114,9 @@ export default function PrivacyPolicyPage() {
                 that run the machines your data sits on. For V1, this is inside the European Union.
               </li>
               <li>
-                <span className={styles.strong}>Creem</span> — the payment company that takes your
-                payment, holds your card details, and handles invoices, refunds, and chargebacks.
+                <span className={styles.strong}>Creem</span> — Payments will run through Creem when
+                billing ships — it isn&apos;t live yet. When it does, Creem will take your payment,
+                hold your card details, and handle invoices, refunds, and chargebacks.
               </li>
               <li>
                 <span className={styles.strong}>The AI services we use</span> — they receive only

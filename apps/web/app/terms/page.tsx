@@ -41,8 +41,9 @@ export default function TermsOfServicePage() {
             <ul className={styles.list}>
               <li>Corvus builds and runs a Discord bot from your plain-English description.</li>
               <li>
-                Your 3-day trial is full access with no card. When it ends, your bot naps and you
-                can upgrade whenever you want.
+                Billing isn&apos;t live yet. A 3-day trial with full access and no card is planned.
+                When plans ship, your bot naps when a plan ends and you can upgrade whenever you
+                want.
               </li>
               <li>You are responsible for what your bot does in your server.</li>
               <li>You can leave whenever you want and take your data with you.</li>
@@ -78,37 +79,30 @@ export default function TermsOfServicePage() {
 
           <section className={styles.section}>
             <h2 className={styles.h2}>Plans, trial, and billing</h2>
+            <p className={styles.p}>
+              Payments aren&apos;t live yet — there is no checkout, no charges, no refill packs, and
+              no dashboard cancel, because there is nothing to cancel. Below is what we intend to
+              sell:
+            </p>
             <ul className={styles.list}>
               <li>
-                <span className={styles.strong}>Trial:</span> 3 days of full Pro access, one bot, no
-                card required. Because we never take a card for the trial, it cannot auto-charge
-                you.
+                <span className={styles.strong}>Planned: Trial:</span> 3 days of full Pro access,
+                one bot, no card required.
               </li>
               <li>
-                <span className={styles.strong}>Paid plans:</span> Pro is $10 a month and Studio is
-                $29 a month, billed through Creem. Prices are shown in US dollars before you check
-                out.
+                <span className={styles.strong}>Planned: Paid plans:</span> Pro is $10 a month and
+                Studio is $29 a month. Prices are in US dollars.
               </li>
               <li>
-                <span className={styles.strong}>Credits:</span> paid plans include AI credits, which
-                pay for building bots and writing smart replies. Everyday jobs such as roles,
-                commands, and XP never use credits. You can add a $5 refill pack of 1,000 credits,
-                which stay valid for 90 days.
+                <span className={styles.strong}>Planned: Credits:</span> paid plans include AI
+                credits, which pay for building bots and writing smart replies. Everyday jobs such
+                as roles, commands, and XP never use credits. A $5 refill pack of 1,000 credits,
+                valid for 90 days, is planned.
               </li>
               <li>
-                <span className={styles.strong}>When a plan lapses:</span> your bot naps. Nothing is
-                deleted. We keep your data for 12 months, and your bot wakes up the moment you
-                upgrade.
-              </li>
-              <li>
-                <span className={styles.strong}>Cancelling:</span> you can cancel from your
-                dashboard at any time. Your plan runs to the end of the period you paid for, then
-                goes to sleep.
-              </li>
-              <li>
-                <span className={styles.strong}>Refunds and disputes:</span> Creem handles payments
-                and refunds under their buyer terms. If a charge is disputed, we pause AI spending
-                while we look into it, and we keep your bot online.
+                <span className={styles.strong}>Planned: When a plan lapses:</span> your bot naps.
+                Nothing is deleted. We keep your data for 12 months, and your bot wakes up the
+                moment you upgrade.
               </li>
             </ul>
           </section>

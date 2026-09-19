@@ -7,7 +7,7 @@ import { LandingEffects, VelarisCanvas } from './landing-islands';
 export const metadata: Metadata = {
   title: 'Corvus - Build a Discord Bot With Plain Words',
   description:
-    'The no-code bot builder for Discord communities: describe your bot in plain English and test it before it goes live. 3-day free trial, no card required.',
+    'The no-code bot builder for Discord communities: describe your bot in plain English and test it before it goes live. free preview, no card required.',
 };
 
 // next/font/google (latin, display-swap). If the Google font fetch fails,
@@ -39,11 +39,11 @@ const NAV_LINKS = [
 const FAQS = [
   {
     q: 'Do I ever need to share my bot token or credentials?',
-    a: 'Never. You sign in with Discord - we never see or store your password or token. The bot only gets the permissions you approve, nothing more.',
+    a: 'You sign in with Discord — you never paste a token. When you connect a bot, its token is encrypted before it is saved, and only the part of our system that runs your bot can unlock it.',
   },
   {
     q: 'What happens to my guild data and XP records if my trial expires?',
-    a: 'Nothing is lost. Your settings, member XP and your bot\u2019s setup are kept safe. If your subscription ends, your bot naps until you come back - you can wake it up anytime or take your data with you.',
+    a: 'Limits and sleep aren\u2019t enforced yet \u2014 your bot stays as-is until we ship them.',
   },
   {
     q: 'How does Corvus differ from legacy bots like MEE6 or Dyno?',
@@ -51,11 +51,11 @@ const FAQS = [
   },
   {
     q: 'How do AI credits work for dynamic interactions and moderation?',
-    a: 'Everyday jobs (giving roles, running commands, counting XP, enforcing rules) are free and never touch your credits. Credits go only to AI work: building from your descriptions and smart replies (about 1.1 credits per build). The 2,000 credits in Pro last most communities for months.',
+    a: 'Planned: Everyday jobs (giving roles, running commands, counting XP, enforcing rules) are free and never touch your credits. Credits go only to AI work: building from your descriptions and smart replies (about 1.1 credits per build). The 2,000 credits in Pro last most communities for months. (not enforced yet)',
   },
   {
     q: 'I already have other bots installed. Will role permissions conflict?',
-    a: 'No. Before joining, Corvus checks your server\u2019s roles and permissions and tells you in plain words where the bot should sit, so it never fights your other bots.',
+    a: 'No. Before your bot goes live, Corvus will check your server\u2019s roles and permissions and tell you in plain words where the bot should sit, so it never fights your other bots.',
   },
 ];
 
@@ -196,7 +196,7 @@ export default function HomePage() {
           <div className={styles.heroContainer}>
             <div className={`${styles.heroCopy} ${styles.reveal}`}>
               <div className={styles.badge}>
-                <span>No code | No token paste | 3-day free trial</span>
+                <span>No code | No token paste | free preview</span>
               </div>
 
               <h1 className={`${styles.display} ${styles.h1}`}>
@@ -209,12 +209,17 @@ export default function HomePage() {
               </p>
 
               <div className={styles.ctaRow}>
-                <a href="/dashboard" className={styles.ctaTrial}>
-                  <span>Start 3-Day Free Trial</span>
-                  <span className={styles.ctaTrialCircle} aria-hidden="true">
-                    <ArrowRight size={16} strokeWidth={2.5} />
-                  </span>
-                </a>
+                <div>
+                  <a href="/dashboard" className={styles.ctaTrial}>
+                    <span>Start building free</span>
+                    <span className={styles.ctaTrialCircle} aria-hidden="true">
+                      <ArrowRight size={16} strokeWidth={2.5} />
+                    </span>
+                  </a>
+                  <p className={styles.priceNote}>
+                    Free while in preview — limits not enforced yet.
+                  </p>
+                </div>
                 <a href="/demo" className={styles.ctaDemo}>
                   <Play size={16} className={styles.playGlyph} aria-hidden="true" />
                   <span>Interactive Demo</span>
@@ -274,8 +279,9 @@ export default function HomePage() {
                     Your server. Your bot. No surprises.
                   </h3>
                   <p className={styles.blockPara}>
-                    Sign in with Discord. We never see your password or bot token. You can leave
-                    anytime &mdash; take your bot with you.
+                    You sign in with Discord — you never paste a token. When you connect a bot, its
+                    token is encrypted before it is saved, and only the part of our system that runs
+                    your bot can unlock it.
                   </p>
                   <ul className={styles.checkList}>
                     <li className={styles.checkItem}>
@@ -347,31 +353,41 @@ export default function HomePage() {
                 <div className={`${styles.panelCol} ${styles.panelFirst}`}>
                   <div className={styles.panel}>
                     <div className={styles.panelPad}>
-                      <div className={styles.panelLabel}>Overnight update, member view</div>
+                      <div className={styles.panelLabel}>
+                        Overnight update, member view (planned)
+                      </div>
                       <ul className={styles.timeList}>
                         <li className={styles.timeItem}>
                           <span className={styles.timeDot} aria-hidden="true" />
                           <div>
                             <div className={styles.timeTitle}>
-                              Update installed in the background
+                              Updates will install in the background (planned)
                             </div>
-                            <div className={styles.timeSub}>bot stayed online the whole time</div>
-                          </div>
-                        </li>
-                        <li className={styles.timeItem}>
-                          <span className={styles.timeDot} aria-hidden="true" />
-                          <div>
-                            <div className={styles.timeTitle}>Every XP record kept</div>
                             <div className={styles.timeSub}>
-                              roles, warnings and balances untouched
+                              your bot will stay online the whole time (planned)
                             </div>
                           </div>
                         </li>
                         <li className={styles.timeItem}>
                           <span className={styles.timeDot} aria-hidden="true" />
                           <div>
-                            <div className={styles.timeTitle}>Nobody noticed a thing</div>
-                            <div className={styles.timeSub}>zero downtime for your members</div>
+                            <div className={styles.timeTitle}>
+                              Every XP record will be kept (planned)
+                            </div>
+                            <div className={styles.timeSub}>
+                              roles, warnings and balances will stay untouched (planned)
+                            </div>
+                          </div>
+                        </li>
+                        <li className={styles.timeItem}>
+                          <span className={styles.timeDot} aria-hidden="true" />
+                          <div>
+                            <div className={styles.timeTitle}>
+                              Nobody will notice a thing (planned)
+                            </div>
+                            <div className={styles.timeSub}>
+                              zero downtime for your members (planned)
+                            </div>
                           </div>
                         </li>
                       </ul>
@@ -383,21 +399,21 @@ export default function HomePage() {
                     Always on. Always remembered.
                   </h3>
                   <p className={styles.blockPara}>
-                    Your community&rsquo;s XP, roles, and history stick around. Restarts and updates
-                    happen without anyone noticing.
+                    Your community&rsquo;s XP, roles, and history will stick around. Restarts and
+                    updates will happen without anyone noticing (planned).
                   </p>
                   <ul className={styles.checkList}>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Your community&rsquo;s XP and roles survive every restart
+                      Your community&rsquo;s XP and roles will survive every restart (planned)
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Updates happen in the background, no downtime
+                      Updates will happen in the background, no downtime (planned)
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      12 months of data kept, even after you stop paying
+                      Planned: 12 months of data kept, even after you stop paying
                     </li>
                   </ul>
                 </div>
@@ -410,7 +426,8 @@ export default function HomePage() {
                   </h3>
                   <p className={styles.blockPara}>
                     Tell us what your bot should do. In plain English. We&rsquo;ll make it, test it
-                    on a practice server, and put it on your server.
+                    on a practice server, and help you put it on your server when going live is
+                    wired.
                   </p>
                   <ul className={styles.checkList}>
                     <li className={styles.checkItem}>
@@ -479,7 +496,7 @@ export default function HomePage() {
               </p>
             </div>
             <a href="#pricing" className={`${styles.btnGhost} ${styles.ghostCta}`}>
-              <span>All templates included - start free</span>
+              <span>Templates preview — start free while in preview</span>
               <span className={styles.arrowGlyph} aria-hidden="true">
                 →
               </span>
@@ -674,8 +691,8 @@ export default function HomePage() {
               Transparent pricing, no per-server fees
             </h2>
             <p className={styles.pricingLede}>
-              One bot replaces the 4-5 bots you pay for on every server. One subscription,
-              everything in one place.
+              One bot replaces the 4-5 bots you pay for on every server. Prices and limits are
+              planned — no checkout yet, nothing is enforced.
             </p>
           </div>
 
@@ -683,33 +700,33 @@ export default function HomePage() {
             <div className={`${styles.priceCard} ${styles.reveal}`}>
               <div>
                 <div className={styles.priceHeadRow}>
-                  <h3 className={styles.priceName}>Starter Trial</h3>
+                  <h3 className={styles.priceName}>Starter</h3>
                   <span className={styles.priceFlag}>No Card Required</span>
                 </div>
                 <div className={styles.priceRow}>
                   <span className={`${styles.display} ${styles.priceValue}`}>$0</span>
-                  <span className={styles.pricePer}>/ 3-day access</span>
+                  <span className={styles.pricePer}>/ free preview</span>
                 </div>
                 <p className={styles.priceDesc}>
-                  Deploy your first custom Discord bot to production in minutes. No credit card
-                  required.
+                  Deploy your first custom Discord bot in minutes while Corvus is in preview. No
+                  credit card required. Prices and limits are planned — nothing is enforced.
                 </p>
                 <ul className={styles.priceList}>
                   <li className={styles.priceLi}>
-                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />1 active
-                    production Discord bot
-                  </li>
-                  <li className={styles.priceLi}>
-                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />1 connected
-                    Discord guild
+                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />
+                    Planned: 1 active production Discord bot
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    100 AI credits for 3 days - builds plus smart replies
+                    Planned: 1 connected Discord guild
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Full access to all 8 starter templates
+                    Planned: 100 AI credits - builds plus smart replies
+                  </li>
+                  <li className={styles.priceLi}>
+                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />
+                    Planned: full access to all 8 starter templates
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
@@ -717,9 +734,12 @@ export default function HomePage() {
                   </li>
                 </ul>
               </div>
-              <a href="/dashboard" className={`${styles.btnGhost} ${styles.priceCta}`}>
-                Start 3-Day Free Trial
-              </a>
+              <div>
+                <a href="/dashboard" className={`${styles.btnGhost} ${styles.priceCta}`}>
+                  Start building free
+                </a>
+                <p className={styles.priceNote}>Free while in preview — limits not enforced yet.</p>
+              </div>
             </div>
 
             <div className={`${styles.priceCardPopular} ${styles.reveal}`}>
@@ -733,31 +753,32 @@ export default function HomePage() {
                 </div>
                 <div className={styles.priceRow}>
                   <span className={`${styles.display} ${styles.priceValue}`}>$10</span>
-                  <span className={styles.pricePer}>/ month</span>
+                  <span className={styles.pricePer}>/ month (planned)</span>
                 </div>
                 <p className={styles.priceDesc}>
                   Full capabilities for growing communities, gaming hubs, and multi-channel servers.
+                  Prices and limits are planned — nothing is enforced.
                 </p>
                 <ul className={`${styles.priceList} ${styles.priceListBright}`}>
                   <li className={`${styles.priceLi} ${styles.priceLiStrong}`}>
-                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />2 active
-                    production Discord bots
+                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />
+                    Planned: 2 active production Discord bots
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Up to 5 connected Discord guilds
+                    Planned: up to 5 connected Discord guilds
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    2,000 AI credits (~1,800 builds)
+                    Planned: 2,000 AI credits (~1,800 builds)
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    XP, roles and settings survive every restart
+                    Planned: XP, roles and settings survive every restart
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Stays online while you build - editing never takes it down
+                    Planned: stays online while you build - editing never takes it down
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
@@ -766,10 +787,14 @@ export default function HomePage() {
                 </ul>
               </div>
               <div className={styles.priceCtaBlock}>
-                <a href="/dashboard" className={`${styles.btnPrimary} ${styles.priceCtaPrimary}`}>
-                  Upgrade to Pro
-                </a>
-                <p className={styles.priceNote}>Cancel anytime with a single click</p>
+                <button
+                  type="button"
+                  disabled
+                  style={{ font: 'inherit', cursor: 'not-allowed' }}
+                  className={`${styles.btnPrimary} ${styles.priceCtaPrimary}`}
+                >
+                  Pro — coming soon
+                </button>
               </div>
             </div>
 
@@ -781,23 +806,24 @@ export default function HomePage() {
                 </div>
                 <div className={styles.priceRow}>
                   <span className={`${styles.display} ${styles.priceValue}`}>$29</span>
-                  <span className={styles.pricePer}>/ month</span>
+                  <span className={styles.pricePer}>/ month (planned)</span>
                 </div>
                 <p className={styles.priceDesc}>
-                  For networks and agencies running many communities at once.
+                  For networks and agencies running many communities at once. Prices and limits are
+                  planned — nothing is enforced.
                 </p>
                 <ul className={styles.priceList}>
                   <li className={`${styles.priceLi} ${styles.priceLiStrong}`}>
-                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />8 active
-                    production Discord bots
+                    <Check size={12} className={styles.priceCheck} aria-hidden="true" />
+                    Planned: 8 active production Discord bots
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Up to 100 connected Discord guilds
+                    Planned: up to 100 connected Discord guilds
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    6,000 AI credits per month
+                    Planned: 6,000 AI credits per month
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
@@ -813,9 +839,14 @@ export default function HomePage() {
                   </li>
                 </ul>
               </div>
-              <a href="/dashboard" className={`${styles.btnGhost} ${styles.priceCta}`}>
-                Select Studio Plan
-              </a>
+              <button
+                type="button"
+                disabled
+                style={{ font: 'inherit', cursor: 'not-allowed' }}
+                className={`${styles.btnGhost} ${styles.priceCta}`}
+              >
+                Studio — coming soon
+              </button>
             </div>
           </div>
         </section>
@@ -871,7 +902,8 @@ export default function HomePage() {
                 <span className={styles.footerBrandName}>CORVUS</span>
               </a>
               <p className={styles.footerTag}>
-                Build a Discord bot with plain words. No code, no token paste.
+                Build a Discord bot with plain words. No code. No token paste — we store your
+                bot&apos;s token encrypted.
               </p>
             </div>
 
@@ -884,9 +916,6 @@ export default function HomePage() {
                 <a className={styles.footerLink} href="#bento">
                   Features
                 </a>
-                <a className={styles.footerLink} href="#bento">
-                  Security Architecture
-                </a>
                 <a className={styles.footerLink} href="#templates">
                   Templates
                 </a>
@@ -895,18 +924,15 @@ export default function HomePage() {
                 </a>
               </nav>
               <nav aria-label="Resources" className={styles.footerCol}>
-                <p className={styles.footerHeading}>Resources</p>
+                <p className={styles.footerHeading}>Learn</p>
                 <a className={styles.footerLink} href="#faq">
-                  Documentation
+                  FAQ
                 </a>
                 <a className={styles.footerLink} href="#bento">
-                  Security Whitepaper
-                </a>
-                <a className={styles.footerLink} href="#bento">
-                  Discord Gateway
+                  Features
                 </a>
                 <a className={styles.footerLink} href="#how-it-works">
-                  Pre-Flight Scanner
+                  How it works
                 </a>
               </nav>
               <nav aria-label="Company" className={styles.footerCol}>
@@ -916,6 +942,9 @@ export default function HomePage() {
                 </a>
                 <a className={styles.footerLink} href="/terms">
                   Terms of Service
+                </a>
+                <a className={styles.footerLink} href="#top">
+                  Home
                 </a>
                 <span className={styles.footerLink}>Community Discord</span>
                 <span className={styles.footerLink}>X (Twitter)</span>

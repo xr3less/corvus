@@ -65,6 +65,8 @@ describe('privacy policy page', () => {
     expect(text).toContain('No card numbers');
     expect(text).toContain('No Discord password');
     expect(text).toContain('Creem');
+    expect(text).toContain('Payments will run through Creem when billing ships');
+    expect(text).toContain("isn't live yet");
     expect(text).toContain('Contabo');
     expect(text).toContain('Hetzner');
     expect(text).toContain('72 hours');

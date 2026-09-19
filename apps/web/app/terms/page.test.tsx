@@ -44,6 +44,12 @@ describe('terms of service page', () => {
   it('states the trial, prices, credit shape, sleep-not-delete and contact in plain words', () => {
     const { container } = render(<TermsOfServicePage />);
     const text = container.textContent ?? '';
+    expect(text).toContain('Payments aren');
+    expect(text).toContain('live yet');
+    expect(text).toContain('no checkout');
+    expect(text).toContain('nothing to cancel');
+    expect(text).toContain('what we intend to sell');
+    expect(text).toContain('Planned:');
     expect(text).toContain('3 days of full Pro access');
     expect(text).toContain('no card required');
     expect(text).toContain('$10');
@@ -51,8 +57,11 @@ describe('terms of service page', () => {
     expect(text).toContain('$5 refill pack');
     expect(text).toContain('12 months');
     expect(text).toContain('naps');
-    expect(text).toContain('Creem');
     expect(text).toContain('support@corvus.ai');
+    expect(text).not.toContain('billed through Creem');
+    expect(text).not.toContain('cancel from your dashboard');
+    expect(text).not.toContain('Creem handles payments');
+    expect(text).not.toContain('Creem');
   });
 
   it('skips to content and links both legal routes from its footer', () => {

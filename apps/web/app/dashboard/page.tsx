@@ -4,32 +4,17 @@
    `app/dashboard/layout.tsx`; the bots list is its own page at
    `/dashboard/bots`. `?view=bots` is honored once as a redirect for old
    back-links. */
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Activity, Bot, Coins, FlaskConical, Server, ShieldCheck } from 'lucide-react';
 import { BuilderProgress } from '@/components/ui/builder-progress';
-import {
-  activityFor,
-  CREDITS_TOTAL,
-  CREDITS_USED,
-  fetchBots,
-  MOCK_BOTS,
-  TRIAL_DEAL,
-  type MockBot,
-} from '@/lib/bots';
+import { fetchBots, TRIAL_DEAL, type MockBot } from '@/lib/bots';
 import styles from './page.module.css';
 
 /* Three starter presets — plain buttons with no action behind them yet. */
 const TEMPLATES = ['Community Guardian', 'AI Support Desk', 'Welcome & Role Picker'];
 
-interface ActivityItem {
-  id: string;
-  text: string;
-  suffix: string;
-  time: string;
-}
-
-/* Setup is a display-only checklist; the numbers are mock and marked (example). */
+/* Setup is a display-only checklist. */
 const SETUP_STEPS: { id: string; name: string; state: string; done: boolean; current: boolean }[] =
   [
     { id: 'setup-1', name: 'Connect your server', state: 'Done', done: true, current: false },
@@ -40,12 +25,6 @@ const SETUP_STEPS: { id: string; name: string; state: string; done: boolean; cur
 
 const SETUP_DONE = 2;
 const SETUP_TOTAL = 4;
-
-const PREFLIGHT_ROWS: { id: string; tone: 'pass' | 'warn'; text: string }[] = [
-  { id: 'pf-1', tone: 'pass', text: 'Token and permissions look right' },
-  { id: 'pf-2', tone: 'pass', text: 'Rate limits within caps' },
-  { id: 'pf-3', tone: 'warn', text: 'Welcome reply targets a hidden channel' },
-];
 
 function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   const searchParams = useSearchParams();
@@ -64,40 +43,53 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   }, [searchParams, router]);
 
   /* Counts reflect the caller's own bots when the list can be read; otherwise
-     the example bots. Only a live answer swaps the data. */
+     the page renders an honest empty state (KI-030) — never example bots. */
   const [liveBots, setLiveBots] = useState<MockBot[] | null>(null);
   useEffect(() => {
     if (injectedBots !== undefined) return;
     const controller = new AbortController();
     let active = true;
     void fetchBots(controller.signal).then((snapshot) => {
-      if (active && snapshot.isLive) setLiveBots(snapshot.bots);
+      if (active) setLiveBots(snapshot.bots);
     });
     return () => {
       active = false;
       controller.abort();
     };
   }, [injectedBots]);
-  const bots = liveBots ?? injectedBots ?? MOCK_BOTS;
+  const bots = liveBots ?? injectedBots ?? [];
 
   const liveCount = bots.filter((bot) => bot.status === 'online').length;
   const trialCount = bots.filter((bot) => bot.status === 'trial').length;
+  const serverKnown = bots.some((bot) => typeof bot.servers === 'number');
   const serverTotal = bots.reduce((sum, bot) => sum + (bot.servers ?? 0), 0);
-  const creditsLeft = CREDITS_TOTAL - CREDITS_USED;
+  const hasBots = bots.length > 0;
 
-  /* Every number here is mock — the (example) marker rides on the aria-label. */
-  const statCards: { key: string; label: string; value: number; icon: typeof Bot }[] = [
-    { key: 'live', label: 'Live bots', value: liveCount, icon: Bot },
-    { key: 'trial', label: 'On trial', value: trialCount, icon: FlaskConical },
-    { key: 'servers', label: 'Servers', value: serverTotal, icon: Server },
-    { key: 'credits', label: 'Credits left', value: creditsLeft, icon: Coins },
+  /* Stat cards show real numbers when rows exist, `—`/`No data yet` when not
+     — never mock counts (KI-030). Live/trial counts derive from real rows.
+     Server counts and credit balances are not wired yet, so they read
+     `No data yet` whenever rows exist (a summed 0 from absent data would be
+     fabricated) and `—` when there is nothing to measure. */
+  const statCards: { key: string; label: string; value: string; icon: typeof Bot }[] = [
+    { key: 'live', label: 'Live bots', value: hasBots ? String(liveCount) : '—', icon: Bot },
+    {
+      key: 'trial',
+      label: 'On trial',
+      value: hasBots ? String(trialCount) : '—',
+      icon: FlaskConical,
+    },
+    {
+      key: 'servers',
+      label: 'Servers',
+      value: !hasBots ? '—' : serverKnown ? String(serverTotal) : 'No data yet',
+      icon: Server,
+    },
+    { key: 'credits', label: 'Credits left', value: hasBots ? 'No data yet' : '—', icon: Coins },
   ];
 
-  /* This week reuses the first bot's existing activity rows — no new data source. */
-  const weekRows = useMemo(
-    (): ActivityItem[] => (bots.length > 0 ? activityFor(bots[0]) : []),
-    [bots],
-  );
+  /* KI-030: no activity feed exists yet, so This week stays an honest empty
+     state even when bots exist — never example rows passed off as the
+     account's activity. */
 
   return (
     <div className={styles.homeScroll}>
@@ -107,14 +99,14 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
           <p className={styles.pageSub}>Your bots at a glance.</p>
         </header>
 
-        <section id="get-started" aria-label="Get started (2/4) (example)" className={styles.panel}>
+        <section id="get-started" aria-label="Get started (2/4)" className={styles.panel}>
           <div className={styles.cardHead}>
             <h2 className={styles.panelTitle}>Get started (2/4)</h2>
             <p className={styles.cardSub}>Two steps done. Describe your bot to keep going.</p>
           </div>
           <div
             role="progressbar"
-            aria-label="Setup progress (example)"
+            aria-label="Setup progress"
             aria-valuenow={SETUP_DONE}
             aria-valuemin={0}
             aria-valuemax={SETUP_TOTAL}
@@ -147,18 +139,13 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
             <h2 className={styles.panelTitle}>Build progress</h2>
             <Activity aria-hidden="true" size={16} className={styles.panelIcon} />
           </div>
-          <p className={styles.cardSub}>Follow your bot from draft to live.</p>
+          <p className={styles.cardSub}>Follow your bot from draft to saved version.</p>
           <BuilderProgress runId={runId} />
         </section>
 
         <section aria-label="Overview" className={styles.statRow}>
           {statCards.map((stat) => (
-            <div
-              key={stat.key}
-              role="group"
-              aria-label={`${stat.label} (example)`}
-              className={styles.statCard}
-            >
+            <div key={stat.key} role="group" aria-label={stat.label} className={styles.statCard}>
               <stat.icon aria-hidden="true" size={16} className={styles.statIcon} />
               <span className={styles.statNumber}>{stat.value}</span>
               <span className={styles.statSub}>{stat.label}</span>
@@ -166,44 +153,29 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
           ))}
         </section>
 
+        {hasBots ? null : (
+          <section aria-label="No bots yet" className={styles.panel}>
+            <h2 className={styles.panelTitle}>No bots yet — describe your first bot.</h2>
+            <a href="/dashboard/new" className={styles.templateLink}>
+              Create your first bot
+            </a>
+          </section>
+        )}
+
         <div className={styles.dualRow}>
-          <section id="week" aria-label="This week (example)" className={styles.panel}>
+          <section id="week" aria-label="This week" className={styles.panel}>
             <div className={styles.panelHead}>
               <h2 className={styles.panelTitle}>This week</h2>
               <Activity aria-hidden="true" size={16} className={styles.panelIcon} />
             </div>
-            {weekRows.length > 0 ? (
-              <ul className={styles.activityList}>
-                {weekRows.map((item) => (
-                  <li key={item.id} className={styles.activityRow}>
-                    <span className={styles.activityText}>
-                      {item.text}
-                      <span className={styles.activityTime}>{item.suffix}</span>
-                    </span>
-                    <span className={styles.activityTime}>{item.time}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.todaySentence}>No bots yet.</p>
-            )}
+            <p className={styles.todaySentence}>No activity yet.</p>
           </section>
           <section id="preflight" aria-label="Pre-flight" className={styles.panel}>
             <div className={styles.panelHead}>
               <h2 className={styles.panelTitle}>Pre-flight</h2>
               <ShieldCheck aria-hidden="true" size={16} className={styles.panelIcon} />
             </div>
-            <ul className={styles.activityList}>
-              {PREFLIGHT_ROWS.map((row) => (
-                <li key={row.id} className={styles.preflightRow}>
-                  <span
-                    aria-hidden="true"
-                    className={`${styles.preDot} ${row.tone === 'pass' ? styles.prePass : styles.preWarn}`}
-                  />
-                  {row.text}
-                </li>
-              ))}
-            </ul>
+            <p className={styles.todaySentence}>No scan yet — open a bot to run one.</p>
           </section>
         </div>
 

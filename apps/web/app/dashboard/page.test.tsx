@@ -16,7 +16,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 
-const TRIAL_LINE = 'Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.';
+const TRIAL_LINE = 'Free while in preview — limits not enforced yet.';
 const PAGE_TITLE = 'Home';
 const PAGE_SUB = 'Your bots at a glance.';
 /* Model names may never appear in user copy — verified against the rendered text. */
@@ -102,9 +102,9 @@ describe('dashboard home', () => {
 
   it('renders the Get started card with a 2/4 progress bar and four step minis', () => {
     render(<DashboardPage />);
-    const region = screen.getByRole('region', { name: 'Get started (2/4) (example)' });
+    const region = screen.getByRole('region', { name: 'Get started (2/4)' });
     expect(within(region).getByRole('heading', { name: 'Get started (2/4)' })).toBeTruthy();
-    const bar = within(region).getByRole('progressbar', { name: 'Setup progress (example)' });
+    const bar = within(region).getByRole('progressbar', { name: 'Setup progress' });
     expect(bar.getAttribute('aria-valuenow')).toBe('2');
     expect(bar.getAttribute('aria-valuemax')).toBe('4');
     const steps = within(region).getAllByRole('listitem');
@@ -120,38 +120,64 @@ describe('dashboard home', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('renders four stat cards, each number marked as an example', () => {
+  it('renders four stat cards with honest empty values and no mock counts', () => {
     render(<DashboardPage />);
     const overview = screen.getByRole('region', { name: 'Overview' });
     const expected = [
-      { name: 'Live bots (example)', value: '1' },
-      { name: 'On trial (example)', value: '1' },
-      { name: 'Servers (example)', value: '6' },
-      { name: 'Credits left (example)', value: '18' },
+      { name: 'Live bots', value: '—' },
+      { name: 'On trial', value: '—' },
+      { name: 'Servers', value: '—' },
+      { name: 'Credits left', value: '—' },
     ];
     for (const stat of expected) {
       const card = within(overview).getByRole('group', { name: stat.name });
       expect(within(card).getByText(stat.value)).toBeTruthy();
     }
     expect(within(overview).getAllByRole('group')).toHaveLength(4);
+    /* No (example)-marked numbers and no mock balances anywhere. */
+    expect(document.body.textContent).not.toContain('(example)');
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('renders This week and Pre-flight side by side on home', () => {
     render(<DashboardPage />);
-    const week = screen.getByRole('region', { name: 'This week (example)' });
+    const week = screen.getByRole('region', { name: 'This week' });
     expect(within(week).getByRole('heading', { name: 'This week' })).toBeTruthy();
-    expect(within(week).getAllByRole('listitem')).toHaveLength(4);
-    expect(week.textContent).toContain('Published Study Hall v12');
+    /* KI-030: no activity feed exists yet — honest empty state, never mock rows. */
+    expect(within(week).queryByRole('listitem')).toBeNull();
+    expect(within(week).getByText('No activity yet.')).toBeTruthy();
 
     const preflight = screen.getByRole('region', { name: 'Pre-flight' });
     expect(within(preflight).getByRole('heading', { name: 'Pre-flight' })).toBeTruthy();
-    expect(within(preflight).getAllByRole('listitem')).toHaveLength(3);
-    expect(preflight.textContent).toContain('Welcome reply targets a hidden channel');
+    expect(within(preflight).queryByRole('listitem')).toBeNull();
+    expect(within(preflight).getByText('No scan yet — open a bot to run one.')).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('renders the Workspace strip with the trial deal and a mock Upgrade', () => {
+  it('keeps This week honest when bots exist — no fabricated activity', () => {
+    render(<DashboardPage bots={[{ id: 'bot-9', name: 'Real One', status: 'offline' }]} />);
+    const week = screen.getByRole('region', { name: 'This week' });
+    expect(within(week).queryByRole('listitem')).toBeNull();
+    expect(within(week).getByText('No activity yet.')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('(example)');
+    const preflight = screen.getByRole('region', { name: 'Pre-flight' });
+    expect(within(preflight).queryByRole('listitem')).toBeNull();
+    expect(within(preflight).getByText('No scan yet — open a bot to run one.')).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('renders an honest empty state with a link to create the first bot', () => {
+    render(<DashboardPage />);
+    const empty = screen.getByRole('region', { name: 'No bots yet' });
+    expect(
+      within(empty).getByRole('heading', { name: 'No bots yet — describe your first bot.' }),
+    ).toBeTruthy();
+    const link = within(empty).getByRole('link', { name: 'Create your first bot' });
+    expect(link.getAttribute('href')).toBe('/dashboard/new');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('renders the Workspace strip with the preview deal and an honest Upgrade', () => {
     render(<DashboardPage />);
     const workspace = screen.getByRole('region', { name: 'Workspace' });
     expect(within(workspace).getByRole('heading', { name: 'Workspace' })).toBeTruthy();
@@ -190,6 +216,14 @@ describe('dashboard home', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
+  it('shows the saved-version line in Build progress, never a live promise', () => {
+    render(<DashboardPage />);
+    const region = screen.getByRole('region', { name: 'Build progress' });
+    expect(within(region).getByText('Follow your bot from draft to saved version.')).toBeTruthy();
+    expect(region.textContent).not.toContain('draft to live');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
   it('counts the caller own bots when the live list answers', async () => {
     vi.stubGlobal(
       'fetch',
@@ -205,10 +239,33 @@ describe('dashboard home', () => {
     render(<DashboardPage />);
 
     const overview = screen.getByRole('region', { name: 'Overview' });
-    const liveCard = within(overview).getByRole('group', { name: 'Live bots (example)' });
+    const liveCard = within(overview).getByRole('group', { name: 'Live bots' });
     await waitFor(() => expect(within(liveCard).getByText('2')).toBeTruthy());
-    const trialCard = within(overview).getByRole('group', { name: 'On trial (example)' });
+    const trialCard = within(overview).getByRole('group', { name: 'On trial' });
     expect(within(trialCard).getByText('0')).toBeTruthy();
+    /* Server counts and credit balances are not wired — honest placeholders. */
+    const serversCard = within(overview).getByRole('group', { name: 'Servers' });
+    expect(within(serversCard).getByText('No data yet')).toBeTruthy();
+    const creditsCard = within(overview).getByRole('group', { name: 'Credits left' });
+    expect(within(creditsCard).getByText('No data yet')).toBeTruthy();
+    /* The honest empty state disappears once real rows exist. */
+    expect(screen.queryByRole('region', { name: 'No bots yet' })).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('renders an honest empty state when the live list fails, never mock rows', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
+    );
+    render(<DashboardPage />);
+
+    const empty = await screen.findByRole('region', { name: 'No bots yet' });
+    expect(
+      within(empty).getByRole('heading', { name: 'No bots yet — describe your first bot.' }),
+    ).toBeTruthy();
+    expect(document.body.textContent).not.toContain('Study Hall');
+    expect(document.body.textContent).not.toContain('(example)');
     expect(consoleError).not.toHaveBeenCalled();
   });
 });

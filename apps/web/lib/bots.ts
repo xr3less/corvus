@@ -1,8 +1,10 @@
 // Shared bot data (D-118, KI-010): the dashboard pages read the caller's own
-// bots from GET /api/bots, live-first, and fall back to the example bots here
-// when the list cannot be read (401/500/network). Mock rows stay
-// example-marked at the render site; the explainer sentences over these specs
-// are produced live by explain().
+// bots from GET /api/bots, live-first. When the list cannot be read
+// (401/500/network/malformed), fetchBots() returns an empty list so pages
+// render an honest empty state — example rows are never passed off as the
+// account's bots (KI-030). The example rows below stay exported for compat
+// and tests; no page renders them as real data. The explainer sentences over
+// these specs are produced live by explain().
 
 import { isUuid } from './editor/drafts';
 
@@ -38,7 +40,7 @@ export const MOCK_BOTS: MockBot[] = [
   { id: 'bot-3', name: 'Night Market mods', status: 'offline', members: 2013, servers: 2 },
 ];
 
-export const TRIAL_DEAL = 'Trial: 3 days, full Pro, no card. Then pay or your bot sleeps.';
+export const TRIAL_DEAL = 'Free while in preview — limits not enforced yet.';
 
 export interface ActivityItem {
   id: string;
@@ -71,6 +73,8 @@ export const PREFLIGHT_ROWS: { id: string; tone: 'pass' | 'warn'; text: string }
   { id: 'pf-3', tone: 'warn', text: 'Welcome reply targets a hidden channel' },
 ];
 
+/* Kept exported for compat only (KI-030): no page renders these as a real
+   balance. Real credit balances are not wired yet. */
 export const CREDITS_USED = 82;
 export const CREDITS_TOTAL = 100;
 
@@ -170,9 +174,9 @@ export interface BotsSnapshot {
   bots: MockBot[];
   source: BotSource;
   isLive: boolean;
-  /* The live list answered 401. The example bots are still shown (the surface
-     stays usable) but the page can say the session is gone rather than pass
-     the examples off as the account's bots. */
+  /* The live list answered 401. Pages render an honest empty state and can
+     say the session is gone rather than pass examples off as the account's
+     bots. */
   unauthorized: boolean;
 }
 
@@ -209,24 +213,24 @@ export function readLiveBotRows(payload: unknown): LiveBotRow[] | null {
 
 /* Live-first list. A 2xx with a row array is live — an empty array is a real
    answer (an honest empty state, not a fallback). 401/500/network/malformed
-   body fall back to the example bots so the dashboard stays usable, flagged
-   `isLive: false` so nothing calls them the account's own. Never throws. */
+   body return an empty list so pages render an honest empty state (KI-030),
+   flagged `isLive: false` (and `unauthorized: true` on 401). Never throws. */
 export async function fetchBots(signal?: AbortSignal): Promise<BotsSnapshot> {
   try {
     const response = await fetch('/api/bots', signal === undefined ? {} : { signal });
     if (response.status === 401) {
-      return { ...mockBotsSnapshot(), unauthorized: true };
+      return { bots: [], source: 'mock', isLive: false, unauthorized: true };
     }
     if (!response.ok) {
-      return mockBotsSnapshot();
+      return { bots: [], source: 'mock', isLive: false, unauthorized: false };
     }
     const rows = readLiveBotRows(await response.json());
     if (rows === null) {
-      return mockBotsSnapshot();
+      return { bots: [], source: 'mock', isLive: false, unauthorized: false };
     }
     return { bots: rows.map(toDisplayBot), source: 'live', isLive: true, unauthorized: false };
   } catch {
-    return mockBotsSnapshot();
+    return { bots: [], source: 'mock', isLive: false, unauthorized: false };
   }
 }
 

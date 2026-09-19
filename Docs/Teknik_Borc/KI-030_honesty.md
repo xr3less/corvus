@@ -1,6 +1,10 @@
 # KI-030 — Public pages sell a paid live Discord bot that is not wired
 
-## Status: OPEN (P0 honesty)
+## Status: RESOLVED 2026-09-19 night (D-144)
+
+Wave: spec `Docs/2026-09-19-2001_orchestrator_SPEC_ki030-honesty.md`, 5 agents (ki030-c report-less, verified via review), reviewer PARTIAL `Docs/2026-09-19-2015_reviewer_ki030.md` → fix SUCCESS `Docs/2026-09-19-2015_ki030-fix_MODIFY_review-findings.md` → canvas-noise fix SUCCESS `Docs/2026-09-19-2127_ki030-fix-canvas_FIX_canvas-noise.md`. Merged gates 21:39: vitest 10 files 132/132, tsc clean, eslint 20 files clean, prettier 20 files clean, secrecy clean. Every "Close when" item below now holds.
+
+(Original issue text preserved below for the record.)
 
 Filed 2026-09-19. Do not put strangers on `/` + `/dashboard` until this is fail-empty or real.
 

@@ -53,7 +53,8 @@ describe('DashboardRail', () => {
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
     expect(within(nav).getByText('My server')).toBeTruthy();
-    expect(within(nav).getByText('Pro')).toBeTruthy();
+    /* KI-030: no fake Pro pill — no visitor is shown a paid tier. */
+    expect(within(nav).queryByText('Pro')).toBeNull();
 
     const expected: [string, string][] = [
       ['Home', '/dashboard'],
@@ -121,13 +122,12 @@ describe('DashboardRail', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('renders the credits meter and Upgrade button from the shared source', () => {
+  it('renders no fake credit balance — only the honest disabled Upgrade', () => {
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(screen.getByText('Credits 82/100 · 18 left')).toBeTruthy();
-    const meter = screen.getByRole('progressbar', { name: 'Credits' });
-    expect(meter.getAttribute('aria-valuenow')).toBe('82');
-    expect(meter.getAttribute('aria-valuemax')).toBe('100');
+    /* KI-030: CREDITS_USED/CREDITS_TOTAL must never render as a real balance. */
+    expect(screen.queryByRole('progressbar', { name: 'Credits' })).toBeNull();
+    expect(screen.queryByText(/credits/i)).toBeNull();
     expect(within(nav).getByRole('button', { name: 'Upgrade · Coming soon' })).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });

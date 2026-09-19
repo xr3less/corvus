@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import HomePage from './page';
 
@@ -15,6 +15,19 @@ vi.mock('lenis', () => ({
   },
 }));
 
+// jsdom ships no canvas backend, so every render of HomePage lets VelarisCanvas's
+// WebGL probe reach jsdom's unimplemented getContext() and log to console.error.
+// Returning null makes the component take the null-context early return it already handles.
+let getContextSpy: ReturnType<typeof vi.spyOn>;
+
+beforeAll(() => {
+  getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+});
+
+afterAll(() => {
+  getContextSpy.mockRestore();
+});
+
 describe('homepage (antigravity port)', () => {
   it('renders the H1, trial line, pricing tiers, and FAQ without console errors', () => {
     const fetchStub = vi.fn();
@@ -28,8 +41,10 @@ describe('homepage (antigravity port)', () => {
           name: /build custom ai discord bots in minutes, not weeks/i,
         }),
       ).toBeTruthy();
-      expect(screen.getByText(/100 ai credits for 3 days/i)).toBeTruthy();
-      expect(screen.getByRole('heading', { name: 'Starter Trial' })).toBeTruthy();
+      expect(
+        screen.getAllByText(/free while in preview — limits not enforced yet/i).length,
+      ).toBeGreaterThanOrEqual(2);
+      expect(screen.getByRole('heading', { name: 'Starter' })).toBeTruthy();
       expect(screen.getByRole('heading', { name: 'Corvus Pro' })).toBeTruthy();
       expect(screen.getByRole('heading', { name: 'Corvus Studio' })).toBeTruthy();
       expect(screen.getByText('$10')).toBeTruthy();
@@ -51,17 +66,16 @@ describe('homepage (antigravity port)', () => {
     for (const link of signIns) {
       expect(link.getAttribute('href')).toBe('/api/auth/login');
     }
-    const trials = screen.getAllByRole('link', { name: 'Start 3-Day Free Trial' });
-    expect(trials.length).toBeGreaterThanOrEqual(2);
-    for (const link of trials) {
+    const starts = screen.getAllByRole('link', { name: 'Start building free' });
+    expect(starts.length).toBeGreaterThanOrEqual(2);
+    for (const link of starts) {
       expect(link.getAttribute('href')).toBe('/dashboard');
     }
-    expect(screen.getByRole('link', { name: 'Upgrade to Pro' }).getAttribute('href')).toBe(
-      '/dashboard',
-    );
-    expect(screen.getByRole('link', { name: 'Select Studio Plan' }).getAttribute('href')).toBe(
-      '/dashboard',
-    );
+    expect(screen.getAllByText(/prices and limits are planned/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByRole('link', { name: 'Pro — coming soon' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Studio — coming soon' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Pro — coming soon' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Studio — coming soon' })).toBeTruthy();
     const demos = screen.getAllByRole('link', { name: 'Interactive Demo' });
     expect(demos.length).toBeGreaterThanOrEqual(2);
     for (const link of demos) {

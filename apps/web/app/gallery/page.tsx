@@ -1,9 +1,9 @@
 'use client';
 
-/* Template gallery: live card list (GET /api/templates) with the local
-   MOCK_TEMPLATES as the silent fallback, and real forks
+/* Template gallery: live card list (GET /api/templates) with real forks
    (POST /api/templates/[slug]/fork). Search, category band, card grid,
-   fork counts, and the empty state behave exactly as before.
+   fork counts, and the empty state behave exactly as before. On list
+   failure the grid renders an honest unavailable state — never mock rows.
     Wrapped in the same left rail as /dashboard so the route reads as the app. */
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardRail } from '@/components/ui/dashboard-rail';
@@ -17,72 +17,13 @@ interface GalleryTemplate {
   detail: string;
 }
 
-const MOCK_TEMPLATES: GalleryTemplate[] = [
-  {
-    id: 'study-hall',
-    name: 'Study Hall',
-    category: 'XP',
-    forks: 412,
-    detail: 'Awards 10 XP per message with a 60 second cooldown.',
-  },
-  {
-    id: 'welcome-mat',
-    name: 'Welcome Mat',
-    category: 'Welcome',
-    forks: 368,
-    detail: 'Greets every join in #welcome with the rules first.',
-  },
-  {
-    id: 'mod-kit',
-    name: 'Mod Kit',
-    category: 'Moderation',
-    forks: 295,
-    detail: 'Warns, mutes after 3 warnings, logs every action.',
-  },
-  {
-    id: 'level-ladder',
-    name: 'Level Ladder',
-    category: 'Levels',
-    forks: 241,
-    detail: 'Grants 1 role every 5 levels across 20 levels.',
-  },
-  {
-    id: 'coin-jar',
-    name: 'Coin Jar',
-    category: 'Economy',
-    forks: 187,
-    detail: 'Pays 5 coins per active day, wallet caps at 500.',
-  },
-  {
-    id: 'poll-maker',
-    name: 'Poll Maker',
-    category: 'Polls',
-    forks: 154,
-    detail: 'Closes polls after 24 hours and posts the 1 winner.',
-  },
-  {
-    id: 'audit-trail',
-    name: 'Audit Trail',
-    category: 'Logs',
-    forks: 129,
-    detail: 'Keeps 90 days of joins, leaves, edits, deletes.',
-  },
-  {
-    id: 'role-desk',
-    name: 'Role Desk',
-    category: 'Roles',
-    forks: 98,
-    detail: 'Hands out 12 self-serve roles from 1 menu.',
-  },
-];
-
 const ALL = 'All';
 
 /* Server card mapping (GET /api/templates -> { templates: TemplateCard[] }).
    The list route serves card columns only — slug, name, category, forks plus
    capabilities — so the card detail line renders the capability list. Any row
-   that is not exactly this shape rejects the whole payload (silent mock
-   fallback), never a half-mapped grid. */
+   that is not exactly this shape rejects the whole payload (honest
+   unavailable state), never a half-mapped grid. */
 function detailForCard(row: Record<string, unknown>): string {
   const capabilities = row.capabilities;
   if (
@@ -161,10 +102,12 @@ function toneForCategory(category: string): TileTone {
 export default function GalleryPage() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(ALL);
-  /* Live list with silent mock fallback: the grid starts on MOCK_TEMPLATES
-     and swaps to GET /api/templates only on a fully valid 200 payload. Any
-     failure (network, non-200, bad JSON, shape mismatch) keeps the mock. */
-  const [templates, setTemplates] = useState<GalleryTemplate[]>(MOCK_TEMPLATES);
+  /* Live list, honest on failure: the grid starts empty and fills from
+     GET /api/templates only on a fully valid 200 payload. Any failure
+     (network, non-200, bad JSON, shape mismatch) renders the honest
+     unavailable state — never mock rows. */
+  const [templates, setTemplates] = useState<GalleryTemplate[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [forked, setForked] = useState<string[]>([]);
   const [forking, setForking] = useState<string[]>([]);
   const [forkResults, setForkResults] = useState<Record<string, ForkSuccess>>({});
@@ -174,11 +117,16 @@ export default function GalleryPage() {
     let active = true;
     fetch('/api/templates')
       .then(async (response) => {
-        if (!active || !response.ok) return;
+        if (!active) return;
+        if (!response.ok) {
+          if (active) setLoadFailed(true);
+          return;
+        }
         let payload: unknown;
         try {
           payload = await response.json();
         } catch {
+          if (active) setLoadFailed(true);
           return;
         }
         if (!active) return;
@@ -186,18 +134,24 @@ export default function GalleryPage() {
           typeof payload === 'object' && payload !== null
             ? (payload as { templates?: unknown }).templates
             : undefined;
-        if (!Array.isArray(rows)) return;
+        if (!Array.isArray(rows)) {
+          setLoadFailed(true);
+          return;
+        }
         const mapped: GalleryTemplate[] = [];
         for (const row of rows) {
           const template = toGalleryTemplate(row);
-          if (template === null) return;
+          if (template === null) {
+            setLoadFailed(true);
+            return;
+          }
           mapped.push(template);
         }
         if (!active) return;
         setTemplates(mapped);
       })
       .catch(() => {
-        /* Silent fallback — the mock grid stays. */
+        if (active) setLoadFailed(true);
       });
     return () => {
       active = false;
@@ -348,7 +302,11 @@ export default function GalleryPage() {
             </div>
           </section>
 
-          {visible.length === 0 ? (
+          {loadFailed && templates.length === 0 ? (
+            <div className={styles.empty}>
+              <p className={styles.emptyText}>Templates unavailable — try again.</p>
+            </div>
+          ) : visible.length === 0 ? (
             <div className={styles.empty}>
               <p className={styles.emptyText}>No templates match that search.</p>
               <button type="button" className={styles.clear} onClick={clearFilters}>
@@ -404,10 +362,7 @@ export default function GalleryPage() {
                           </div>
                           <div className={styles.tBody}>
                             <div className={styles.tMeta}>
-                              <span
-                                className={styles.forks}
-                                aria-label={`${forks} forks (example)`}
-                              >
+                              <span className={styles.forks} aria-label={`${forks} forks`}>
                                 {forks} forks
                               </span>
                             </div>
@@ -425,7 +380,7 @@ export default function GalleryPage() {
                                 <a href={`/dashboard/bots/${result.botId}`}>Open your bot</a>
                                 {' · '}
                                 <a href={result.inviteUrl} target="_blank" rel="noopener">
-                                  Add to Discord
+                                  Add to Discord (shared test app)
                                 </a>
                               </p>
                             ) : null}

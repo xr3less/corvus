@@ -40,7 +40,8 @@ describe('dashboard layout rail', () => {
     const nav = screen.getByRole('navigation', { name: 'Primary' });
     expect(screen.getByRole('link', { name: 'Skip to content' })).toBeTruthy();
     expect(within(nav).getByText('My server')).toBeTruthy();
-    expect(within(nav).getByText('Pro')).toBeTruthy();
+    /* KI-030: no fake Pro pill — no visitor is shown a paid tier. */
+    expect(within(nav).queryByText('Pro')).toBeNull();
 
     const expected: [string, string][] = [
       ['Home', '/dashboard'],
@@ -57,8 +58,9 @@ describe('dashboard layout rail', () => {
       expect(link.getAttribute('href')).toBe(href);
     }
 
-    expect(screen.getByText('Credits 82/100 · 18 left')).toBeTruthy();
-    expect(screen.getByRole('progressbar', { name: 'Credits' })).toBeTruthy();
+    /* KI-030: no fake credit balance — only the honest disabled Upgrade. */
+    expect(screen.queryByText(/credits/i)).toBeNull();
+    expect(screen.queryByRole('progressbar', { name: 'Credits' })).toBeNull();
     expect(within(nav).getByRole('button', { name: 'Upgrade · Coming soon' })).toBeTruthy();
     /* No Interview rail item — no honest target exists for it, and no old group labels. */
     expect(within(list).queryByRole('link', { name: 'Interview' })).toBeNull();
