@@ -15,16 +15,16 @@
 
 ## At a glance
 
-| ID     | Severity   | One line (2026-09-19 midday)                                                                         | Detail                                                   |
-| ------ | ---------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| KI-029 | P0 deploy  | Pushed (`54918cd` on origin); box not rebuilt; local docker-build still unproven                     | [KI-029_docker-copy.md](KI-029_docker-copy.md)           |
-| KI-030 | P0 honesty | Unchanged — do not share `https://13-140-181-113.nip.io/`                                            | [KI-030_honesty.md](KI-030_honesty.md)                   |
-| KI-031 | P0 docs    | Unchanged — banners only; numbered bodies still lie                                                  | [KI-031_docs-stale.md](KI-031_docs-stale.md)             |
-| KI-032 | P1 secrets | **RESOLVED (D-137)** — pushed (`4aed2ff` on origin); `.env.example` has shape-only `ENCRYPTION_KEY=` | [KI-032_encryption-key.md](KI-032_encryption-key.md)     |
-| KI-033 | P1 billing | Unchanged — trial clock / 1-bot / sleep not in product code                                          | [KI-033_trial-unenforced.md](KI-033_trial-unenforced.md) |
-| KI-034 | P1 ship    | Source guarded (`notFound` in prod), pushed (`54918cd`); live image not rebuilt                      | [KI-034_parked-routes.md](KI-034_parked-routes.md)       |
+| ID     | Severity   | One line (2026-09-19 midday)                                                                                     | Detail                                                   |
+| ------ | ---------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| KI-029 | P0 deploy  | Repo fix LIVE-proven on box (`5c6c134`, web 313MB + gateway 638MB); local docker-build + deploy.yml run unproven | [KI-029_docker-copy.md](KI-029_docker-copy.md)           |
+| KI-030 | P0 honesty | Unchanged — do not share `https://13-140-181-113.nip.io/`                                                        | [KI-030_honesty.md](KI-030_honesty.md)                   |
+| KI-031 | P0 docs    | Unchanged — banners only; numbered bodies still lie                                                              | [KI-031_docs-stale.md](KI-031_docs-stale.md)             |
+| KI-032 | P1 secrets | **RESOLVED (D-137)** — pushed (`4aed2ff` on origin); `.env.example` has shape-only `ENCRYPTION_KEY=`             | [KI-032_encryption-key.md](KI-032_encryption-key.md)     |
+| KI-033 | P1 billing | Unchanged — trial clock / 1-bot / sleep not in product code                                                      | [KI-033_trial-unenforced.md](KI-033_trial-unenforced.md) |
+| KI-034 | P1 ship    | Guards LIVE (prod 404s re-verified 2026-09-19); `07` map leg remains                                             | [KI-034_parked-routes.md](KI-034_parked-routes.md)       |
 
-Already-open product debt (not new, still real): KI-015, KI-016, KI-017, KI-018, KI-019, KI-024 — see [eski-aciklar.md](eski-aciklar.md) and `KNOWN_ISSUES.md`.
+Already-open product debt (not new, still real): KI-016, KI-017, KI-018, KI-019, KI-024 — see [eski-aciklar.md](eski-aciklar.md) and `KNOWN_ISSUES.md`. (KI-015 RESOLVED 2026-09-19 evening, D-140.)
 
 ---
 

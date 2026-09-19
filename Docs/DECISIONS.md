@@ -2814,4 +2814,128 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 
 **Cost & risk.** Cost: $0, one founder command. Risk: pushed docs reference commits the box does not run yet — mitigated by keeping KI-018/KI-029/KI-034 Open until the rebuild lands.
 
+### D-138 — Box rebuilt from repo commit; 5432 closed and parked guards live
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder `tamam devam et` authorized the Dockerfile reconcile)
+- **Door type:** two-way (reversible — snapshot + pg_dump taken before recreate; box is rented compute)
+- **Type:** engineering
+
+**Context.** box-redeploy-002 failed at `git pull --ff-only`: the box still carried the night-of-deploy Dockerfile patch while origin held the committed equivalents (`54918cd`). The founder's go authorized checking out exactly those two files from origin/master, then pulling. Snapshot was already taken (`aldim`); a pg_dump was still required before the postgres recreate.
+
+**Decision.** box-redeploy-003 SUCCESS: `/opt/corvus` pulled `b5c9833`→`5c6c134`; web (313MB) + gateway (638MB) built on-box from the repo Dockerfiles and retagged `:stable` (no GHCR pull by design); postgres recreated with no published 5432; off-box TCP 5432 CLOSED + HTTPS 200 re-verified from this machine; `/pryzm`+`/pick`+`/pick/results`+`/demo/stats-bento` 404 live, `/demo` 200 intended; 12 tables survive, bots 0; exec-based dump (59273 bytes) at `/opt/corvus/infra/compose/backups/corvus.dump` because the pg-backup sidecar hangs. Report: `Docs/2026-09-19-1405_box-redeploy-003_CREATE_rebuild-retry.md`.
+
+**Why.** Business terms: the box now runs what git says it runs — the "live vs reproducible" gap from D-136/D-137 is closed. The open database door is shut, and the shouldn't-be-public pages are shut, at $0 extra.
+
+**Cost & risk.** Cost: $0, one rebuild + verifications. Risk: `:3000` plaintext still published (known residual), GHCR `:stable` not pushed (box runs locally-built images), pg-backup sidecar still hangs (manual dump path documented as the workaround).
+
+**Superseded by:** none
+
+### D-139 — WIRO key installed plumbing-correct; provider rejects it (401), builder fails honest at $0
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder authorized opening `wiroai.txt` for WIRO install only)
+- **Door type:** two-way (reversible — key line replaceable, box untouched otherwise)
+- **Type:** engineering
+
+**Context.** live-smoke-001 left the `live` draft path unproven (all 5 AI keys EMPTY). Founder pasted the key-file path, then authorized opening it (`dostum sen ac sikinti yok sen yapabilirsin`). wiro-key-001b STOPPED on shape mismatch (4 lines/labels, merge fragmented, restored clean); wiro-key-001c parsed 3 nonempty lines → candidates len 32 + len 64, installed the longest-token winner (len 64) with gateway restart. live-smoke-002 then ran one real builder run against box PG.
+
+**Options considered.**
+
+1. Treat install as done because file+env lengths match (rejected: lengths prove plumbing, not provider acceptance — and the smoke proved rejection).
+2. Swap in the discarded len-32 candidate now (rejected without founder word: 001c's longest-token rule was the install contract; swapping key material is a new decision, not a retry).
+3. Record the honest result + ask the founder to rule (chosen): status-only probes show provider reachable (unauth GET 200) but the installed key auth-rejected (authed POST 401); the run failed as `failed/router_failed` in 35s with 0 credits / 0 spec rows, fixtures cleaned.
+
+**Decision.** Option 3. Reports: `Docs/2026-09-19-1703_wiro-key-001c_CREATE_install-key.md` (SUCCESS) + `Docs/2026-09-19-1710_live-smoke-002_CREATE_builder-resmoke.md` (FAILED-auth). Ruling owed by founder: retry the len-32 candidate, or activate the installed key on the provider side — then an authorized re-smoke (live-smoke-003).
+
+**Why.** Business terms: the $0.00 spend with a coded `router_failed` (no provider text leaked) is exactly the "never bill for our failures" promise working — the failure branch is now live-proven on real PG, including a 35s real-provider round-trip. What remains is one human answer no agent can give: which key string the provider expects.
+
+**Cost & risk.** Cost: $0.00 (2 live runs total, both zero-spend). Risk: two pg-boss `builder` retry rows accumulate harmlessly (`run_gone` until 7-day delete) unless cancelled; `.env.bak-wiro-20260919` still on box (keep/delete is founder's call).
+
+**Superseded by:** none
+
+### D-140 — Builder `live` on box PG: len-32 key accepted, KI-015 closed
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder confirmed provider panel ACTIVE, then D-139's ruling executed)
+- **Door type:** two-way (reversible — key line replaceable)
+- **Type:** engineering
+
+**Context.** D-139 ended with a founder ruling owed. Founder answered: provider panel shows ACTIVE. So the 001d agent swapped `/opt/corvus/.env` WIRO_API_KEY len 64→len 32 (the 001c discard), recreated gateway only, verified worker pickup. live-smoke-003 then ran one real builder run against box PG.
+
+**Options considered.**
+
+1. Keep swapping key material on each failure (rejected: both file candidates are now tried; a third swap would mean guessing outside the source file).
+2. Accept the smoke result as the close of the key question (chosen): 003 terminal `live` (`stub false`, `glm/5-2`, v1) in ~~24s, boss `completed`, 1 billable call 0.31696cr (~~$0.0016, far under the 3-call/54cr cap), spec_versions v1 row, bot stayed `draft` (zero Discord publish), all fixtures deleted to 0.
+
+**Decision.** Option 2. Reports: `Docs/2026-09-19-1720_wiro-key-001d_CREATE_swap-candidate.md` (SUCCESS) + `Docs/2026-09-19-1730_live-smoke-003_CREATE_builder-resmoke2.md` (SUCCESS). KI-015 → Resolved (both branches live-proven: honest-fail at $0 + `live` draft at ~$0.0016). Keep the len-32 key installed; no further key action.
+
+**Why.** Business terms: the founder's first question — "bot oluşturma çalışıyor mu" — now answers yes with a receipt: a real draft in 24 seconds for less than a kuruş, with the meter running. The D-139 loser is now the winner because the provider, not our guess, voted.
+
+**Cost & risk.** Cost: $0.0016 for the proving run (3 live runs total: $0.00 + $0.00 + $0.0016). Risk: account-delete cascades ai_spend/spec rows, so spend evidence exists only pre-cleanup (noted for future smokes); 001/002 pg-boss retry rows still sit harmlessly; backup on box now holds the len-64 state. Next: Phase 2c tidy commit (grab + 7 reports + living docs, push via founder `! git push`).
+
+**Superseded by:** none
+
+### D-141 — Builder quality bench 10/10 PASS on live box (founder-ordered)
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder: "Byi yap bakalim", option B systematic scorecard)
+- **Door type:** two-way (reversible — measurement only, zero product change)
+- **Type:** engineering
+
+**Context.** live-smoke-003 proved the builder CAN produce a draft; the founder asked whether it does it RIGHT. Spec `Docs/2026-09-19-1800_orchestrator_SPEC_bench-quality.md`: 10 frozen briefs (welcome, moderation, XP, poll, autoresponder, modlog, giveaway, reaction-role, timeout, thread-welcome) + frozen rubric R1–R5, 2 parallel runners × 5 live runs, 1 independent grader, abort if >$1.
+
+**Options considered.**
+
+1. Quick eyeball test of 5 drafts (rejected by founder choice — single-person opinion, not a receipt).
+2. Systematic scorecard, 10 frozen briefs + frozen rubric (chosen): every brief gets phase + wall time + spend + spec rows, graded identically.
+3. Blind comparison vs competitor output (rejected for today — slowest, needs rival accounts; revisit after KI-030 honesty).
+
+**Decision.** Option 2. Results: 10/10 PASS (band ≥7/10 met, no failing briefs). Total 11 billable calls, 6.13536cr ≈ $0.031. Mean wall 38s, median 27s. Cheapest B9 ~$0.001, costliest B7 ~$0.010 (2 calls — only brief needing a retry). All bots stayed `draft`, zero Discord publish, all fixtures cleaned. Reports: spec + bench-a + bench-b + `Docs/2026-09-19-1800_bench-grade_REVIEW_bench-scorecard.md`.
+
+**Why.** Business terms: a bot draft costs a few kuruş and lands in under a minute on all 10 everyday asks — the $10 tier math holds with room. The honest caveat: runners recorded spec row counts only, so "does it ask for the right things" is verified at row-count level, not behavior-by-behavior — next wave snapshots spec detail pre-delete (grader's harness fix).
+
+**Cost & risk.** Cost: $0.031 for 10 live runs (13 live runs today total: ~$0.033). Risk: none new — measurement only; single-worker queue contention inflated B4/B7 walls (not penalized); no premium-lane drift observed. Next: Phase 2c.
+
+**Superseded by:** none
+
+### D-142 — Builder content-correctness 4/4 contract-PASS, rubric wording defect found (founder-ordered option A)
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder: "Ayi yap bakalim alt ajanlar okur kodlarini ve bakarlar", option A content-read with subagents reading code; option B stage test after)
+- **Door type:** two-way (reversible — measurement only, zero product change)
+- **Type:** engineering
+
+**Context.** Bench-quality (D-141) proved 10/10 `live` at row-count level but left R2/R3 as PASS-with-note: no FULL spec JSON was snapshotted. Spec `Docs/2026-09-19-1829_orchestrator_SPEC_bench-content.md`: re-run 4 frozen briefs (C1 welcome, C2 moderation-warn, C3 giveaway, C4 timeout) live + FULL `spec_versions.spec` JSON pre-delete + fresh line-by-line grader grounding R3 in `packages/spec/src/index.ts` + `packages/ai/src/eval/golden-briefs.ts`.
+
+**Options considered.**
+
+1. Content re-run with spec snapshots + line-by-line grade (chosen): proves faithfulness/shape with evidence.
+2. Live Discord stage test (deferred — option B, needs trial server + bot setup, after this wave).
+
+**Decision.** Contract-correct reading: 4/4 PASS — every spec is `parseSpec`-VALID (v1 + behaviors array), counts 3/6/4/2 all in 1..20, every core ask PRESENT with nothing dropped and no unrelated features. Literal rubric as written: 0/4 on R3-kind (0 entries with `kind` on any brief). The SOLE failure is the rubric's wording, not the builder: entries are contractually opaque (`id`-discriminated, triggers/actions/steps), and the `kind` demand comes from the explicitly non-gating `checkProductDraft` aspiration. Fix = reword R3 to validity + informational kind-outcome; no builder change, no re-run. Strongest C4 timeout (clean 2/2), weakest C2 moderation-warn (4 of 6 behaviors are related management gap-fill for the brief's undefined banned-list source). Reports: spec + bench-c + bench-d + `Docs/2026-09-19-1829_bench-grade-c_REVIEW_bench-content.md`.
+
+**Why.** Business terms: the builder hears the ask correctly on all 4 everyday requests — nothing dropped, nothing alien invented, a draft in 15–35 seconds for ~1 kuruş. The one blemish class: when the ask leaves something undefined (where does the banned-word list come from?), the builder invents management buttons nobody asked for — related, not alien, but worth knowing. And our own scorecard had a wording bug (`kind` demanded, contract doesn't require it) — found and fixed on paper, no product change needed.
+
+**Cost & risk.** Cost: $0.01152 for 4 live runs (2.30388cr; 17 live runs today total ≈ $0.044). Risk: none new — measurement only; all bots stayed `draft`, zero Discord publish, all fixtures cleaned. Next: option B stage test on live Discord (needs trial server), then Phase 2c.
+
+**Superseded by:** none
+
+### D-143 — Stage B live-Discord proof DONE, with DO-NOT-DELETE correction (founder-authorized option B)
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder: `Diger kararlar senden. basla bakalim`, with trial guild ready + token file + invite + full delegation)
+- **Door type:** two-way (reversible — measurement only, zero product change, all fixtures cleaned)
+- **Type:** engineering
+
+**Context.** Bench-quality (D-141) + content wave (D-142) proved the builder produces correct drafts cheaply, but everything stayed `draft` with zero Discord contact. Stage test B, spec `Docs/2026-09-19-1905_orchestrator_SPEC_stage-b.md`: one throwaway bot on the founder's REAL trial guild (timeout brief, byte-identical C4), sequential legs — connect/online + builder draft + publish pointer + real-guild preflight + resilience note + full cleanup, 30-min window, $1 cap.
+
+**Result.** Runner SUCCESS (`Docs/2026-09-19-1905_stage-b_CREATE_live-discord.md`) + independent reviewer SUCCESS (`Docs/2026-09-19-1905_reviewer_stage-b.md`), all 7 legs PASS: CONNECT ready+guild fetch (9 members)+fetchMe in 2.1s, no 4014; BUILDER 1 call `live` `glm/5-2` v1 in ~13s; PUBLISH pointer NULL→v1 with audit row (honest route-SQL fallback, `unscanned` note — publish ran before scan per spec leg order); PREFLIGHT `completed` red0/green5/yellow1 (yellow = commands-sync timing, not failure); RESILIENCE garbage job → `unknown_bot` fail-fast; CLEANUP zeros everywhere except the FK-free audit receipt (survives by schema design — that is the proof artifact, not dirt); SPEND ~$0.0012. Honest scope held: "pointer moved, behavior not executed (no runtime interpreter at V1)". No secrets leaked (lengths only). Cosmetic: two runId variants in the report (transcription typo, no leg impact).
+
+**SAFETY-CRITICAL correction.** The reviewer cross-checked: stage-b bot app id EQUALS the box `DISCORD_CLIENT_ID` — it is the founder's Discord OAuth login application, NOT a throwaway app. The runner's OQ-3 advice ("delete the Discord application in the portal") is UNSAFE as written and is hereby countermanded. Guidance to founder: DO NOT delete the Discord application in the portal (deleting it breaks Discord login); box rows + cipher are already gone; rotate the bot token in the portal later only if wanted.
+
+**Why.** Business terms: the builder's draft can reach a real Discord server — connection, presence, permission scan all green, total cost ~1 kuruş, nothing left behind. What is still NOT proven (and not provable at V1): that a spec's behaviors actually run on Discord — the gateway stores the spec but does not execute it. That stays honest until a runtime interpreter exists.
+
+**Cost & risk.** Cost: ~$0.0012 for 1 live run (18 live runs today total ≈ $0.045). Risk: none new — measurement only, fixtures cleaned, services healthy throughout, repo untouched (HEAD `5c6c134`). Next: Phase 2c (tidy commit → KI-030 → KI-033 → KI-031 → Discord redirect click).
+
 **Superseded by:** none

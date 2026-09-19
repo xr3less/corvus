@@ -1,8 +1,8 @@
 # KI-034 — Unguarded parked routes would ship on first deploy
 
-## Status: OPEN (P1 — source guarded + pushed in `54918cd`, live image not rebuilt)
+## Status: OPEN (P1 — guards LIVE in production 2026-09-19; `07` map leg remains)
 
-Committed + pushed 2026-09-19 midday (`b5c9833..3213e37` master→origin via founder `! git push`). **Worktree** pages now `notFound()` when `NODE_ENV==='production'`. Live box image was built before the guards — those URLs still 200 until rebuild.
+Rebuilt 2026-09-19 afternoon (box-redeploy-003 from `5c6c134`). Production GETs re-verified off-box this session: `/pryzm` 404, `/pick` 404, `/pick/results` 404, `/demo/stats-bento` 404, `/demo` 200 (intended).
 
 | Route                    | What it is                                                                                    | Prod guard?                                                                                  |
 | ------------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |

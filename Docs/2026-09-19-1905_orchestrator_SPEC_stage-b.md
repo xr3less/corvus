@@ -1,0 +1,54 @@
+# SPEC: stage-b — live Discord proof on real trial guild (throwaway bot, honest scope)
+
+## Status: SPEC (founder-authorized 2026-09-19 evening: `C:\Users\xr3less\Desktop\corvusbot.txt` + invite `https://discord.gg/WamzaFUVs` + `Diger kararlar senden. basla bakalim`)
+
+## Goal
+
+Prove with a receipt — not an opinion — that a builder-produced bot can CONNECT to Discord, appear ONLINE in the founder's trial guild, stay up through a short window, move the publish pointer (`prod_spec_id`) on the real box PG, and complete a preflight scan against the real guild. NOTHING MORE.
+
+## Honest scope (locked, non-negotiable — the grader WILL fail behavior-execution claims)
+
+PROVABLE in B: token valid + login + READY + guild fetch + online presence in trial guild + gateway process stays healthy with the test bot alongside (sibling isolation intact) + `prod_spec_id` pointer moves via the guarded publish contract + preflight scan rows written for the real guild + full cleanup to 0 rows.
+NOT PROVABLE in B and MUST NOT be claimed: behavior execution (welcome greet, timeout action, giveaway pick, moderation delete). Ground truth: `apps/gateway/src/gateway.ts` is a multiplex core (addBot/relogin/removeBot/startAll/shutdown, per-bot boundary/quarantine) with NO spec interpreter; `apps/web/app/api/spec/publish/route.ts` only repoints `prod_spec_id` (+ audit row); `Docs/Teknik_Borc/KI-031_docs-stale.md` records gateway stores prod_spec but does NOT interpret it at runtime. Any report sentence implying a spec behavior RAN on Discord is a FAIL — write "pointer moved, behavior not executed (no runtime interpreter at V1)" instead.
+
+## Non-goals
+
+- No repo code changes. No HEAD/stage/commit/push. No git restore/stash/checkout --/reset (uncommitted wave in progress — HARD BAN).
+- No strangers on the URL. No URL sharing. Zero Discord publish of product rows (only the throwaway test bot, in the founder's own trial guild).
+- No key/token/password values ANYWHERE (chat, logs, reports, helper output). Lengths + shapes only.
+- No premium-model lanes. Max ONE live builder call (timeout brief only); abort the wave if projected spend exceeds $1.
+
+## Orchestrator decisions (per founder delegation — do not re-ask)
+
+- Draft pick: TIMEOUT (C4 = B9 byte-identical: "Create a timeout bot: time out a member for 10 minutes when a moderator uses the timeout command."). Reason: strongest content trace (clean 2/2, D-142), cheapest class (~1 call, ~0.3cr, ~1 kuruş), moderator-permission path exercises the preflight permissionRow realism.
+- Online window: 30 minutes max from first READY, then cleanup. If the guild owner asks the bot to leave sooner, obey immediately and record it.
+- Token lifecycle: throwaway Discord application. After the run, remove the box rows AND tell the founder to delete the Discord application (agent cannot click the portal). Token value never survives on the box outside `token_cipher` bytea; no plaintext copy left in any helper file, shell history, or log.
+
+## Inputs (all present)
+
+- Token source file (LOCAL, founder-provided): `C:\Users\xr3less\Desktop\corvusbot.txt`. Read it ONLY inside a helper process; report LENGTHS only (e.g. "1 nonempty line, len 59" — never the value, never a prefix/suffix).
+- Guild invite (founder's trial server): `https://discord.gg/WamzaFUVs`. Use ONLY to resolve the guildId the bot must be in (via Discord API from the box, never by joining personal accounts). The bot MUST already be a member of that guild before scanning — if it is not, STOP and report `bot-not-in-guild` with the exact operator step the founder must click (Discord portal → application → OAuth2 → URL generator → bot scope → Add to trial guild). Do NOT attempt to join the guild with a user token.
+- Box: `/opt/corvus` at HEAD `5c6c134`, services web healthy / gateway Up / postgres healthy / caddy Up (verify at pre-check).
+
+## Runner contract (single agent `stage-b`, sequential, one live bot at a time)
+
+- Pre-checks (read-only): box HEAD `5c6c134` (`git rev-parse HEAD` + `git status --short` — status must show nothing except `?? infra/compose/backups/`); `compose ps` all running; `SELECT count(*) FROM bots` baseline + zero `stage-b-` fixtures; WIRO lens lengths only (no values); `builder-worker-started` present in gateway logs.
+- You may READ (read-only, never modify): `apps/gateway/src/lib/crypto.ts` (encryptToken AES-256-GCM IV12 TAG16 AAD=botId; ENCRYPTION_KEY hex64/base64 → 32 bytes), `apps/gateway/src/gateway.ts` (addBot/relogin/startAll/quarantine surface), `apps/gateway/src/preflight/worker.ts` (PREFLIGHT_LOAD_BOT_SQL + job shape + perJobResults), `apps/web/app/api/preflight/start/route.ts` (job contract), `apps/web/app/api/spec/publish/route.ts` (guarded UPDATE + Red-block + audit).
+- Token install (box-side only): pipe the token file to the box via SSH stdin (e.g. `cat file | ssh ... 'python3 -c ...'` style through the existing `$TEMP\sshwork` helper pattern — password read from the Desktop secret file INSIDE the helper process only, never on a command line). On the box, inside `corvus-gateway-1` (which already carries ENCRYPTION_KEY in env — NEVER cat `/opt/corvus/.env`, never print env values): run a one-shot node script that (1) reads the token from stdin, (2) generates botId (uuid), (3) calls the repo's REAL `encryptToken(botId, token)` (import from the checked-out tree, not a retype), (4) INSERTs `accounts(discord_id='stage-b-2026-09-19', tier='trial')` + `bots(account_id, name='stage-b-timeout-bot', token_cipher=$cipher, status='draft')` + returns ids. Verify lengths only afterwards (`length(token_cipher)` > 28, never the bytes). New helper scripts go under `$TEMP\sshwork` (outside the repo), new this task, never committed.
+- Step 1 — CONNECT/ONLINE proof: from inside `corvus-gateway-1`, run a short-lived discord.js login with the DECRYPTED token (decrypt box-side via the real `decryptToken`, never exfiltrate): `login → wait ClientReady (≤15s, same bound as PREFLIGHT_READY_TIMEOUT_MS) → read client.user.tag + id → guilds.fetch(trialGuildId) → presence check (guild.members.fetchMe()) → destroy`. Record: READY y/n, bot user id + tag, guild name + member count (numbers only), fetchMe ok, wall seconds. On 4014 disallowed-intents: record the distinct reason and STOP the online leg (report which privileged intent the portal lacks). On bad-token: fail fast, record `login_failed`, skip to cleanup.
+- Step 2 — BUILDER DRAFT (max 1 billable call): INSERT `builder_runs` + `boss.send('builder',{runId,botId,brief:TIMEOUT})` with v2 options (`singletonKey=runId, retryLimit 3, retryDelay 30, expireInSeconds 3600, deleteAfterSeconds 604800`); poll ≤10 min to terminal; EXPECT `live` + `{"stub":false,"model":"glm/5-2","version":1}` + spec v1 row + boss `completed`. If the run leaves WIRO routes toward a premium lane, STOP observing, record, continue to publish leg only if a v1 exists. Snapshot spend (count+sum) + spec count BEFORE cleanup. If a usable timeout v1 already exists from this wave, do NOT re-run — reuse it and say so.
+- Step 3 — PUBLISH POINTER proof: move `prod_spec_id` to the timeout v1 through the REAL guarded path if a session can be minted box-side without touching secrets (preferred: call the route handler's `POST` with an injected session in a box-side node eval, NOT over HTTP with a forged cookie). Fallback (honest, allowed): execute the route's EXACT guarded SQL (`UPDATE bots SET prod_spec_id=$1 ... WHERE prod_spec_id IS NOT DISTINCT FROM $4` + `audit_events` publish row with `{"version":N,"preflight":...}`) and label it `pointer-move-via-route-SQL (route handler not invoked over HTTP — session seam)`. FIRST run the Red check: read `guild_installs.preflight` envelopes for the bot; any Red row BLOCKS the move (record `preflight-red`, do not publish). Record: pre-publish `prod_spec_id`, post-publish `prod_spec_id`, audit row id, 409 stale-draft behavior if raced (single agent — expect none).
+- Step 4 — PREFLIGHT proof on the REAL guild: enqueue ONE `preflight` job for (testBotId, trialGuildId) with the REAL capability map for the timeout command (`ManageRoles`? NO — timeout needs `ModerateMembers`; map via `CAPABILITY_MAP`, never a hand bitfield) + `intents=FULL_PREFLIGHT_INTENTS` + `expectedCommands=required.length`; poll `GET /api/preflight?jobId=` semantics box-side (or `boss.getJobById`) to terminal; record state + summary {red,yellow,green} + the timeout-permission row tone. A Red row on ModerateMembers is a PRODUCT finding, not a failure — record it verbatim.
+- Step 5 — RESILIENCE note (cheap, honest): while the test bot is online, enqueue one `preflight` job with a garbage botId (validates `unknown_bot` fail-fast without touching the live bot) + confirm gateway process still Up + test bot still `live` afterwards. Do NOT crash the live bot deliberately (no forced quarantine on a guild-visible bot).
+- Cleanup (mapper order, BEFORE writing the report): `DELETE FROM builder_runs WHERE bot_id` → `DELETE FROM bots WHERE id` → `DELETE FROM accounts WHERE id`; verify global zeros (bots 0, builder_runs 0, spec_versions 0 for the bot, accounts with `stage-b-` 0). Pre-delete snapshots (spend sum, spec count, publish audit id) are the evidence — post-cleanup re-audit is impossible by FK cascade (recorded, not a gap). Confirm no plaintext token survives: helper files contain no token bytes, shell history clean (`history -c` equivalent where applicable), box rows gone.
+- Stop rules: one live bot at a time; max 2 attempts per failing command (then record + move on); abort whole task if projected total >$1; zero Discord behavior-execution claims; zero strangers on URL.
+
+## Report
+
+`Docs/2026-09-19-1905_stage-b_CREATE_live-discord.md` — report schema exactly (Status SUCCESS only if connect+publish+preflight+cleanup all evidenced; PARTIAL with the exact leg that failed otherwise). Include: pre-checks, READY proof (user id/tag? NO — id only, tag redacted to `name#****`), guild numbers only, builder run table (runId, phase, wall s, calls, credits, spec rows, cleaned y/n), publish proof (pre/post pointer, audit id, Red verdict), preflight summary + timeout-permission row tone, spend + $ at USD_PER_CREDIT=0.005, cleanup zeros, founder click needed (delete Discord app + bot-not-in-guild invite step if hit). Token/password/key/DATABASE_URL values: NONE (lengths only). No behavior-execution sentences.
+
+## Files in scope
+
+- CREATE (local): this spec + 1 runner report. Nothing else local.
+- BOX-TRANSIENT: one accounts row + one bots row + one builder_runs row + resulting spec/spend/audit/preflight rows — ALL deleted by the runner.
+- NEVER: `/opt/corvus/.env` (values), HEAD, pgdata, other box files, other services' restarts (gateway recreate FORBIDDEN — no key change in this wave), any repo code, stage/commit/push, git restore/stash/checkout/reset. Zero strangers on URL. Zero key values anywhere.

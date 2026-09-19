@@ -6,7 +6,24 @@
 
 ---
 
-## Current state — 2026-09-19 morning (FIRST DEPLOY LIVE — new-chat handoff)
+## Current state — 2026-09-19 evening (BUILDER IS LIVE — bot üretiyor)
+
+**Canlı adres (yabancılara paylaşma — KI-030 açık):** `https://13-140-181-113.nip.io/`
+
+Bot yapma motoru bu akşam gerçekten çalıştı. Kısa anahtar adayı kutuya takıldı, 24 saniyede ilk taslak üretildi: 1 çağrı, ~0.3 kredi (kuruşun altında), sahte test botu silindi, kimseye bir şey yayınlanmadı. Yani "bot olusturma vs calisiyor mu" sorusunun cevabı artık **evet** — motor tarafta çalışıyor. Rapor: `Docs/2026-09-19-1730_live-smoke-003_CREATE_builder-resmoke2.md`.
+
+**Canlı Discord kanıtı (D-143, Stage B DONE):** motorun taslağı gerçek bir Discord sunucusuna da ulaştı — bot bağlandı, çevrimiçi göründü, izin taraması yeşil (kırmızı 0), yayın kaydı veritabanına yazıldı, maliyet ~1 kuruş, arkasında hiçbir iz bırakılmadı. Raporlar: `Docs/2026-09-19-1905_stage-b_CREATE_live-discord.md` + `Docs/2026-09-19-1905_reviewer_stage-b.md`. **Önemli:** test edilen uygulama, giriş (login) uygulaması çıktı — Discord portalındaki uygulamayı **silme**; silmek siteye Discord'la girişi bozar. İstersen sonra sadece bot anahtarı döndürülür. Dürüst sınır: taslak sunucuya ulaştı, ama botun davranışları (karşılama/timeout gibi) sahada henüz koşmuyor — bunu kimseye söz vermiyoruz.
+
+**Dürüst artıklar:**
+
+- Grab kurulumu + 7 rapor bu bilgisayarda kayıtsız duruyor — bir sonraki kayda binecek, itilmedi.
+- `:3000` düz HTTP hâlâ yayında (bilinen artık); GHCR `:stable` itilmedi (kutu yerel yapımla çalışıyor); yedekleme yardımcısı takılıyor (elle yedek alındı).
+- Retry satırları birikiyor (001/002 işleri `retry`de; zararsız, `run_gone`, 7 günde silinir; 003 `completed`).
+- KI-030 dürüstlük, KI-031 numaralı gövde, KI-033 deneme saati — hiçbiri yazılmadı.
+- KI-018 kapanmaz: Discord giriş bağlantısı kaydı (kurucu tıkı) + `lint`/`format` kanıtı kaldı.
+- KI-034 kapanmaz: `07` haritası hâlâ eski sayfa adını yazıyor (KI-031 işi).
+
+Önceki banner ("kutu eski kodla çalışıyor") **artık yanlış** — kutu yeni kodla çalışıyor, üstteki satırlar güncel durumu söylüyor.
 
 **Canlı adres (yabancılara paylaşma — KI-030 açık):** `https://13-140-181-113.nip.io/`
 
