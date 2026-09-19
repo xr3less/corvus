@@ -14,12 +14,12 @@ Kutu gece ilk kez ayağa kalktı: HTTPS 200, Let's Encrypt sertifika doğrulamas
 
 **Dürüst artıklar (kutuda uygulama VAR, iş bitmedi):**
 
-- HEAD hâlâ `b5c9833`. Gece dalgası **commitlenmedi** (Docker COPY, parked 404, compose 5432 kapatması, Caddy deploy.yml, yaşayan evrak, `Teknik_Borc/`, `Agent Reports/`).
-- Canlı kutu hâlâ eski compose: Postgres **5432 internete açık**, web **:3000 düz HTTP**. Repoda 5432 kapatıldı (compose-036); kutu recreate edilmedi.
-- KI-032: `.env.example` hâlâ `ENCRYPTION_KEY` yazmıyor (kutuda 64-hex anahtar var).
+- Yerel commit'ler hazır: `54918cd` (32 dosya — Docker COPY, parked 404, compose 5432 kapatması, Caddy deploy.yml, yaşayan evrak, `Teknik_Borc/`, handoff) + `4aed2ff` (KI-032: `.env.example` artık `ENCRYPTION_KEY` yazıyor, şekil-açıklamalı, değersiz). İkisi de **henüz GitHub'a itilmedi** — otomatik itme iki kez reddedildi (geçici sınıflandırıcı hatası), kurucunun sohbetten `! git push origin master` yapması gerek.
+- Canlı kutu hâlâ eski compose: Postgres **5432 internete açık**, web **:3000 düz HTTP**. 5432 kapatması artık git'te (`54918cd`); kutu recreate edilmedi.
+- KI-032 kod tarafı bitti (kutuda zaten 64-hex anahtar vardı) — ama örnek dosya GitHub'a gidene kadar "kapandı" sayılmaz.
 - KI-030 dürüstlük, KI-031 numaralı gövde, KI-033 deneme saati — hiçbiri yazılmadı.
-- KI-018 kapanmaz: dağıtım git'ten tekrar üretilemiyor (kutu Dockerfile yaması sadece kutuda; repo imajı yerel Docker kapalı olduğu için bu sabah kanıtlanmadı).
-- Kurucu tıkları: Discord redirect URI + Contabo snapshot.
+- KI-018 kapanmaz: dağıtım git'ten tekrar üretilemiyor (kutu Dockerfile yaması sadece kutuda; repo imajı yerel Docker kapalı olduğu için bu sabah kanıtlanmadı; şimdi commit var ama kutu yeniden kurulmadı).
+- Kurucu tıkları: Discord redirect URI + Contabo snapshot + `! git push origin master`.
 
 Önceki banner ("kutuda uygulama yok") **yanlıştı** — o cümle yeni sohbeti yanıltırdı, silindi.
 
