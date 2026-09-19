@@ -49,7 +49,13 @@ describe('terms of service page', () => {
     expect(text).toContain('no checkout');
     expect(text).toContain('nothing to cancel');
     expect(text).toContain('what we intend to sell');
-    expect(text).toContain('Planned:');
+    /* KI-033: the trial is enforced now, so its label says so. The rest of the
+       planned list is still unsold and keeps its `Planned:` label. */
+    expect(text).toContain('Trial (live):');
+    expect(text).toContain('Planned: Paid plans:');
+    expect(text).toContain('Planned: Credits:');
+    expect(text).toContain('Planned: When a plan lapses:');
+    expect(text).not.toContain('Planned: Trial:');
     expect(text).toContain('3 days of full Pro access');
     expect(text).toContain('no card required');
     expect(text).toContain('$10');

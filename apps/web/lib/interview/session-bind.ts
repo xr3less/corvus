@@ -9,6 +9,14 @@ import { getSession, type SessionStore } from '../auth/session';
 export interface InterviewSession {
   accountId: string;
   discordId: string;
+  // KI-033: the account's trial clock + plan tier, carried on the session so
+  // routes can gate on expiry / bypass paid tiers without a second query.
+  // Optional on purpose: absent/null/unknown resolve to the trial path at the
+  // gates (fail-open on the clock, fail-closed on the free path) — never to a
+  // paid bypass. null = the DB was asked and answered "none"; undefined = the
+  // store has no such concept (a hand-rolled double).
+  trialEndsAt?: Date | string | null;
+  tier?: string | null;
 }
 
 export interface SessionReader {
@@ -27,7 +35,15 @@ export function createSessionReader(store?: SessionStore): SessionReader {
         if (!session) {
           return null;
         }
-        return { accountId: session.accountId, discordId: session.discordId };
+        return {
+          accountId: session.accountId,
+          discordId: session.discordId,
+          // Passed straight through (same undefined-stays-undefined rule as
+          // getSession): stripping either field would re-dormant the dashboard
+          // banners and unwire the paid-tier bypass.
+          trialEndsAt: session.trialEndsAt,
+          tier: session.tier,
+        };
       } catch {
         return null;
       }

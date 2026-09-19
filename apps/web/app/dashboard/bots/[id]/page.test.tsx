@@ -13,6 +13,8 @@ vi.mock('next/navigation', () => ({
 }));
 
 const TRIAL_LINE = 'Free while in preview — limits not enforced yet.';
+const TRIAL_DEAL_LINE = 'Free 3-day trial — 1 bot, 100 AI credits.';
+const TRIAL_EXPIRED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
 const COST_NOTE = 'About 1.1 credits per change · platform failures retry free.';
 
 /* KI-030: the detail page is empty-not-example, so every mock-id render needs
@@ -102,6 +104,14 @@ function renderDetail(id: string, bots?: MockBot[]) {
      exercise a bot pass the injected fixture list explicitly. */
   const injected = bots ?? (id.startsWith('bot-') ? [botById(id)] : undefined);
   return render(injected === undefined ? <BotDetailPage /> : <BotDetailPage bots={injected} />);
+}
+
+/* KI-033: the expired flag is the same prop the dashboard home takes — this
+   page reads no new endpoint for it. */
+function renderExpiredDetail(id: string, bots?: MockBot[]) {
+  mockRouteId = id;
+  const injected = bots ?? (id.startsWith('bot-') ? [botById(id)] : undefined);
+  return render(<BotDetailPage bots={injected} trialExpired />);
 }
 
 /* Fill and submit the detail composer (expanding the collapsed input first). */
@@ -301,9 +311,11 @@ describe('bot detail page', () => {
   it('second turn carries the completed first turn as history', async () => {
     const first = sseStream();
     const second = sseStream();
-    /* First slot is the mount-time draft load (no draft for mock ids). */
+    /* First slot is the mount-time trial signal (fail-open 401: no banner),
+       second the draft load (no draft for mock ids). */
     const fetchStub = vi
       .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
       .mockResolvedValueOnce(streamResponse(first.stream))
       .mockResolvedValueOnce(streamResponse(second.stream));
@@ -318,9 +330,9 @@ describe('bot detail page', () => {
     await waitFor(() => expect(screen.getByText('First answer.')).toBeTruthy());
 
     await submitDetail('Second question');
-    /* Draft load + two submits. */
-    expect(fetchStub).toHaveBeenCalledTimes(3);
-    const secondInit = fetchStub.mock.calls[2][1] as RequestInit;
+    /* Trial signal + draft load + two submits. */
+    expect(fetchStub).toHaveBeenCalledTimes(4);
+    const secondInit = fetchStub.mock.calls[3][1] as RequestInit;
     expect(JSON.parse(String(secondInit.body))).toEqual({
       botId: null,
       message: 'Second question',
@@ -334,9 +346,11 @@ describe('bot detail page', () => {
 
   it('a 401 says logged-out in plain words and Retry re-issues after login', async () => {
     const sse = sseStream();
-    /* First slot is the mount-time draft load (no draft for mock ids). */
+    /* First the mount-time trial signal (fail-open 401), then the draft load
+       (no draft for mock ids). */
     const fetchStub = vi
       .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
       .mockResolvedValueOnce({
         ok: false,
@@ -351,8 +365,8 @@ describe('bot detail page', () => {
     await screen.findByText('You are logged out — log in again, then press Retry.');
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    /* Draft load + failed submit + retry. */
-    expect(fetchStub).toHaveBeenCalledTimes(3);
+    /* Trial signal + draft load + failed submit + retry. */
+    expect(fetchStub).toHaveBeenCalledTimes(4);
 
     await act(async () => {
       sse.push(frame({ t: 'content', text: 'Recovered.' }));
@@ -376,12 +390,84 @@ describe('bot detail page', () => {
   it('updates the header for a trial bot and hides the trial line for a live bot', () => {
     const { unmount } = renderDetail('bot-2');
     expect(screen.getByRole('heading', { name: 'Draft Arena' })).toBeTruthy();
-    expect(screen.getByText(TRIAL_LINE)).toBeTruthy();
+    expect(screen.getByText(TRIAL_DEAL_LINE)).toBeTruthy();
     unmount();
 
     renderDetail('bot-1');
     expect(screen.getByRole('heading', { name: 'Study Hall' })).toBeTruthy();
+    expect(screen.queryByText(TRIAL_DEAL_LINE)).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* KI-033: the trial is enforced now, so the trial line states the live deal
+     (the KI-030 "not enforced yet" line is gone) and an expired trial says what
+     actually happened, in the locked words. */
+  it('states the enforced trial deal on the trial line, never the retired preview line', () => {
+    renderDetail('bot-2');
+    expect(screen.getByText(TRIAL_DEAL_LINE)).toBeTruthy();
     expect(screen.queryByText(TRIAL_LINE)).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('renders the locked expired line when the trial has ended, on any bot status', () => {
+    const { unmount } = renderExpiredDetail('bot-2');
+    expect(screen.getByRole('status').textContent).toBe(TRIAL_EXPIRED_MESSAGE);
+    unmount();
+
+    /* Ruling 4: reads stay open, so a live bot is still shown — with the pause
+       line, because the account's bots are paused whatever their own status. */
+    renderExpiredDetail('bot-1');
+    expect(screen.getByRole('heading', { name: 'Study Hall' })).toBeTruthy();
+    expect(screen.getByText(TRIAL_EXPIRED_MESSAGE)).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('shows no expired line when the trial has not ended', () => {
+    renderDetail('bot-2');
+    expect(screen.getByText(TRIAL_DEAL_LINE)).toBeTruthy();
+    expect(screen.queryByText(TRIAL_EXPIRED_MESSAGE)).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('lights the expired line from GET /api/session/trial when the endpoint says expired', async () => {
+    /* Injected fixtures skip the bot-list fetch but NOT the expiry signal; the
+       injected trialExpired prop stays undefined so the page reads the signal
+       endpoint once on mount (fail-open: a 404 draft + an expired flag still
+       render the banner on the real bot header). */
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(String(url));
+        if (String(url) === '/api/session/trial') {
+          return { ok: true, status: 200, json: async () => ({ trialExpired: true }) };
+        }
+        throw new Error('network disabled in tests');
+      }),
+    );
+    mockRouteId = 'bot-3';
+    render(<BotDetailPage trialExpired={undefined} bots={[botById('bot-3')]} />);
+
+    expect(await screen.findByText(TRIAL_EXPIRED_MESSAGE)).toBeTruthy();
+    expect(calls).toContain('/api/session/trial');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('keeps the expired line off when the signal endpoint fails (fail-open)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (String(url) === '/api/session/trial') {
+          return { ok: false, status: 401, json: async () => ({}) };
+        }
+        throw new Error('network disabled in tests');
+      }),
+    );
+    mockRouteId = 'bot-3';
+    render(<BotDetailPage bots={undefined} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.queryByText(TRIAL_EXPIRED_MESSAGE)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -461,12 +547,16 @@ describe('bot detail page', () => {
 
   it('ignores a stale feed response after the bot changes', async () => {
     const first = deferred<FetchResponse>();
-    /* Mount-time draft loads (no draft for mock ids) interleave with the feed calls. */
+    /* Mount-time trial signals (fail-open 401) interleave with draft loads
+       (no draft for mock ids) and the feed calls. */
     const noDraft = () => ({ ok: false, status: 404, json: async () => ({}) });
+    const noSignal = () => ({ ok: false, status: 401, json: async () => ({}) });
     const fetchStub = vi
       .fn()
+      .mockResolvedValueOnce(noSignal())
       .mockResolvedValueOnce(noDraft())
       .mockImplementationOnce(() => first.promise)
+      .mockResolvedValueOnce(noSignal())
       .mockResolvedValueOnce(noDraft())
       .mockResolvedValueOnce(
         respOk([{ at: '2026-09-13T11:00:00.000Z', kind: 'publish', text: 'Draft Arena only' }]),
@@ -1046,9 +1136,11 @@ describe('bot detail chat stream', () => {
   it('shows an honest inline error and Retry re-issues the same message on one row', async () => {
     const first = sseStream();
     const second = sseStream();
-    /* First slot is the mount-time draft load (no draft for mock ids). */
+    /* First the mount-time trial signal (fail-open 401), then the draft load
+       (no draft for mock ids), then stream + retry. */
     const fetchStub = vi
       .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
       .mockResolvedValueOnce(streamResponse(first.stream))
       .mockResolvedValueOnce(streamResponse(second.stream));
@@ -1064,8 +1156,8 @@ describe('bot detail chat stream', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(screen.getAllByText('You: Add a welcome rule')).toHaveLength(1);
-    /* Draft load + failed stream + retry. */
-    expect(fetchStub).toHaveBeenCalledTimes(3);
+    /* Trial signal + draft load + failed stream + retry. */
+    expect(fetchStub).toHaveBeenCalledTimes(4);
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Thinking' })).toBeTruthy();
 

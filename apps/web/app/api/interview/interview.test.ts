@@ -2,6 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { beforeAll, afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
 import { __resetPool } from '../../../lib/db/pool';
+import {
+  LIVE_BOT_COUNT_SQL,
+  TRIAL_BOT_LIMIT_MESSAGE,
+  TRIAL_EXPIRED_MESSAGE,
+} from '../../../lib/bots';
 import { __resetProgressStore } from '../../../lib/interview/progress-store';
 import { interviewProgress } from '../../../lib/interview/tree';
 import {
@@ -125,8 +130,31 @@ async function ensureSchema(pool: Pool): Promise<void> {
       ? '0001_init.sql + 0002_v11.sql + 0003_v12.sql (sibling migrations)'
       : `inline-fallback (${applied}/${sources.length} sibling files applied)`;
   await pool.query(FALLBACK_DDL);
+  // Self-heal for the cross-workspace shared-DB path (KI-033): the shared test
+  // container may already hold `accounts` from an older tree whose migrations
+  // stop before 0010, in which case the CREATE TABLE above is a no-op and the
+  // trial column would be missing — every KI-033 gate assertion would then fail
+  // on `column "trial_ends_at" does not exist`. Best-effort, mirroring
+  // apps/web/app/api/bots/[botId]/activity/route.test.ts: loud warn, never fail
+  // the hook on repair DDL.
+  try {
+    await pool.query(TRIAL_COLUMN_DDL);
+  } catch (error) {
+    console.warn(
+      `[interview.test] self-heal accounts.trial_ends_at failed: ${(error as Error).message}`,
+    );
+  }
   console.info(`[interview.test] schema ready via ${migrationSource}`);
 }
+
+/* The 0010 migration adds the column; this is the fallback-DDL equivalent for
+   a database where the sibling file could not be applied. */
+const TRIAL_COLUMN_DDL = 'ALTER TABLE accounts ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz';
+
+/* Clocks are literals relative to the run, never date comparisons in
+   assertions: an hour of margin on either side cannot flake on a slow machine. */
+const NOW_PLUS_HOUR = new Date(Date.now() + 3_600_000).toISOString();
+const NOW_MINUS_HOUR = new Date(Date.now() - 3_600_000).toISOString();
 
 function jsonRequest(path: string, body: unknown): Request {
   return new Request(`http://localhost${path}`, {
@@ -221,22 +249,47 @@ describe('interview routes fail honestly when the database is not configured', (
   let owner: InterviewSession;
   let intruder: InterviewSession;
 
+  async function makeAccount(
+    discordId: string,
+    trialEndsAt: string | null = NOW_PLUS_HOUR,
+  ): Promise<string> {
+    const row = await pool.query<{ id: string }>(
+      `INSERT INTO accounts (discord_id, trial_ends_at) VALUES ($1, $2::timestamptz) RETURNING id`,
+      [discordId, trialEndsAt],
+    );
+    return row.rows[0].id;
+  }
+
+  async function setTrialClock(accountId: string, trialEndsAt: string | null): Promise<void> {
+    await pool.query('UPDATE accounts SET trial_ends_at = $2::timestamptz WHERE id = $1', [
+      accountId,
+      trialEndsAt,
+    ]);
+  }
+
+  async function setTier(accountId: string, tier: string): Promise<void> {
+    await pool.query('UPDATE accounts SET tier = $2 WHERE id = $1', [accountId, tier]);
+  }
+
+  async function liveBotsOf(accountId: string): Promise<number> {
+    const counted = await pool.query<{ count: number }>(LIVE_BOT_COUNT_SQL, [accountId]);
+    return counted.rows[0].count;
+  }
+
   beforeAll(async () => {
     pool = new Pool({ connectionString });
     setStartPool(pool);
     setAnswerPool(pool);
     await ensureSchema(pool);
     const tag = `interview-test-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-    const ownerRow = await pool.query<{ id: string }>(
-      'INSERT INTO accounts (discord_id) VALUES ($1) RETURNING id',
-      [`${tag}-owner`],
-    );
-    const intruderRow = await pool.query<{ id: string }>(
-      'INSERT INTO accounts (discord_id) VALUES ($1) RETURNING id',
-      [`${tag}-intruder`],
-    );
-    owner = { accountId: ownerRow.rows[0].id, discordId: `${tag}-owner` };
-    intruder = { accountId: intruderRow.rows[0].id, discordId: `${tag}-intruder` };
+    // The default clock is an hour out, so every pre-existing assertion in this
+    // file exercises a RUNNING trial: the interview flow mints bots, and a
+    // grandfathered/expired clock would (correctly) refuse the second one and
+    // turn these into gate tests by accident.
+    const ownerId = await makeAccount(`${tag}-owner`);
+    const intruderId = await makeAccount(`${tag}-intruder`);
+    owner = { accountId: ownerId, discordId: `${tag}-owner` };
+    intruder = { accountId: intruderId, discordId: `${tag}-intruder` };
   }, 30000);
 
   afterAll(async () => {
@@ -271,6 +324,69 @@ describe('interview routes fail honestly when the database is not configured', (
       }),
     );
     expect(res.status).toBe(422);
+  });
+
+  it('refuses a second bot on a running trial — 403 trial_bot_limit, nothing minted', async () => {
+    const tag = `itv-cap-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await makeAccount(`${tag}-owner`);
+    const session: InterviewSession = { accountId, discordId: `${tag}-owner` };
+    actAs(session);
+
+    const first = await startBot('First Bot');
+    expect(first.status).toBe(200);
+
+    const second = await startBot('Second Bot');
+    expect(second.status).toBe(403);
+    expect(second.body).toEqual({
+      error: 'trial_bot_limit',
+      message: TRIAL_BOT_LIMIT_MESSAGE,
+    });
+    expect(await liveBotsOf(accountId)).toBe(1);
+  });
+
+  it('refuses an expired clock — 403 trial_expired, nothing minted', async () => {
+    const tag = `itv-expired-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await makeAccount(`${tag}-owner`, NOW_MINUS_HOUR);
+    actAs({ accountId, discordId: `${tag}-owner` });
+
+    const { status, body } = await startBot('Too Late');
+
+    expect(status).toBe(403);
+    expect(body).toEqual({ error: 'trial_expired', message: TRIAL_EXPIRED_MESSAGE });
+    expect(await liveBotsOf(accountId)).toBe(0);
+  });
+
+  it('fails open for a grandfathered NULL clock and bypasses for a paid tier', async () => {
+    const tag = `itv-clock-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const nullClockId = await makeAccount(`${tag}-null`, null);
+    actAs({ accountId: nullClockId, discordId: `${tag}-null` });
+    expect((await startBot('Grandfathered')).status).toBe(200);
+
+    // Paid tier: expired clock AND a bot already in place — both gates bypassed.
+    const paidId = await makeAccount(`${tag}-paid`, NOW_MINUS_HOUR);
+    await pool.query(
+      `INSERT INTO bots (account_id, name, token_cipher, status)
+       VALUES ($1, 'Existing', '\\x'::bytea, 'draft')`,
+      [paidId],
+    );
+    await setTier(paidId, 'pro');
+    actAs({ accountId: paidId, discordId: `${tag}-paid` });
+    expect((await startBot('Paid Bot')).status).toBe(200);
+    expect(await liveBotsOf(paidId)).toBe(2);
+  });
+
+  it('takes effect without a re-login — the clock is read per request', async () => {
+    const tag = `itv-flip-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await makeAccount(`${tag}-owner`);
+    actAs({ accountId, discordId: `${tag}-owner` });
+    expect((await startBot('Before')).status).toBe(200);
+
+    await setTrialClock(accountId, NOW_MINUS_HOUR);
+    const after = await startBot('After');
+
+    expect(after.status).toBe(403);
+    expect(after.body).toEqual({ error: 'trial_expired', message: TRIAL_EXPIRED_MESSAGE });
+    expect(await liveBotsOf(accountId)).toBe(1);
   });
 
   it('starts an interview with the first question', async () => {

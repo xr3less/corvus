@@ -167,7 +167,7 @@ export interface BuilderWorkerDeps {
  * undefined when the tier is unknown — the pre-check then falls back to the
  * trial allowance, which is exactly today's behaviour. Injected so KI-020's
  * tier wiring lands here without coupling this module to a billing schema that
- * does not exist yet (accounts has no `tier` column in the current migrations).
+ * does not exist yet (accounts HAS a `tier` column since migration 0008, default 'trial').
  */
 export type BuilderTierResolver = (accountId: string) => Promise<PlanTier | null | undefined>;
 

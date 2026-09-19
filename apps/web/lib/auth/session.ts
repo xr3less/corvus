@@ -29,6 +29,21 @@ export interface AccountRow {
   creem_id: string | null;
   credits: string;
   created_at: string;
+  // Account plan tier (accounts.tier, default 'trial'). Optional on purpose:
+  // hand-rolled doubles and selects that predate the tier read carry no tier,
+  // which resolves to the trial path (fail-closed on the free path) via
+  // isPaidTier — never to a paid bypass.
+  tier?: string | null;
+  // KI-033 trial clock (0010_accounts_trial_ends.sql). Optional on purpose:
+  // the memory double below keeps the row shape it always had (type-only
+  // compat, no behaviour change), and a row that predates the migration may
+  // legitimately carry no clock. null / undefined = no clock = NOT expired —
+  // that fail-open direction is the locked semantic, so an absent value can
+  // never be mistaken for "expired". The value is a union because pg returns
+  // a Date for timestamptz while JSON and other paths hand back an ISO string;
+  // isTrialExpired accepts both, and consumers must go through it rather than
+  // comparing dates by hand.
+  trial_ends_at?: string | Date | null;
 }
 
 export interface SessionRow {
@@ -41,11 +56,39 @@ export interface SessionRow {
 export interface SessionInfo {
   accountId: string;
   discordId: string;
+  // KI-033: the account's trial clock, carried on the session so a route can
+  // gate on expiry without a second query. The join in findSessionWithAccount
+  // selects it; a row with no clock surfaces as null (a real store) or is
+  // absent (a hand-rolled double) — isTrialExpired reads both as "not expired".
+  trialEndsAt?: Date | string | null;
+  // KI-033: the account's plan tier, carried on the session so routes can
+  // bypass the trial gates for paid tiers without a second query. Optional on
+  // purpose: absent/null/unknown resolves to the trial path (never to a paid
+  // bypass) — see isPaidTier in lib/bots.ts.
+  tier?: string | null;
 }
 
 export interface FoundSession {
   session: SessionRow;
   discordId: string;
+  // REQUIRED key (every SessionStore implementation must state what clock it
+  // yields), but the VALUE may be undefined as well as null. The two are kept
+  // distinct on purpose:
+  //   - null      = the database was asked and answered "no clock" (SQL NULL)
+  //   - undefined = this store has no clock concept at all (a hand-rolled test
+  //                 double), or the key predates the migration
+  // Both mean "not expired" — isTrialExpired treats them identically (tested).
+  // Collapsing undefined into null here would erase that distinction, and would
+  // also force every existing exact-shape session assertion in the suite to
+  // change. The REQUIRED key still fails the build for a new implementation that
+  // forgets the clock entirely.
+  trialEndsAt: Date | string | null | undefined;
+  // KI-033: the account's plan tier (accounts.tier). REQUIRED key so a new
+  // SessionStore implementation states what tier it yields, but the VALUE may be
+  // null/undefined: both resolve to the trial path (never to a paid bypass).
+  // Kept symmetric with trialEndsAt so implementations never silently widen a
+  // hand-rolled double into a paid account.
+  tier: string | null | undefined;
 }
 
 export interface SessionStore {
@@ -64,8 +107,10 @@ export class PgSessionStore implements SessionStore {
   }
 
   async findSessionWithAccount(sessionId: string): Promise<FoundSession | null> {
-    const result = await this.pool.query<SessionRow & { discord_id: string }>(
-      'SELECT s.id, s.account_id, s.expires_at, s.created_at, a.discord_id' +
+    const result = await this.pool.query<
+      SessionRow & { discord_id: string; trial_ends_at: Date | string | null; tier: string | null }
+    >(
+      'SELECT s.id, s.account_id, s.expires_at, s.created_at, a.discord_id, a.trial_ends_at, a.tier' +
         ' FROM sessions s JOIN accounts a ON a.id = s.account_id WHERE s.id = $1',
       [sessionId],
     );
@@ -81,6 +126,14 @@ export class PgSessionStore implements SessionStore {
         created_at: row.created_at,
       },
       discordId: row.discord_id,
+      // Carried straight through: SQL NULL (no clock) stays null. No COALESCE
+      // or default — an absent clock must reach isTrialExpired's fail-open
+      // branch rather than being silently reinterpreted here.
+      trialEndsAt: row.trial_ends_at,
+      // Carried straight through: the tier column is NOT NULL in production
+      // ('trial' default), so a real row always yields a string here. Passed
+      // as-is — unknown values resolve to the trial path at the gate.
+      tier: row.tier,
     };
   }
 
@@ -96,10 +149,16 @@ export class PgSessionStore implements SessionStore {
   }
 
   async upsertAccountByDiscordId(discordId: string, email: string | null): Promise<AccountRow> {
+    // KI-033: trial_ends_at is set on INSERT ONLY. The ON CONFLICT branch
+    // deliberately does not mention it — re-login must never extend a trial,
+    // and a returning account keeps the clock it was given at creation (or
+    // the fresh one the 0010 backfill gave it). DO NOT add trial_ends_at to
+    // the DO UPDATE SET list.
     const result = await this.pool.query<AccountRow>(
-      'INSERT INTO accounts (discord_id, email) VALUES ($1, $2)' +
+      'INSERT INTO accounts (discord_id, email, trial_ends_at)' +
+        " VALUES ($1, $2, now() + interval '3 days')" +
         ' ON CONFLICT (discord_id) DO UPDATE SET email = COALESCE(EXCLUDED.email, accounts.email)' +
-        ' RETURNING id, discord_id, email, creem_id, credits, created_at',
+        ' RETURNING id, discord_id, email, creem_id, credits, created_at, trial_ends_at',
       [discordId, email],
     );
     const row = result.rows[0];
@@ -141,7 +200,17 @@ export function createMemorySessionStore(now: () => number = Date.now): SessionS
       if (!account) {
         return Promise.resolve(null);
       }
-      return Promise.resolve({ session, discordId: account.discord_id });
+      return Promise.resolve({
+        session,
+        discordId: account.discord_id,
+        // Mirrors the SQL store: the clock is passed straight through, so a
+        // double-created account (which has none) yields undefined, exactly as
+        // a pre-migration row would. Never silently backfilled here.
+        trialEndsAt: account.trial_ends_at,
+        // Mirrors the SQL store: the double-created row carries no tier, so it
+        // yields undefined — which resolves to the trial path at the gates.
+        tier: account.tier,
+      });
     },
     touchSession(sessionId: string, expiresAt: Date): Promise<void> {
       const session = sessions.get(sessionId);
@@ -162,9 +231,21 @@ export function createMemorySessionStore(now: () => number = Date.now): SessionS
           if (email !== null) {
             existing.email = email;
           }
+          // KI-033: deliberately does NOT touch trial_ends_at — the memory
+          // double must mirror the SQL store's "re-login never extends the
+          // trial" rule, not diverge from it.
           return Promise.resolve(existing);
         }
       }
+      // KI-033, type-only compat: the literal below deliberately carries NO
+      // trial_ends_at (undefined = fail-open = not expired). The double must
+      // NOT mint `now() + 3 days` here: this store shares its injectable
+      // `now()` with tests that seed accounts in the PAST (e.g. a 20-day-old
+      // signup), so a derived clock would silently come out already-expired and
+      // change those tests' behaviour. Accounts created through the double are
+      // therefore never trial-expired — a suite that needs an expired session
+      // injects its own SessionReader with a past `trialEndsAt`, or uses
+      // PgSessionStore against the real database.
       const row: AccountRow = {
         id: randomUUID(),
         discord_id: discordId,
@@ -376,11 +457,29 @@ export async function getSession(
     if (Number.isFinite(createdMs) && nowMs - createdMs > SESSION_TOUCH_AFTER_MS) {
       await resolved.touchSession(sessionId, new Date(nowMs + SESSION_TTL_MS));
     }
-    return { accountId: found.session.account_id, discordId: found.discordId };
+    return {
+      accountId: found.session.account_id,
+      discordId: found.discordId,
+      // Same pass-through rule as the stores: undefined (double with no clock)
+      // stays undefined rather than becoming a null the caller must learn about.
+      trialEndsAt: found.trialEndsAt,
+      // Same pass-through rule: undefined (double with no tier) stays
+      // undefined, which the gates resolve to the trial path — never a bypass.
+      tier: found.tier,
+    };
   } catch {
     return null;
   }
 }
+
+// KI-033 trial clock predicate — re-exported so session consumers get it from
+// the same import they already use. The DEFINITION lives in ../trial.ts, which
+// is runtime-agnostic (no `pg`, no Node built-ins) so the same predicate can be
+// imported by the gateway follow-up or a script without dragging in the session
+// module. What it means, and why an absent clock is fail-open, is documented
+// there; every gate (mint cap, builder start, chat) must go through it rather
+// than hand-rolling `new Date(a) < new Date(b)`.
+export { isTrialExpired } from '../trial';
 
 export interface SessionCookieOptions {
   secure?: boolean;

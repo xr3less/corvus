@@ -5,8 +5,15 @@
 // account's bots (KI-030). The example rows below stay exported for compat
 // and tests; no page renders them as real data. The explainer sentences over
 // these specs are produced live by explain().
+//
+// KI-033: this module also owns the trial gate shared by all three bot-mint
+// entry points (POST /api/bots, POST /api/interview/start, POST
+// /api/templates/[slug]/fork). The DECISION lives in mintGate() here; the
+// routes only do the reads and shape the 403. The clock predicate itself is
+// isTrialExpired() from ./trial — never re-derive a date comparison.
 
 import { isUuid } from './editor/drafts';
+import { isTrialExpired } from './trial';
 
 export type BotStatus = 'online' | 'trial' | 'offline';
 
@@ -40,7 +47,108 @@ export const MOCK_BOTS: MockBot[] = [
   { id: 'bot-3', name: 'Night Market mods', status: 'offline', members: 2013, servers: 2 },
 ];
 
-export const TRIAL_DEAL = 'Free while in preview — limits not enforced yet.';
+export const TRIAL_DEAL = 'Free 3-day trial — 1 bot, 100 AI credits.';
+
+/* Shared KI-033 copy locks. Both strings are byte-level law from the SPEC;
+   they appear in API bodies and on screen, so they live here once rather than
+   being retyped (and drifting) per surface. */
+export const TRIAL_EXPIRED_MESSAGE =
+  'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
+export const TRIAL_BOT_LIMIT_MESSAGE = 'Free 3-day trial — 1 bot, 100 AI credits.';
+
+/* --- Mint cap (KI-033) ---------------------------------------------------- */
+
+/* The account columns the cap reads. `trial_ends_at` is the clock (null = no
+   clock = NOT expired, fail-open — never compared by hand, see ./trial);
+   `tier` decides whether the cap applies at all. */
+export interface MintAccountRow {
+  tier: string | null;
+  trial_ends_at?: Date | string | null;
+}
+
+export interface MintGateResult {
+  /* `tier` is carried through so callers can label a refusal without a second
+     read, and so the gate stays a pure function of one row. */
+  tier: string | null;
+  /* Exactly one of these is set when the mint must be refused. Both are null
+     when the mint may proceed. */
+  expired: string | null;
+  botLimit: string | null;
+}
+
+/* The paid tiers bypass BOTH gates (no cap, no clock). The tiers are not for
+   sale yet, but the bypass is coded now so the gate cannot quietly become a
+   wall once they are — that would be a behavior change discovered in
+   production instead of here. */
+const PAID_TIERS = new Set(['pro', 'studio', 'scale']);
+
+export function isPaidTier(tier: string | null | undefined): boolean {
+  return typeof tier === 'string' && PAID_TIERS.has(tier);
+}
+
+/* A tier outside the paid set is treated as trial — including the database
+   default ('trial'), an unexpected value, and null/undefined (a hand-rolled
+   session double that carries no tier). The gate fails CLOSED for the free
+   path: an unknown tier gets the trial's limits, never a free pass. */
+export function isTrialTier(tier: string | null | undefined): boolean {
+  return !isPaidTier(tier);
+}
+
+/* Both mint refusals, and the whole tier decision, in one place. Order matters
+   and is locked: an expired clock refuses regardless of how many bots exist
+   (the account's bots are paused, so "1 bot limit" would be a confusing reason
+   on a second mint), and the bot cap is only consulted for a still-running
+   trial. `liveBotCount` counts live rows only (deleted_at IS NULL) — the count
+   is the caller's read, the decision is this function's. */
+export function mintGate(account: MintAccountRow, liveBotCount: number): MintGateResult {
+  const tier = account?.tier ?? null;
+  if (isPaidTier(tier)) {
+    return { tier, expired: null, botLimit: null };
+  }
+  if (isTrialExpired(account)) {
+    return { tier, expired: TRIAL_EXPIRED_MESSAGE, botLimit: null };
+  }
+  if (liveBotCount >= 1) {
+    return { tier, expired: null, botLimit: TRIAL_BOT_LIMIT_MESSAGE };
+  }
+  return { tier, expired: null, botLimit: null };
+}
+
+/* Whether the bot count is worth reading at all: only a still-running trial can
+   be refused BY THE CAP. A paid tier is never capped, and an expired clock is
+   already refused on its own, so both skip the count read entirely. The routes
+   ask this before the second SELECT — the expiry answer never depends on how
+   many bots exist, so paying for the count to reach it would be work with no
+   effect on the outcome. */
+export function needsLiveBotCount(account: MintAccountRow | null | undefined): boolean {
+  return isTrialTier(account?.tier ?? null) && !isTrialExpired(account);
+}
+
+/* The one extra read each mint path makes before writing: the account's clock
+   and tier, by primary key. One row, one query — never a COUNT plus a second
+   lookup for the same fact. */
+export const MINT_ACCOUNT_SQL = 'SELECT tier, trial_ends_at FROM accounts WHERE id = $1';
+
+/* Live bots owned by the account (soft-deleted rows never count). Used only
+   when the tier says the cap applies. */
+export const LIVE_BOT_COUNT_SQL =
+  'SELECT count(*)::int AS count FROM bots WHERE account_id = $1 AND deleted_at IS NULL';
+
+/* Route-level refusal codes. The message is the honest sentence a person
+   reads; the code is what a client (or a test) branches on. */
+export type MintRefusalCode = 'trial_expired' | 'trial_bot_limit';
+
+export function mintRefusal(
+  gate: MintGateResult,
+): { code: MintRefusalCode; message: string } | null {
+  if (gate.expired !== null) {
+    return { code: 'trial_expired', message: gate.expired };
+  }
+  if (gate.botLimit !== null) {
+    return { code: 'trial_bot_limit', message: gate.botLimit };
+  }
+  return null;
+}
 
 export interface ActivityItem {
   id: string;

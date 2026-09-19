@@ -491,3 +491,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* KI-033: the expired-trial banner. Amber, not red — the trial ended and the
+   bots are paused; nothing broke and nothing was deleted. Border/background
+   are the same translucent-on-dark family as .panel so it reads as part of
+   the page rather than an alert bolted on. */
+.trialExpiredBanner {
+  margin: 0;
+  padding: 14px 18px;
+  color: #fde68a;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 500;
+  text-wrap: pretty;
+  background-color: rgb(245 158 11 / 0.1);
+  border: 1px solid rgb(245 158 11 / 0.35);
+  border-radius: 12px;
+}

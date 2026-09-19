@@ -43,7 +43,7 @@ const FAQS = [
   },
   {
     q: 'What happens to my guild data and XP records if my trial expires?',
-    a: 'Limits and sleep aren\u2019t enforced yet \u2014 your bot stays as-is until we ship them.',
+    a: 'When your trial ends, your bots pause and stay as-is \u2014 nothing is deleted.',
   },
   {
     q: 'How does Corvus differ from legacy bots like MEE6 or Dyno?',
@@ -51,7 +51,7 @@ const FAQS = [
   },
   {
     q: 'How do AI credits work for dynamic interactions and moderation?',
-    a: 'Planned: Everyday jobs (giving roles, running commands, counting XP, enforcing rules) are free and never touch your credits. Credits go only to AI work: building from your descriptions and smart replies (about 1.1 credits per build). The 2,000 credits in Pro last most communities for months. (not enforced yet)',
+    a: 'Everyday jobs (giving roles, running commands, counting XP, enforcing rules) are free and never touch your credits. Credits go only to AI work: building from your descriptions and smart replies (about 1.1 credits per build). The trial includes 100 credits for 3 days; the 2,000 credits in Pro last most communities for months.',
   },
   {
     q: 'I already have other bots installed. Will role permissions conflict?',
@@ -217,7 +217,7 @@ export default function HomePage() {
                     </span>
                   </a>
                   <p className={styles.priceNote}>
-                    Free while in preview — limits not enforced yet.
+                    Free 3-day trial — 1 bot, 100 AI credits, no card required.
                   </p>
                 </div>
                 <a href="/demo" className={styles.ctaDemo}>
@@ -708,8 +708,7 @@ export default function HomePage() {
                   <span className={styles.pricePer}>/ free preview</span>
                 </div>
                 <p className={styles.priceDesc}>
-                  Deploy your first custom Discord bot in minutes while Corvus is in preview. No
-                  credit card required. Prices and limits are planned — nothing is enforced.
+                  Prices and limits are planned — the trial (1 bot, 100 AI credits) is enforced.
                 </p>
                 <ul className={styles.priceList}>
                   <li className={styles.priceLi}>
@@ -738,7 +737,9 @@ export default function HomePage() {
                 <a href="/dashboard" className={`${styles.btnGhost} ${styles.priceCta}`}>
                   Start building free
                 </a>
-                <p className={styles.priceNote}>Free while in preview — limits not enforced yet.</p>
+                <p className={styles.priceNote}>
+                  Free 3-day trial — 1 bot, 100 AI credits, no card required.
+                </p>
               </div>
             </div>
 

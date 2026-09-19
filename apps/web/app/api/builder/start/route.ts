@@ -15,23 +15,53 @@
 // queue on send (L-011), so the first-ever run cannot 500 on a fresh DB.
 //
 // No billing hook: a builder run is free to retry; no credits are consumed
-// here.
+// here. The monthly allowance is enforced one layer down, in the gateway
+// worker's pre-call gate (builder-runs.ts), which refuses before the first
+// billable model call — this route deliberately does not duplicate it.
+//
+// KI-033: an expired trial account is refused with 403 before any row or job
+// exists. The check is on the session's own trial clock, so it needs no
+// database read and runs ahead of the body validation.
 
 import { NextResponse } from 'next/server';
 import { PgBoss } from 'pg-boss';
 import type { SendOptions } from 'pg-boss';
 import { DatabaseNotConfiguredError, getPool, requireDatabaseUrl } from '../../../../lib/db/pool';
-import { defaultSessionReader, type SessionReader } from '../../../../lib/interview/session-bind';
+import {
+  defaultSessionReader,
+  type InterviewSession,
+} from '../../../../lib/interview/session-bind';
+import { isTrialExpired } from '../../../../lib/auth/session';
+import { isPaidTier } from '../../../../lib/bots';
 
 export const BUILDER_QUEUE = 'builder';
+
+// Locked wording (KI-033 SPEC, byte-level): the same sentence the chat route and
+// the dashboard banner carry, so a blocked build says what happened and what was
+// not lost instead of leaving the caller with a code.
+const TRIAL_ENDED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // --- Injectable seams (fail-closed, test-only writers) ---
 
-let sessionReader: SessionReader = defaultSessionReader;
+// The session this route consumes. A local extension of session-bind's
+// InterviewSession (accountId + discordId) rather than an edit to that shared
+// module: the KI-033 clock and tier are optional, so the real production reader
+// still satisfies this type, while a reader that carries neither is simply a
+// trial-path account (fail-open on the clock, fail-closed on the free path).
+export interface BuilderSession extends InterviewSession {
+  trialEndsAt?: Date | string | null;
+  tier?: string | null;
+}
 
-export function __setSessionReader(reader: SessionReader): void {
+export interface BuilderSessionReader {
+  getSession(req: Request): Promise<BuilderSession | null>;
+}
+
+let sessionReader: BuilderSessionReader = defaultSessionReader;
+
+export function __setSessionReader(reader: BuilderSessionReader): void {
   sessionReader = reader;
 }
 
@@ -82,6 +112,19 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
   if (!session) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  // KI-033: the trial clock gates the WRITE (SPEC ruling 4). This runs before
+  // the body check, the ownership read, the run INSERT and the pg-boss send, so
+  // an expired account leaves no trace at all — no row to poll, no queued job
+  // for the worker to pick up. A paid tier bypasses the clock: the tiers are not
+  // sold yet, but the bypass is coded now so the gate cannot become a wall. A
+  // missing/unknown tier resolves to the trial path (never to a bypass).
+  if (!isPaidTier(session.tier) && isTrialExpired({ trial_ends_at: session.trialEndsAt })) {
+    return NextResponse.json(
+      { error: 'trial_expired', message: TRIAL_ENDED_MESSAGE },
+      { status: 403 },
+    );
   }
 
   let raw: StartInput = {};

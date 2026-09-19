@@ -86,8 +86,8 @@ export default function TermsOfServicePage() {
             </p>
             <ul className={styles.list}>
               <li>
-                <span className={styles.strong}>Planned: Trial:</span> 3 days of full Pro access,
-                one bot, no card required.
+                <span className={styles.strong}>Trial (live):</span> 3 days of full Pro access, one
+                bot, no card required.
               </li>
               <li>
                 <span className={styles.strong}>Planned: Paid plans:</span> Pro is $10 a month and

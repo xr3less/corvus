@@ -3,6 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
 import { TEST_DATABASE_URL, __resetPool, __setPool } from '../../../lib/db/pool';
 import {
+  LIVE_BOT_COUNT_SQL,
+  TRIAL_BOT_LIMIT_MESSAGE,
+  TRIAL_EXPIRED_MESSAGE,
+} from '../../../lib/bots';
+import {
   ADMINISTRATOR_BIT,
   CAPABILITY_MAP,
   buildInvite,
@@ -40,6 +45,15 @@ if (!probe.ok) {
       `Reason: ${probe.reason}. Start the orchestrator-owned test container, then re-run.`,
   );
 }
+
+/* The 0010 migration adds the column; this is the fallback-DDL equivalent for
+   a database where the sibling file could not be applied. */
+const TRIAL_COLUMN_DDL = 'ALTER TABLE accounts ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz';
+
+/* Clocks are literals relative to the run, never date comparisons in
+   assertions: an hour of margin on either side cannot flake on a slow machine. */
+const NOW_PLUS_HOUR = new Date(Date.now() + 3_600_000).toISOString();
+const NOW_MINUS_HOUR = new Date(Date.now() - 3_600_000).toISOString();
 
 // Inline fallback DDL matching the sibling migrations verbatim (0001 bots +
 // 0002 accounts/spec_versions) plus the V1-6 templates contract text. Every
@@ -113,6 +127,20 @@ async function ensureSchema(pool: Pool): Promise<void> {
       ? '0001_init.sql + 0002_v11.sql (sibling migrations)'
       : `inline-fallback (${applied}/${sources.length} sibling files applied)`;
   await pool.query(FALLBACK_DDL);
+  // Self-heal for the cross-workspace shared-DB path (KI-033): the shared test
+  // container may already hold `accounts` from an older tree whose migrations
+  // stop before 0010, in which case the CREATE TABLE above is a no-op and the
+  // trial column would be missing — the fork gate would then fail every
+  // assertion on `column "trial_ends_at" does not exist`. Best-effort, mirroring
+  // apps/web/app/api/bots/[botId]/activity/route.test.ts: loud warn, never fail
+  // the hook on repair DDL.
+  try {
+    await pool.query(TRIAL_COLUMN_DDL);
+  } catch (error) {
+    console.warn(
+      `[templates.test] self-heal accounts.trial_ends_at failed: ${(error as Error).message}`,
+    );
+  }
   console.info(`[templates.test] schema ready via ${migrationSource}`);
 }
 
@@ -305,15 +333,37 @@ describe('template routes with DATABASE_URL absent', () => {
     return found.rows[0].forks;
   }
 
+  async function liveBotsOf(accountId: string): Promise<number> {
+    const counted = await pool.query<{ count: number }>(LIVE_BOT_COUNT_SQL, [accountId]);
+    return counted.rows[0].count;
+  }
+
+  /* A separate fork account per gate test: the shared `session` account carries
+     the file's other assertions, and mutating its clock or tier would reach
+     across tests (vitest runs a file's tests in order, in one pool). */
+  async function gateAccount(
+    discordId: string,
+    trialEndsAt: string | null = NOW_PLUS_HOUR,
+  ): Promise<string> {
+    const row = await pool.query<{ id: string }>(
+      `INSERT INTO accounts (discord_id, trial_ends_at) VALUES ($1, $2::timestamptz) RETURNING id`,
+      [discordId, trialEndsAt],
+    );
+    return row.rows[0].id;
+  }
+
   beforeAll(async () => {
     pool = new Pool({ connectionString });
     await ensureSchema(pool);
     __setPool(pool);
     process.env.DISCORD_CLIENT_ID = '123456789012345678';
     const account = await pool.query<{ id: string }>(
-      `INSERT INTO accounts (discord_id) VALUES ('tfork-discord-1')
-       ON CONFLICT (discord_id) DO UPDATE SET discord_id = EXCLUDED.discord_id
+      `INSERT INTO accounts (discord_id, trial_ends_at)
+       VALUES ('tfork-discord-1', $1::timestamptz)
+       ON CONFLICT (discord_id) DO UPDATE
+         SET discord_id = EXCLUDED.discord_id, trial_ends_at = EXCLUDED.trial_ends_at
        RETURNING id`,
+      [NOW_PLUS_HOUR],
     );
     session.accountId = account.rows[0].id;
     await seedTemplate({
@@ -336,6 +386,10 @@ describe('template routes with DATABASE_URL absent', () => {
     resetForkReader();
     if (probe.ok && pool) {
       await pool.query('DELETE FROM bots WHERE account_id = $1', [session.accountId]);
+      await pool.query(
+        "DELETE FROM bots WHERE account_id IN (SELECT id FROM accounts WHERE discord_id LIKE 'tfork-gate-%')",
+      );
+      await pool.query("DELETE FROM accounts WHERE discord_id LIKE 'tfork-gate-%'");
       await pool.query("DELETE FROM templates WHERE slug LIKE 'tfork-%'");
       await pool.query('DELETE FROM accounts WHERE discord_id = $1', ['tfork-discord-1']);
       await pool.end().catch(() => {});
@@ -494,6 +548,89 @@ describe('template routes with DATABASE_URL absent', () => {
     );
     expect(names.rows.map((r) => r.name)).toEqual(['Fork One', 'Fork Two']);
     expect(await forksOf('tfork-beta')).toBe(before + 2);
+  });
+
+  it('refuses the second fork on a running trial — 403 trial_bot_limit, forks untouched', async () => {
+    const tag = `tfork-gate-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await gateAccount(`${tag}-cap`);
+    setForkReader({ getSession: async () => ({ accountId, discordId: `${tag}-cap` }) });
+    const before = await forksOf('tfork-alpha');
+
+    const first = await forkTemplate(postFork('tfork-alpha', {}), {
+      params: Promise.resolve({ slug: 'tfork-alpha' }),
+    });
+    expect(first.status).toBe(200);
+
+    const second = await forkTemplate(postFork('tfork-alpha', {}), {
+      params: Promise.resolve({ slug: 'tfork-alpha' }),
+    });
+    expect(second.status).toBe(403);
+    expect(await readJson(second)).toEqual({
+      error: 'trial_bot_limit',
+      message: TRIAL_BOT_LIMIT_MESSAGE,
+    });
+    // The refusal happens before the transaction: no bot, no spec version and
+    // no fork increment.
+    expect(await liveBotsOf(accountId)).toBe(1);
+    expect(await forksOf('tfork-alpha')).toBe(before + 1);
+
+    setForkReader({ getSession: async () => session });
+  });
+
+  it('refuses an expired clock — 403 trial_expired, nothing written', async () => {
+    const tag = `tfork-gate-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await gateAccount(`${tag}-expired`, NOW_MINUS_HOUR);
+    setForkReader({ getSession: async () => ({ accountId, discordId: `${tag}-expired` }) });
+    const before = await forksOf('tfork-alpha');
+
+    const res = await forkTemplate(postFork('tfork-alpha', {}), {
+      params: Promise.resolve({ slug: 'tfork-alpha' }),
+    });
+
+    expect(res.status).toBe(403);
+    expect(await readJson(res)).toEqual({
+      error: 'trial_expired',
+      message: TRIAL_EXPIRED_MESSAGE,
+    });
+    expect(await liveBotsOf(accountId)).toBe(0);
+    expect(await forksOf('tfork-alpha')).toBe(before);
+
+    setForkReader({ getSession: async () => session });
+  });
+
+  it('lets a paid tier bypass both gates and fails open on a NULL clock', async () => {
+    const tag = `tfork-gate-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+
+    const paidId = await gateAccount(`${tag}-paid`, NOW_MINUS_HOUR);
+    await pool.query('UPDATE accounts SET tier = $2 WHERE id = $1', [paidId, 'pro']);
+    await pool.query(
+      `INSERT INTO bots (account_id, name, token_cipher, status)
+       VALUES ($1, 'Existing', '\\x'::bytea, 'draft')`,
+      [paidId],
+    );
+    setForkReader({ getSession: async () => ({ accountId: paidId, discordId: `${tag}-paid` }) });
+    expect(
+      (
+        await forkTemplate(postFork('tfork-alpha', {}), {
+          params: Promise.resolve({ slug: 'tfork-alpha' }),
+        })
+      ).status,
+    ).toBe(200);
+    expect(await liveBotsOf(paidId)).toBe(2);
+
+    const nullClockId = await gateAccount(`${tag}-null`, null);
+    setForkReader({
+      getSession: async () => ({ accountId: nullClockId, discordId: `${tag}-null` }),
+    });
+    expect(
+      (
+        await forkTemplate(postFork('tfork-alpha', {}), {
+          params: Promise.resolve({ slug: 'tfork-alpha' }),
+        })
+      ).status,
+    ).toBe(200);
+
+    setForkReader({ getSession: async () => session });
   });
 
   it('seam: every row perms_needed is a subset of the REAL mapper output', async () => {

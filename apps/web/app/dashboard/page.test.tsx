@@ -16,7 +16,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 
-const TRIAL_LINE = 'Free while in preview — limits not enforced yet.';
+const TRIAL_LINE = 'Free 3-day trial — 1 bot, 100 AI credits.';
+const TRIAL_EXPIRED_BANNER = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
 const PAGE_TITLE = 'Home';
 const PAGE_SUB = 'Your bots at a glance.';
 /* Model names may never appear in user copy — verified against the rendered text. */
@@ -177,13 +178,113 @@ describe('dashboard home', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('renders the Workspace strip with the preview deal and an honest Upgrade', () => {
+  it('renders the Workspace strip with the trial deal and an honest Upgrade', () => {
     render(<DashboardPage />);
     const workspace = screen.getByRole('region', { name: 'Workspace' });
     expect(within(workspace).getByRole('heading', { name: 'Workspace' })).toBeTruthy();
     expect(within(workspace).getByText('Workspace: My server')).toBeTruthy();
     expect(within(workspace).getByText(TRIAL_LINE)).toBeTruthy();
     expect(within(workspace).getByRole('button', { name: 'Upgrade · Coming soon' })).toBeTruthy();
+    /* KI-033: the deal line is present-tense truth now — the old "limits not
+       enforced yet" wording may never ship again. */
+    expect(document.body.textContent).not.toContain('not enforced yet');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('shows the honest expired banner when the trial clock has passed', () => {
+    render(<DashboardPage trialExpired />);
+    expect(screen.getByText(TRIAL_EXPIRED_BANNER)).toBeTruthy();
+    /* Nothing is deleted and nothing is hidden: the page still renders its
+       real bots and the create link stays reachable. */
+    expect(screen.getByRole('region', { name: 'No bots yet' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Create your first bot' })).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('lights the banner from GET /api/session/trial when the endpoint says expired', async () => {
+    /* No injected prop: the page reads the signal endpoint once on mount. */
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url === '/api/session/trial') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ trialExpired: true }),
+          });
+        }
+        return Promise.reject(new Error('network disabled in tests'));
+      }),
+    );
+    render(<DashboardPage />);
+
+    expect(await screen.findByText(TRIAL_EXPIRED_BANNER)).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith('/api/session/trial', expect.objectContaining({}));
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('keeps the banner off when the signal endpoint says the trial runs (fail-open)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url === '/api/session/trial') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ trialExpired: false }),
+          });
+        }
+        return Promise.reject(new Error('network disabled in tests'));
+      }),
+    );
+    render(<DashboardPage />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.queryByText(TRIAL_EXPIRED_BANNER)).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('keeps the banner off when the signal endpoint fails (fail-open, never guesses)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url === '/api/session/trial') {
+          return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+        }
+        return Promise.reject(new Error('network disabled in tests'));
+      }),
+    );
+    render(<DashboardPage />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.queryByText(TRIAL_EXPIRED_BANNER)).toBeNull();
+    /* Malformed shapes resolve the same way: only an explicit boolean true
+       may light the banner. */
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('keeps the banner off on a malformed signal body (only boolean true counts)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url === '/api/session/trial') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ trialExpired: 'yes' }),
+          });
+        }
+        return Promise.reject(new Error('network disabled in tests'));
+      }),
+    );
+    render(<DashboardPage />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.queryByText(TRIAL_EXPIRED_BANNER)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 

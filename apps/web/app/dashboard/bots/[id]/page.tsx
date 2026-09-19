@@ -17,6 +17,7 @@ import {
   formatActivityTime,
   resolveBotId,
   TRIAL_DEAL,
+  TRIAL_EXPIRED_MESSAGE,
   type BotStatus,
   type LiveActivityItem,
   type MockBot,
@@ -160,7 +161,18 @@ function StatusPill({ status }: { status: BotStatus }) {
 type ListState =
   { status: 'ready'; bots: MockBot[] } | { status: 'loading' } | { status: 'unauthorized' };
 
-function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
+function BotDetailInner({
+  bots: injectedBots,
+  trialExpired: injectedTrialExpired,
+}: {
+  bots?: MockBot[];
+  /* KI-033: the trial clock is server truth (accounts.trial_ends_at) and this
+     page is 'use client', so the flag is read from GET /api/session/trial on
+     mount — never from the bot rows, and never guessed. An injected prop
+     (tests) wins; otherwise absent/fetch-fail means "not expired as far as
+     this read knows" and the banner stays off. */
+  trialExpired?: boolean;
+}) {
   const routeParams = useParams<{ id: string }>();
   const id = typeof routeParams?.id === 'string' ? routeParams.id : '';
   const serverId = resolveBotId(id);
@@ -193,6 +205,36 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
       controller.abort();
     };
   }, [injectedBots, serverId, lookupNonce]);
+
+  /* The expiry signal arrives from GET /api/session/trial (never from the bot
+     rows). An injected prop (tests) wins outright; otherwise the endpoint is
+     read once on mount and any failure resolves to false — fail-open, so a
+     down session read can never conjure a banner. */
+  const [liveTrialExpired, setLiveTrialExpired] = useState(false);
+  useEffect(() => {
+    if (injectedTrialExpired !== undefined) return;
+    const controller = new AbortController();
+    let active = true;
+    void (async () => {
+      try {
+        const response = await fetch('/api/session/trial', { signal: controller.signal });
+        if (!active || !response.ok) return;
+        const payload: unknown = await response.json();
+        if (!active) return;
+        if (typeof payload === 'object' && payload !== null) {
+          const flag = (payload as Record<string, unknown>).trialExpired;
+          if (typeof flag === 'boolean' && flag) setLiveTrialExpired(true);
+        }
+      } catch {
+        return;
+      }
+    })();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [injectedTrialExpired]);
+  const trialExpired = injectedTrialExpired ?? liveTrialExpired;
 
   const bot = list.status === 'ready' ? (list.bots.find((entry) => entry.id === id) ?? null) : null;
   /* Writes send only a real server id; a mock key becomes null (D-112). */
@@ -865,6 +907,11 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
               <h1 className={styles.detailTitle}>{bot.name}</h1>
               <StatusPill status={bot.status} />
             </div>
+            {trialExpired ? (
+              <p role="status" className={styles.trialText}>
+                {TRIAL_EXPIRED_MESSAGE}
+              </p>
+            ) : null}
             {bot.status === 'trial' ? <p className={styles.trialText}>{TRIAL_DEAL}</p> : null}
             <div className={styles.actionRow}>
               <button
@@ -1142,10 +1189,16 @@ function BotDetailInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   );
 }
 
-export default function BotDetailPage({ bots }: { bots?: MockBot[] }) {
+export default function BotDetailPage({
+  bots,
+  trialExpired,
+}: {
+  bots?: MockBot[];
+  trialExpired?: boolean;
+}) {
   return (
     <Suspense>
-      <BotDetailInner bots={bots} />
+      <BotDetailInner bots={bots} trialExpired={trialExpired} />
     </Suspense>
   );
 }

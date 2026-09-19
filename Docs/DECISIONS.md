@@ -2956,3 +2956,22 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Cost & risk.** Cost: $0 code change. Risk: none new — copy + empty states only; the `fetchBots()` failure contract (`[]`) and all exports preserved, so live-data paths keep working untouched. Next: KI-033 wording → KI-031 bodies → founder Discord redirect click.
 
 **Superseded by:** none
+
+### D-145 — KI-033 trial enforcement DONE (founder-ordered option A, 2026-09-19 night)
+
+- **Date:** 2026-09-19
+- **Decided by:** orchestrator (engineering — founder: `devam et A dan`, no sleep-charity)
+- **Door type:** two-way (reversible — gates refuse with honest messages; no data deleted, no checkout built)
+- **Type:** engineering
+
+**Context.** KI-033 (`Docs/Teknik_Borc/KI-033_trial-unenforced.md`): the locked trial (3-day full-Pro, 1 bot, 100 credits, no card) was promised on the landing page but enforced nowhere. Spec `Docs/2026-09-19-2211_orchestrator_SPEC_ki033-trial.md` ordered option A: expired = blocked with an honest message, not paywalled (no checkout exists). Clock (`trial_ends_at = now() + 3d` on INSERT only, grandfathered fresh 3 days, NULL = fail-open) shipped first (ki033-a), then mint-cap + spend-gate + copy in parallel (ki033-b/c/d), then a wiring follow-up (ki033-e) after the wave reviewer confirmed two dormant seams.
+
+**Result.** All five write paths refuse an expired trial before any cost: 3 mint entry points (`403 trial_expired` regardless of count; `403 trial_bot_limit` for trial/unknown tier with ≥1 live bot; paid tiers bypass both), chat (clock gate pre-body + monthly 100-credit `checkBudget` allowance pre-model), builder-start (clock gate pre-queue). Banners live on dashboard home + bot detail via `GET /api/session/trial`; tier flows end-to-end (SELECT `a.tier` → session → reader → bypass). Wave reviewer PARTIAL (gaps named, not hidden); e-reviewer SUCCESS. Copy locks byte-exact; privacy untouched; KI-030 locks intact. Reports: `Docs/2026-09-19-2211_*_ki033-*.md`, `Docs/2026-09-19-2300_reviewer_REVIEW_ki033-wave.md`, `Docs/2026-09-19-2310_ki033-e_MODIFY_trial-signal.md`, `Docs/2026-09-19-2315_reviewer_REVIEW_ki033-e.md`.
+
+**Residuals (named, not silent).** 34 DB-backed assertions UNVERIFIED on this machine (loud skips — no Postgres; must run where `TEST_DATABASE_URL` exists). Gateway pause deferred to KI-035 (expired bot keeps its Discord state; copy says "paused", not "stopped"). Pricing-lede "nothing is enforced" sentence coexists with the enforced-trial card — product call left to the founder.
+
+**Why.** Business terms: the site no longer sells a trial it cannot keep — the 3-day/1-bot/100-credit promise is now the actual behavior, and an expired trial meets a plain "paused, nothing deleted" message instead of a silent open door. Nothing was deleted, nobody was charged, no paywall was built that has no checkout behind it.
+
+**Cost & risk.** Cost: $0 (code only, no infra). Risk: an expired user who wants to pay has no checkout yet — that is the KI-035/billing decision, not a bug. Next: KI-031 bodies → founder Discord redirect click.
+
+**Superseded by:** none

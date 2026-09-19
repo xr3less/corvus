@@ -12,13 +12,28 @@
 //
 // POST /api/bots — mint one draft bot (KI-027). Same seams: session first
 // (401), then the name validated with the shared validateBotName (422), then
-// the mint INSERT (account_id, name, empty token placeholder, draft)
-// RETURNING id → 200 { botId }. DB failure answers through the shared
-// mapDbError mapping, else 500 — mirroring the GET handler's error shape.
+// the KI-033 trial gate (403), then the mint INSERT (account_id, name, empty
+// token placeholder, draft) RETURNING id → 200 { botId }. DB failure answers
+// through the shared mapDbError mapping, else 500 — mirroring the GET
+// handler's error shape.
+//
+// The trial gate runs BEFORE the INSERT, so a refused mint writes nothing and
+// costs nothing: an expired clock refuses whatever the bot count (the account's
+// bots are paused), a still-running trial refuses a second live bot, and a paid
+// tier bypasses both. See lib/bots.ts for the decision itself — this route only
+// does the reads and the response shape, identical in all three mint paths.
 
 import { getPool, mapDbError, __setPool } from '../../../lib/db/pool';
 import { defaultSessionReader } from '../../../lib/interview/session-bind';
 import { validateBotName } from '../../../lib/interview/tree';
+import {
+  LIVE_BOT_COUNT_SQL,
+  MINT_ACCOUNT_SQL,
+  mintGate,
+  mintRefusal,
+  needsLiveBotCount,
+  type MintAccountRow,
+} from '../../../lib/bots';
 
 export interface ListSession {
   accountId: string;
@@ -107,6 +122,25 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   try {
+    const account = await getPool().query<MintAccountRow>(MINT_ACCOUNT_SQL, [session.accountId]);
+    const row = account.rows[0] ?? null;
+    let liveBots = 0;
+    // The bot count is read only when it could change the answer: a paid tier
+    // is never capped, and an expired clock already refuses on its own. At most
+    // one extra SELECT, never two, on any mint.
+    if (needsLiveBotCount(row)) {
+      const counted = await getPool().query<{ count: number }>(LIVE_BOT_COUNT_SQL, [
+        session.accountId,
+      ]);
+      liveBots = counted.rows[0]?.count ?? 0;
+    }
+    const refused = mintRefusal(
+      mintGate({ tier: row?.tier ?? null, trial_ends_at: row?.trial_ends_at ?? null }, liveBots),
+    );
+    if (refused) {
+      return Response.json({ error: refused.code, message: refused.message }, { status: 403 });
+    }
+
     // token_cipher is NOT NULL bytea with no token custody on mint, so the
     // draft row carries an empty placeholder — never a real token.
     const result = await getPool().query<{ id: string }>(MINT_BOT_SQL, [

@@ -9,6 +9,14 @@ import {
   validateSlug,
   type TemplateRow,
 } from '../../../../../lib/templates/templates';
+import {
+  LIVE_BOT_COUNT_SQL,
+  MINT_ACCOUNT_SQL,
+  mintGate,
+  mintRefusal,
+  needsLiveBotCount,
+  type MintAccountRow,
+} from '../../../../../lib/bots';
 
 export interface ForkSession {
   accountId: string;
@@ -58,8 +66,11 @@ function error(status: number, message: string): Response {
 //
 // Check order is deliberate: session (401) -> malformed slug (404, pure) ->
 // botName override (422, pure — validatable without touching the DB, so the
-// 422 path stays testable without PG) -> unknown slug (404) -> template-data
-// guards (500). A 422 therefore reveals nothing about slug existence.
+// 422 path stays testable without PG) -> KI-033 trial gate (403, one extra
+// SELECT) -> unknown slug (404) -> template-data guards (500). A 422 therefore
+// reveals nothing about slug existence. The trial gate sits BEFORE the
+// transaction, so a refused fork mints no bot, writes no spec version and
+// never increments the template's fork count.
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> },
@@ -93,7 +104,35 @@ export async function POST(
     }
   }
 
-  const pool = getPool();
+  const gatePool = getPool();
+  try {
+    // Same gate, same order as POST /api/bots (ONE shared decision in
+    // lib/bots.ts): account row first, the live-bot count only when the tier
+    // makes the cap apply.
+    const account = await gatePool.query<MintAccountRow>(MINT_ACCOUNT_SQL, [session.accountId]);
+    const row = account.rows[0] ?? null;
+    let liveBots = 0;
+    if (needsLiveBotCount(row)) {
+      const counted = await gatePool.query<{ count: number }>(LIVE_BOT_COUNT_SQL, [
+        session.accountId,
+      ]);
+      liveBots = counted.rows[0]?.count ?? 0;
+    }
+    const refused = mintRefusal(
+      mintGate({ tier: row?.tier ?? null, trial_ends_at: row?.trial_ends_at ?? null }, liveBots),
+    );
+    if (refused) {
+      return Response.json({ error: refused.code, message: refused.message }, { status: 403 });
+    }
+  } catch (err) {
+    const mapped = mapDbError(err);
+    if (mapped) {
+      return error(mapped.status, mapped.error);
+    }
+    return error(500, 'could not fork');
+  }
+
+  const pool = gatePool;
   let template: TemplateRow;
   try {
     // NOTE: `templates` has no `deleted_at` column, so no soft-delete

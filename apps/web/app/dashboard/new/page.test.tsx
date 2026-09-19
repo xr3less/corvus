@@ -6,6 +6,7 @@ const CREATION_TITLE = 'What will your bot do today?';
 const CREATION_SUB =
   'Describe it in plain words — we draft it, you test the draft, then you save a version. Going live on Discord isn’t wired yet.';
 const MODEL_NAMES = ['Sonnet', 'GPT', 'Gemini', 'GLM', 'grok'];
+const TRIAL_EXPIRED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
 
 const FORBIDDEN = [
   'OAuth',
@@ -396,6 +397,68 @@ describe('new bot page', () => {
     expect(screen.getByText('Keep chatting')).toBeTruthy();
     expect(buildButton().disabled).toBe(true);
     expect(callsTo(fetchStub, '/api/builder/start')).toHaveLength(0);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* KI-033: the mint gate refuses an expired trial with 403
+     { error: 'trial_expired', message: <the honest sentence> }. The page shows
+     the sentence the server wrote — a code like "trial_expired" is not
+     something a person can act on. */
+  it('shows the server’s honest sentence when the mint is refused by the trial gate', async () => {
+    const sse = sseStream();
+    const fetchStub = vi.fn((url: string) => {
+      if (url === '/api/bots') {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          body: null,
+          json: async () => ({ error: 'trial_expired', message: TRIAL_EXPIRED_MESSAGE }),
+        });
+      }
+      return Promise.resolve(streamResponse(sse.stream));
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<NewBotPage />);
+
+    await submitCreation('One more idea');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe(TRIAL_EXPIRED_MESSAGE);
+    expect(alert.textContent).not.toContain('trial_expired');
+    expect(buildButton().disabled).toBe(true);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('shows the server’s honest sentence when the build start is refused by the trial gate', async () => {
+    const sse = sseStream();
+    const fetchStub = vi.fn((url: string) => {
+      if (url === '/api/bots') {
+        return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
+      }
+      if (url === '/api/builder/start') {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          body: null,
+          json: async () => ({ error: 'trial_expired', message: TRIAL_EXPIRED_MESSAGE }),
+        });
+      }
+      return Promise.resolve(streamResponse(sse.stream));
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<NewBotPage />);
+
+    await submitCreation('A moderation helper');
+    await act(async () => {
+      sse.push(frame({ t: 'content', text: 'Drafting your bot.' }));
+      sse.push(frame({ t: 'done', credits: 0.05 }));
+      sse.close();
+    });
+    await waitFor(() => expect(buildButton().disabled).toBe(false));
+
+    fireEvent.click(buildButton());
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe(TRIAL_EXPIRED_MESSAGE);
+    expect(screen.queryByRole('link', { name: 'View build progress' })).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 });

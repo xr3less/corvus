@@ -11,7 +11,6 @@ import { Pool } from 'pg';
 import type { SendOptions } from 'pg-boss';
 import { afterEach, describe, expect, it } from 'vitest';
 import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../../lib/db/pool';
-import type { SessionReader } from '../../../../lib/interview/session-bind';
 import {
   POST,
   BUILDER_QUEUE,
@@ -20,6 +19,7 @@ import {
   __setBossFactory,
   __setSessionReader as setStartReader,
   type BuilderBoss,
+  type BuilderSessionReader,
 } from './route';
 import {
   GET,
@@ -31,10 +31,39 @@ const BOT = '11111111-2222-4333-8444-555555555555';
 const FOREIGN_BOT = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const BRIEF = 'a welcome bot with two behaviors';
 
-const SIGNED_IN: SessionReader = {
+const SIGNED_IN: BuilderSessionReader = {
   getSession: async () => ({ accountId: 'acct-1', discordId: 'disc-1' }),
 };
-const SIGNED_OUT: SessionReader = {
+
+// KI-033: an account whose trial clock has already passed (one millisecond ago,
+// not a fixed date, so the fixture cannot go stale) and one whose clock is still
+// running. The clock rides the session, so neither needs a database.
+const EXPIRED_TRIAL: BuilderSessionReader = {
+  getSession: async () => ({
+    accountId: 'acct-1',
+    discordId: 'disc-1',
+    trialEndsAt: new Date(Date.now() - 1),
+  }),
+};
+const ACTIVE_TRIAL: BuilderSessionReader = {
+  getSession: async () => ({
+    accountId: 'acct-1',
+    discordId: 'disc-1',
+    trialEndsAt: new Date(Date.now() + 86_400_000),
+  }),
+};
+// KI-033 trial-signal: a paid tier with a stale clock still enqueues — the
+// bypass is live, not merely coded. Unknown/null tiers stay on the trial path.
+const EXPIRED_PAID: BuilderSessionReader = {
+  getSession: async () => ({
+    accountId: 'acct-1',
+    discordId: 'disc-1',
+    trialEndsAt: new Date(Date.now() - 1),
+    tier: 'pro',
+  }),
+};
+
+const SIGNED_OUT: BuilderSessionReader = {
   getSession: async () => null,
 };
 
@@ -379,6 +408,143 @@ describe('POST /api/builder/start', () => {
   });
 });
 
+// --- KI-033 trial gate ---
+
+// Byte-level lock from the KI-033 SPEC: the same sentence every blocking
+// surface returns for an expired trial.
+const TRIAL_ENDED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
+
+describe('POST /api/builder/start - KI-033 trial gate', () => {
+  it('refuses an expired trial with 403 + the locked message, before any row or job', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(EXPIRED_TRIAL);
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(403);
+    expect(await readBody(res)).toEqual({ error: 'trial_expired', message: TRIAL_ENDED_MESSAGE });
+    // The whole point of the early gate: nothing was queued, no run row exists
+    // to poll, and the pool was never touched (no ownership read, no INSERT).
+    expect(db.calls).toHaveLength(0);
+    expect(db.runs.size).toBe(0);
+    expect(boss.record.startCalls).toBe(0);
+    expect(boss.record.sent).toHaveLength(0);
+  });
+
+  it('checks the clock before the body, so a malformed request cannot mask it', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(EXPIRED_TRIAL);
+
+    // An empty brief would be a 422 for a live account. For an expired one the
+    // verdict stays 403 — the account state, not the request, is the answer.
+    const res = await POST(postStart({ botId: 'not-a-bot-id', brief: '' }));
+
+    expect(res.status).toBe(403);
+    expect(await readBody(res)).toMatchObject({ error: 'trial_expired' });
+    expect(db.calls).toHaveLength(0);
+    expect(boss.record.startCalls).toBe(0);
+  });
+
+  it('lets an active trial enqueue normally', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(ACTIVE_TRIAL);
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(200);
+    expect(await readBody(res)).toMatchObject({ phase: 'queued' });
+    expect(boss.record.sent).toHaveLength(1);
+  });
+
+  it('fails open when the session carries no clock at all', async () => {
+    // A store with no clock concept (the real production reader declares only
+    // accountId + discordId): "no clock" is NOT "expired" — the KI-033 lock.
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(200);
+    expect(boss.record.sent).toHaveLength(1);
+  });
+
+  it('fails open when the clock is an explicit null', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    __setBossFactory(stubBoss().factory);
+    setStartReader({
+      getSession: async () => ({ accountId: 'acct-1', discordId: 'disc-1', trialEndsAt: null }),
+    });
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(200);
+  });
+
+  it('bypasses the clock for a paid tier even when the clock has passed', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader(EXPIRED_PAID);
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(200);
+    expect(await readBody(res)).toMatchObject({ phase: 'queued' });
+    expect(boss.record.sent).toHaveLength(1);
+  });
+
+  it('treats an unknown tier as trial: an expired clock still refuses', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    __setBossFactory(stubBoss().factory);
+    setStartReader({
+      getSession: async () => ({
+        accountId: 'acct-1',
+        discordId: 'disc-1',
+        trialEndsAt: new Date(Date.now() - 1),
+        tier: 'whatever-the-db-said',
+      }),
+    });
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(403);
+    expect(await readBody(res)).toMatchObject({ error: 'trial_expired' });
+  });
+
+  it('fails closed (401) when the session read itself throws', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    const boss = stubBoss();
+    __setBossFactory(boss.factory);
+    setStartReader({
+      getSession: async () => {
+        throw new Error('cookie store exploded');
+      },
+    });
+
+    const res = await POST(postStart({ botId: BOT, brief: BRIEF }));
+
+    expect(res.status).toBe(401);
+    expect(db.calls).toHaveLength(0);
+    expect(boss.record.startCalls).toBe(0);
+  });
+});
+
 // --- Live PG path: runs when reachable, LOUD skip otherwise ---
 
 // Minimal schema for the live ownership read: the route runs
@@ -467,7 +633,7 @@ describe('live PG path (loud skip when unreachable)', () => {
       return;
     }
     const live = new Pool({ connectionString: liveUrl });
-    const liveIdentity: SessionReader = {
+    const liveIdentity: BuilderSessionReader = {
       getSession: async () => ({ accountId: randomUUID(), discordId: 'live-disc' }),
     };
     try {

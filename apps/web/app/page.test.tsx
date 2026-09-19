@@ -41,9 +41,13 @@ describe('homepage (antigravity port)', () => {
           name: /build custom ai discord bots in minutes, not weeks/i,
         }),
       ).toBeTruthy();
+      // KI-033: the trial is enforced now, so the old "limits not enforced yet"
+      // promise is gone from every surface. Both the hero and the Starter card
+      // carry the locked replacement, byte-for-byte.
       expect(
-        screen.getAllByText(/free while in preview — limits not enforced yet/i).length,
+        screen.getAllByText('Free 3-day trial — 1 bot, 100 AI credits, no card required.').length,
       ).toBeGreaterThanOrEqual(2);
+      expect(screen.queryByText(/not enforced yet/i)).toBeNull();
       expect(screen.getByRole('heading', { name: 'Starter' })).toBeTruthy();
       expect(screen.getByRole('heading', { name: 'Corvus Pro' })).toBeTruthy();
       expect(screen.getByRole('heading', { name: 'Corvus Studio' })).toBeTruthy();
@@ -57,6 +61,42 @@ describe('homepage (antigravity port)', () => {
       consoleError.mockRestore();
       vi.unstubAllGlobals();
     }
+  });
+
+  it('answers the trial-expiry FAQ with the enforced behaviour, not a promise', () => {
+    render(<HomePage />);
+    // The FAQ item is closed by default, so the answer is asserted through the
+    // component's own copy rather than a visible-text query: expand-by-default
+    // is item[0] only (proved below).
+    const items = screen.getAllByTestId('faq-item');
+    const expiry = items.find((item) => /trial expires/i.test(item.textContent ?? ''));
+    expect(expiry).toBeDefined();
+    expect(expiry?.textContent).toContain(
+      'When your trial ends, your bots pause and stay as-is — nothing is deleted.',
+    );
+    expect(expiry?.textContent).not.toContain('not enforced yet');
+  });
+
+  it('states the enforced trial allowance in the credits FAQ alongside the still-planned plans', () => {
+    render(<HomePage />);
+    const items = screen.getAllByTestId('faq-item');
+    const credits = items.find((item) => /how do ai credits work/i.test(item.textContent ?? ''));
+    expect(credits).toBeDefined();
+    expect(credits?.textContent).toContain('The trial includes 100 credits for 3 days;');
+    // The trial line is live, so it must NOT carry a "Planned:" label; the Pro
+    // figure is still a plan and keeps its own wording without the retired
+    // "(not enforced yet)" disclaimer.
+    expect(credits?.textContent).not.toContain('Planned:');
+    expect(credits?.textContent).not.toContain('(not enforced yet)');
+  });
+
+  it('describes the Starter tier as a planned price with an enforced trial', () => {
+    render(<HomePage />);
+    expect(
+      screen.getAllByText(
+        'Prices and limits are planned — the trial (1 bot, 100 AI credits) is enforced.',
+      ).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it('points sign-in CTAs at the login route and product CTAs at the dashboard', () => {

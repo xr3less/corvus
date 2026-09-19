@@ -23,6 +23,20 @@ const SUGGESTIONS = ['Welcome message', 'Moderation rule', 'XP rewards'];
 const MINT_FALLBACK_ERROR = 'Could not save your bot. Your chat is kept — try again.';
 const START_FALLBACK_ERROR = 'Could not start the build. Try again.';
 
+/* A KI-033 trial refusal arrives as { error: <code>, message: <the honest
+   sentence> }: the server writes both, exactly as it does for the bot cap and
+   the build start, so the person reads the reason in words instead of a code.
+   `message` is preferred for that reason; `error` stays the fallback for the
+   older code-only shape, and a body with neither keeps the honest fallback
+   above rather than printing an empty alert. */
+function readRefusalMessage(payload: unknown): string | null {
+  if (typeof payload !== 'object' || payload === null) return null;
+  const record = payload as { message?: unknown; error?: unknown };
+  if (typeof record.message === 'string' && record.message.trim() !== '') return record.message;
+  if (typeof record.error === 'string' && record.error.trim() !== '') return record.error;
+  return null;
+}
+
 function deriveBotName(text: string): string {
   return text.trim().slice(0, 32).trim() || 'Untitled bot';
 }
@@ -68,10 +82,8 @@ export default function NewBotPage() {
         if (!response.ok) {
           let message = MINT_FALLBACK_ERROR;
           try {
-            const data = (await response.json()) as { error?: unknown };
-            if (typeof data.error === 'string' && data.error.trim() !== '') {
-              message = data.error;
-            }
+            const data = (await response.json()) as unknown;
+            message = readRefusalMessage(data) ?? MINT_FALLBACK_ERROR;
           } catch {
             /* keep the honest fallback */
           }
@@ -139,10 +151,8 @@ export default function NewBotPage() {
       if (!response.ok) {
         let message = START_FALLBACK_ERROR;
         try {
-          const data = (await response.json()) as { error?: unknown };
-          if (typeof data.error === 'string' && data.error.trim() !== '') {
-            message = data.error;
-          }
+          const data = (await response.json()) as unknown;
+          message = readRefusalMessage(data) ?? START_FALLBACK_ERROR;
         } catch {
           /* keep the honest fallback */
         }

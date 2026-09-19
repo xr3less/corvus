@@ -12,7 +12,7 @@ const { chatStreamMock } = vi.hoisted(() => ({ chatStreamMock: vi.fn() }));
 vi.mock('@/lib/ai/stream', () => ({ chatStream: chatStreamMock }));
 
 import { USD_PER_CREDIT } from '@/lib/ai/cost';
-import { __resetPool } from '@/lib/db/pool';
+import { DatabaseNotConfiguredError, __resetPool } from '@/lib/db/pool';
 import {
   POST,
   __resetSessionReader,
@@ -53,14 +53,37 @@ interface SpendCall {
   params: unknown[];
 }
 
-// Minimal pool stub: records the ai_spend INSERT so the suite can assert the
-// exact column values without a database, and can be made to fail to prove the
-// ledger write never breaks an in-flight stream.
-function stubPool(options: { fail?: boolean } = {}): { pool: Pool; calls: SpendCall[] } {
+// KI-033: the allowance gate reads the month's spend before the model call, so
+// a pool stub now answers TWO statements. `spent` is what the SUM returns (a
+// Postgres numeric comes back as a string, which the route must parse);
+// `failSpent` rejects that read to prove the route refuses rather than
+// silently treating an unreadable meter as zero. `insertError` fails only the
+// ledger write, so the post-stream billing path can be exercised with a gate
+// that still reads successfully.
+function stubPool(
+  options: {
+    fail?: boolean;
+    spent?: number | string;
+    failSpent?: boolean;
+    insertError?: Error;
+  } = {},
+): {
+  pool: Pool;
+  calls: SpendCall[];
+} {
   const calls: SpendCall[] = [];
   const pool = {
     query: (text: string, params: unknown[]): Promise<{ rows: unknown[] }> => {
       calls.push({ text, params });
+      if (text.includes('SUM(credits)')) {
+        if (options.failSpent) {
+          return Promise.reject(new Error('db down'));
+        }
+        return Promise.resolve({ rows: [{ spent: options.spent ?? '0' }] });
+      }
+      if (options.insertError) {
+        return Promise.reject(options.insertError);
+      }
       if (options.fail) {
         return Promise.reject(new Error('db down'));
       }
@@ -68,6 +91,13 @@ function stubPool(options: { fail?: boolean } = {}): { pool: Pool; calls: SpendC
     },
   };
   return { pool: pool as unknown as Pool, calls };
+}
+
+// The ledger writes, isolated from the gate's spend read: an assertion about
+// "nothing was recorded" or "exactly one row" must never be satisfied or broken
+// by the read that the gate performs on every request.
+function spendInserts(calls: SpendCall[]): SpendCall[] {
+  return calls.filter((call) => call.text.includes('INSERT INTO ai_spend'));
 }
 
 let defaultSpend: ReturnType<typeof stubPool>;
@@ -270,8 +300,9 @@ describe('SSE framing (mocked persona lane)', () => {
       { t: 'content', text: 'Partial' },
       { t: 'error', message: 'The reply stopped unexpectedly.' },
     ]);
-    // No done frame -> no metered turn -> no ledger write.
-    expect(defaultSpend.calls).toHaveLength(0);
+    // No done frame -> no metered turn -> no ledger write (the gate's spend read
+    // is not a write, so it must not be counted here).
+    expect(spendInserts(defaultSpend.calls)).toHaveLength(0);
   });
 });
 
@@ -295,18 +326,11 @@ describe('ai_spend persistence (mocked persona lane)', () => {
     expect(res.status).toBe(200);
     await readFrames(res);
 
-    expect(spend.calls).toHaveLength(1);
-    expect(spend.calls[0].text).toContain('INSERT INTO ai_spend');
+    const inserts = spendInserts(spend.calls);
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0].text).toContain('INSERT INTO ai_spend');
     // account_id, model, usd_cost, credits, reason, ref_id, attempt — NULL, never 0.
-    expect(spend.calls[0].params).toEqual([
-      'acct-1',
-      'persona',
-      null,
-      null,
-      'persona-run',
-      BOT,
-      null,
-    ]);
+    expect(inserts[0].params).toEqual(['acct-1', 'persona', null, null, 'persona-run', BOT, null]);
   });
 
   it('records provider-reported cost and derived credits on a metered done', async () => {
@@ -323,7 +347,7 @@ describe('ai_spend persistence (mocked persona lane)', () => {
     const res = await POST(chatRequest({ botId: BOT, message: 'hi' }));
     await readFrames(res);
 
-    const params = spend.calls[0].params;
+    const params = spendInserts(spend.calls)[0].params;
     expect(params[0]).toBe('acct-1');
     expect(params[1]).toBe('persona');
     expect(params[2] as number).toBeCloseTo(0.075 * USD_PER_CREDIT, 12);
@@ -346,7 +370,7 @@ describe('ai_spend persistence (mocked persona lane)', () => {
 
     const res = await POST(chatRequest({ message: 'hi' }));
     await readFrames(res);
-    expect(spend.calls[0].params[5]).toBeNull();
+    expect(spendInserts(spend.calls)[0].params[5]).toBeNull();
   });
 
   it('does not break an in-flight stream when the spend write fails', async () => {
@@ -367,12 +391,12 @@ describe('ai_spend persistence (mocked persona lane)', () => {
       { t: 'content', text: 'Hello' },
       { t: 'done', credits: 0.075 },
     ]);
-    expect(spend.calls).toHaveLength(1);
+    expect(spendInserts(spend.calls)).toHaveLength(1);
     expect(logged).toHaveBeenCalled();
     logged.mockRestore();
   });
 
-  it('names the real cause when the ledger fails because the database is not configured', async () => {
+  it('names the real cause when the ledger write fails because the database is not configured', async () => {
     chatStreamMock.mockImplementation(() =>
       (async function* () {
         yield { t: 'content', text: 'Hello' };
@@ -380,12 +404,11 @@ describe('ai_spend persistence (mocked persona lane)', () => {
       })(),
     );
     actAs(SESSION);
-    // Real unconfigured-pool path: unset DATABASE_URL and drop the cached pool
-    // so getPool() hands back the stand-in whose query rejects with
-    // DatabaseNotConfiguredError.
-    const saved = process.env.DATABASE_URL;
-    delete process.env.DATABASE_URL;
-    __resetPool();
+    // The gate reads the pool BEFORE the stream, so the pool must answer the
+    // allowance read (empty month) while the ledger write is the one that hits
+    // the real unconfigured path — that is the failure this test is about.
+    const spend = stubPool({ insertError: new DatabaseNotConfiguredError() });
+    __setPool(spend.pool);
     const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
       const res = await POST(chatRequest({ message: 'hi' }));
@@ -401,10 +424,34 @@ describe('ai_spend persistence (mocked persona lane)', () => {
         expect.anything(),
       );
     } finally {
+      logged.mockRestore();
+    }
+  });
+
+  it('answers a 500 and never streams when the database is not configured at all', async () => {
+    chatStreamMock.mockImplementation(() =>
+      (async function* () {
+        yield { t: 'done', credits: 0.075 };
+      })(),
+    );
+    actAs(SESSION);
+    // Real unconfigured-pool path: unset DATABASE_URL and drop the cached pool
+    // so getPool() hands back the stand-in whose query rejects with
+    // DatabaseNotConfiguredError. KI-033 moved the first pool touch in front of
+    // the stream (the allowance read), so an unconfigured process now refuses
+    // honestly instead of opening a stream whose ledger write can never land.
+    const saved = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    __resetPool();
+    try {
+      const res = await POST(chatRequest({ message: 'hi' }));
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: 'database not configured' });
+      expect(chatStreamMock).not.toHaveBeenCalled();
+    } finally {
       if (saved === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = saved;
       __resetPool();
-      logged.mockRestore();
     }
   });
 
@@ -416,5 +463,166 @@ describe('ai_spend persistence (mocked persona lane)', () => {
     const res = await POST(chatRequest({ message: 'hi' }));
     expect(res.status).toBe(401);
     expect(spend.calls).toHaveLength(0);
+  });
+});
+
+// --- KI-033 gates (trial clock + monthly allowance) ---
+
+// Byte-level lock from the KI-033 SPEC: the refusal the caller reads for an
+// expired trial. Every surface that blocks on expiry carries this exact string.
+const TRIAL_ENDED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
+
+describe('KI-033 trial and allowance gates', () => {
+  const EXPIRED: ChatSession = {
+    accountId: 'acct-1',
+    discordId: 'disc-1',
+    trialEndsAt: new Date(Date.now() - 1),
+  };
+  const ACTIVE: ChatSession = {
+    accountId: 'acct-1',
+    discordId: 'disc-1',
+    trialEndsAt: new Date(Date.now() + 86_400_000),
+  };
+
+  beforeEach(() => {
+    // A key is configured for every test in this block, so a passing 200 is
+    // always the gate letting the turn through and never the 500 "AI is not
+    // configured yet" path standing in for it.
+    process.env.WIRO_API_KEY = 'test-key';
+    chatStreamMock.mockImplementation(() =>
+      (async function* () {
+        yield { t: 'content', text: 'Hello' };
+        yield { t: 'done', credits: 0.075 };
+      })(),
+    );
+  });
+
+  it('refuses an expired trial with 403 + the locked message, before any model call', async () => {
+    actAs(EXPIRED);
+    const spend = stubPool();
+    __setPool(spend.pool);
+
+    const res = await POST(chatRequest({ botId: BOT, message: 'hi' }));
+
+    expect(res.status).toBe(403);
+    // A plain JSON body, never SSE: the client must be able to branch on a code.
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(await res.json()).toEqual({ error: 'trial_expired', message: TRIAL_ENDED_MESSAGE });
+    expect(chatStreamMock).not.toHaveBeenCalled();
+    expect(spend.calls).toHaveLength(0);
+  });
+
+  it('checks the clock before the body, so a malformed request cannot mask it', async () => {
+    actAs(EXPIRED);
+    __setPool(stubPool().pool);
+
+    // `message: ''` would be a 422 for a live account. For an expired one the
+    // verdict must stay 403 — the account state, not the request, is the answer.
+    const res = await POST(chatRequest({ message: '' }));
+
+    expect(res.status).toBe(403);
+    expect(chatStreamMock).not.toHaveBeenCalled();
+  });
+
+  it('lets an active trial through to the model', async () => {
+    actAs(ACTIVE);
+    const spend = stubPool();
+    __setPool(spend.pool);
+
+    const res = await POST(chatRequest({ botId: BOT, message: 'hi' }));
+
+    expect(res.status).toBe(200);
+    expect(await readFrames(res)).toHaveLength(2);
+    expect(chatStreamMock).toHaveBeenCalledTimes(1);
+    expect(spendInserts(spend.calls)).toHaveLength(1);
+  });
+
+  it('fails open when the session carries no clock at all', async () => {
+    // A grandfathered row whose backfill never reached it, or a store with no
+    // clock concept: "no clock" is NOT "expired" (KI-033 locked semantics).
+    actAs({ accountId: 'acct-1', discordId: 'disc-1' });
+    __setPool(stubPool().pool);
+
+    const res = await POST(chatRequest({ message: 'hi' }));
+
+    expect(res.status).toBe(200);
+    expect(chatStreamMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails open when the clock is an explicit null', async () => {
+    actAs({ accountId: 'acct-1', discordId: 'disc-1', trialEndsAt: null });
+    __setPool(stubPool().pool);
+
+    const res = await POST(chatRequest({ message: 'hi' }));
+
+    expect(res.status).toBe(200);
+    expect(chatStreamMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('bypasses the clock for a paid tier', async () => {
+    // The tiers are not sold yet; the bypass is coded so the gate cannot harden
+    // into a wall the day one is. An expired clock on a paid account still runs.
+    actAs({ ...EXPIRED, tier: 'pro' });
+    __setPool(stubPool().pool);
+
+    const res = await POST(chatRequest({ message: 'hi' }));
+
+    expect(res.status).toBe(200);
+    expect(chatStreamMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a turn that would cross the monthly allowance, before the model call', async () => {
+    actAs(ACTIVE);
+    // The persona estimate is 0.1024 credits, so 99.99 leaves exactly that much
+    // headroom (99.99 + 0.1024 = 100.0924 > 100) — blocked by a tenth of a
+    // credit. The stub returns the SUM as a STRING because Postgres hands a
+    // numeric back that way; a route that skipped the parse would read NaN.
+    const spend = stubPool({ spent: '99.99' });
+    __setPool(spend.pool);
+
+    const res = await POST(chatRequest({ botId: BOT, message: 'hi' }));
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      error: 'trial_budget_exceeded',
+      // The trial is still running, so the copy must not claim it ended.
+      message: 'Your 3-day trial has used its 100 AI credits for this month. Nothing is deleted.',
+    });
+    expect(chatStreamMock).not.toHaveBeenCalled();
+    expect(spendInserts(spend.calls)).toHaveLength(0);
+  });
+
+  it('allows a call landing exactly on the allowance', async () => {
+    actAs(ACTIVE);
+    // 99.90 + 0.1024 = 100.0024 would block, so the boundary case is stated
+    // precisely: spent + estimate == allowance is allowed, one credit over is not.
+    const spend = stubPool({ spent: '99.8976' });
+    __setPool(spend.pool);
+
+    const res = await POST(chatRequest({ message: 'hi' }));
+
+    expect(res.status).toBe(200);
+    expect(chatStreamMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses with a 500 when the allowance read fails, never a model call', async () => {
+    actAs(ACTIVE);
+    const spend = stubPool({ failSpent: true });
+    __setPool(spend.pool);
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      const res = await POST(chatRequest({ message: 'hi' }));
+
+      // An unreadable meter is a failure to check, not a verdict: the route
+      // never reports "exceeded" for something it could not read, and never
+      // lets the call through unchecked.
+      expect(res.status).toBe(500);
+      expect(res.headers.get('content-type')).toContain('application/json');
+      expect(chatStreamMock).not.toHaveBeenCalled();
+      expect(logged).toHaveBeenCalled();
+    } finally {
+      logged.mockRestore();
+    }
   });
 });

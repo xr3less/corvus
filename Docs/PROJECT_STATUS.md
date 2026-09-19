@@ -6,9 +6,11 @@
 
 ---
 
-## Current state — 2026-09-19 evening (BUILDER IS LIVE — bot üretiyor)
+## Current state — 2026-09-19 evening (KI-033 DONE — deneme saati takılı)
 
 **Canlı adres (yabancılara paylaşma — KI-030 açık):** `https://13-140-181-113.nip.io/`
+
+**KI-033 deneme saati DONE (D-145, bu gece, A seçeneği):** site artık söylediğini yapıyor — 3 günlük deneme gerçekten 3 gün, 1 hesap 1 bot, ayda 100 kredi; süresi dolanın kapısı dürüst bir "duraklatıldı, hiçbir şey silinmedi" yazısıyla kapanıyor. 5 ajan + 2 denetim, karar kaydı D-145. Dürüst artık: veritabanlı testlerin bir kısmı bu bilgisayarda koşamadı (kayıtlı, test makinesinde koşacak); süresi dolan botun Discord'daki hali yerinde duruyor (kapatma işi KI-035'e kaldı).
 
 Bot yapma motoru bu akşam gerçekten çalıştı. Kısa anahtar adayı kutuya takıldı, 24 saniyede ilk taslak üretildi: 1 çağrı, ~0.3 kredi (kuruşun altında), sahte test botu silindi, kimseye bir şey yayınlanmadı. Yani "bot olusturma vs calisiyor mu" sorusunun cevabı artık **evet** — motor tarafta çalışıyor. Rapor: `Docs/2026-09-19-1730_live-smoke-003_CREATE_builder-resmoke2.md`.
 
@@ -19,7 +21,7 @@ Bot yapma motoru bu akşam gerçekten çalıştı. Kısa anahtar adayı kutuya t
 - Grab kurulumu + 7 rapor bu bilgisayarda kayıtsız duruyor — bir sonraki kayda binecek, itilmedi.
 - `:3000` düz HTTP hâlâ yayında (bilinen artık); GHCR `:stable` itilmedi (kutu yerel yapımla çalışıyor); yedekleme yardımcısı takılıyor (elle yedek alındı).
 - Retry satırları birikiyor (001/002 işleri `retry`de; zararsız, `run_gone`, 7 günde silinir; 003 `completed`).
-- KI-030 dürüstlük DONE (D-144, bu gece): 132/132 test + tip + lint + format temiz, yabancı artık ödenemeyen söz görmüyor. KI-031 gövdeler + KI-033 deneme saati — yazılmadı, sırada.
+- KI-033 deneme saati DONE (D-145, bu gece, A seçeneği — 5 kapı kilitli, 2 denetim, kayıtlı artıklarla). KI-031 gövdeler — yazılmadı, sırada.
 - KI-018 kapanmaz: Discord giriş bağlantısı kaydı (kurucu tıkı) + `lint`/`format` kanıtı kaldı.
 - KI-034 kapanmaz: `07` haritası hâlâ eski sayfa adını yazıyor (KI-031 işi).
 

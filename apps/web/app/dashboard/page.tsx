@@ -8,7 +8,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Activity, Bot, Coins, FlaskConical, Server, ShieldCheck } from 'lucide-react';
 import { BuilderProgress } from '@/components/ui/builder-progress';
-import { fetchBots, TRIAL_DEAL, type MockBot } from '@/lib/bots';
+import { TRIAL_EXPIRED_MESSAGE, fetchBots, TRIAL_DEAL, type MockBot } from '@/lib/bots';
 import styles from './page.module.css';
 
 /* Three starter presets — plain buttons with no action behind them yet. */
@@ -26,7 +26,18 @@ const SETUP_STEPS: { id: string; name: string; state: string; done: boolean; cur
 const SETUP_DONE = 2;
 const SETUP_TOTAL = 4;
 
-function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
+/* KI-033: the trial clock is server truth (accounts.trial_ends_at) and this
+   page is 'use client', so the flag is read from GET /api/session/trial on
+   mount — never from the bare bot rows, and never guessed. An injected prop
+   (tests) wins; otherwise absent/fetch-fail means "not expired as far as this
+   read knows" and the banner stays off. */
+function DashboardInner({
+  bots: injectedBots,
+  trialExpired: injectedTrialExpired,
+}: {
+  bots?: MockBot[];
+  trialExpired?: boolean;
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -58,6 +69,36 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
     };
   }, [injectedBots]);
   const bots = liveBots ?? injectedBots ?? [];
+
+  /* The expiry signal arrives from GET /api/session/trial (never from the bot
+     rows). An injected prop (tests) wins outright; otherwise the endpoint is
+     read once on mount and any failure resolves to false — fail-open, so a
+     down session read can never conjure a banner. */
+  const [liveTrialExpired, setLiveTrialExpired] = useState(false);
+  useEffect(() => {
+    if (injectedTrialExpired !== undefined) return;
+    const controller = new AbortController();
+    let active = true;
+    void (async () => {
+      try {
+        const response = await fetch('/api/session/trial', { signal: controller.signal });
+        if (!active || !response.ok) return;
+        const payload: unknown = await response.json();
+        if (!active) return;
+        if (typeof payload === 'object' && payload !== null) {
+          const flag = (payload as Record<string, unknown>).trialExpired;
+          if (typeof flag === 'boolean' && flag) setLiveTrialExpired(true);
+        }
+      } catch {
+        return;
+      }
+    })();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [injectedTrialExpired]);
+  const trialExpired = injectedTrialExpired ?? liveTrialExpired;
 
   const liveCount = bots.filter((bot) => bot.status === 'online').length;
   const trialCount = bots.filter((bot) => bot.status === 'trial').length;
@@ -98,6 +139,12 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
           <h1 className={styles.pageTitle}>Home</h1>
           <p className={styles.pageSub}>Your bots at a glance.</p>
         </header>
+
+        {trialExpired ? (
+          <p role="status" className={styles.trialExpiredBanner}>
+            {TRIAL_EXPIRED_MESSAGE}
+          </p>
+        ) : null}
 
         <section id="get-started" aria-label="Get started (2/4)" className={styles.panel}>
           <div className={styles.cardHead}>
@@ -216,10 +263,16 @@ function DashboardInner({ bots: injectedBots }: { bots?: MockBot[] }) {
   );
 }
 
-export default function DashboardPage({ bots }: { bots?: MockBot[] }) {
+export default function DashboardPage({
+  bots,
+  trialExpired,
+}: {
+  bots?: MockBot[];
+  trialExpired?: boolean;
+}) {
   return (
     <Suspense>
-      <DashboardInner bots={bots} />
+      <DashboardInner bots={bots} trialExpired={trialExpired} />
     </Suspense>
   );
 }
