@@ -38,18 +38,18 @@ describe('dashboard layout rail', () => {
   it('renders the six-item rail as links with the locked hrefs', () => {
     renderLayout();
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(screen.getByRole('link', { name: 'Skip to content' })).toBeTruthy();
-    expect(within(nav).getByText('My server')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'İçeriğe geç' })).toBeTruthy();
+    expect(within(nav).getByText('Sunucum')).toBeTruthy();
     /* KI-030: no fake Pro pill — no visitor is shown a paid tier. */
     expect(within(nav).queryByText('Pro')).toBeNull();
 
     const expected: [string, string][] = [
-      ['Home', '/dashboard'],
-      ['Bots', '/dashboard/bots'],
-      ['Templates', '/gallery'],
-      ['Activity', '/dashboard#week'],
-      ['Pre-flight', '/dashboard#preflight'],
-      ['Settings', '/dashboard#workspace'],
+      ['Ana sayfa', '/dashboard'],
+      ['Botlar', '/dashboard/bots'],
+      ['Şablonlar', '/gallery'],
+      ['Etkinlik', '/dashboard#week'],
+      ['Ön kontrol', '/dashboard#preflight'],
+      ['Ayarlar', '/dashboard#workspace'],
     ];
     const list = within(nav).getByRole('list');
     expect(within(list).getAllByRole('link')).toHaveLength(6);
@@ -61,7 +61,12 @@ describe('dashboard layout rail', () => {
     /* KI-030: no fake credit balance — only the honest disabled Upgrade. */
     expect(screen.queryByText(/credits/i)).toBeNull();
     expect(screen.queryByRole('progressbar', { name: 'Credits' })).toBeNull();
-    expect(within(nav).getByRole('button', { name: 'Upgrade · Coming soon' })).toBeTruthy();
+    expect(within(nav).getByRole('button', { name: 'Yükselt · Yakında' })).toBeTruthy();
+    /* The disabled Upgrade is still disabled — translated copy, same honest state. */
+    const upgrade = within(nav).getByRole('button', { name: 'Yükselt · Yakında' });
+    expect(upgrade.hasAttribute('disabled')).toBe(true);
+    expect(upgrade.getAttribute('aria-disabled')).toBe('true');
+    expect(upgrade.getAttribute('title')).toBe('Yakında');
     /* No Interview rail item — no honest target exists for it, and no old group labels. */
     expect(within(list).queryByRole('link', { name: 'Interview' })).toBeNull();
     for (const label of ['Work', 'Review', 'System']) {
@@ -76,22 +81,22 @@ describe('dashboard layout rail', () => {
   it('marks Home current on /dashboard and Bots current on /dashboard/bots', () => {
     const { unmount } = renderLayout();
     const list = within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('list');
-    expect(within(list).getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBe(
+    expect(within(list).getByRole('link', { name: 'Ana sayfa' }).getAttribute('aria-current')).toBe(
       'page',
     );
     expect(
-      within(list).getByRole('link', { name: 'Bots' }).getAttribute('aria-current'),
+      within(list).getByRole('link', { name: 'Botlar' }).getAttribute('aria-current'),
     ).toBeNull();
     unmount();
 
     mockPathname = '/dashboard/bots';
     renderLayout();
     const botsList = within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('list');
-    expect(within(botsList).getByRole('link', { name: 'Bots' }).getAttribute('aria-current')).toBe(
-      'page',
-    );
     expect(
-      within(botsList).getByRole('link', { name: 'Home' }).getAttribute('aria-current'),
+      within(botsList).getByRole('link', { name: 'Botlar' }).getAttribute('aria-current'),
+    ).toBe('page');
+    expect(
+      within(botsList).getByRole('link', { name: 'Ana sayfa' }).getAttribute('aria-current'),
     ).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -102,12 +107,12 @@ describe('dashboard layout rail', () => {
       const { unmount } = renderLayout();
       const list = within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('list');
       expect(
-        within(list).getByRole('link', { name: 'Bots' }).getAttribute('aria-current'),
-        `Bots should be current on ${path}`,
+        within(list).getByRole('link', { name: 'Botlar' }).getAttribute('aria-current'),
+        `Botlar should be current on ${path}`,
       ).toBe('page');
       expect(
-        within(list).getByRole('link', { name: 'Home' }).getAttribute('aria-current'),
-        `Home should not be current on ${path}`,
+        within(list).getByRole('link', { name: 'Ana sayfa' }).getAttribute('aria-current'),
+        `Ana sayfa should not be current on ${path}`,
       ).toBeNull();
       unmount();
     }

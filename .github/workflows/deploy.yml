@@ -38,6 +38,11 @@ permissions:
 jobs:
   # Same gate order as .github/workflows/ci.yml, re-stated so a deploy can never ship
   # a commit that ci.yml would reject. Keep these steps in sync with ci.yml.
+  #
+  # The `Migrate` step below is the same runner ci.yml uses, against this job's own
+  # throwaway Postgres service — it proves the migration chain applies cleanly from
+  # zero and touches nothing else. This workflow does NOT migrate the live database:
+  # that stays an explicit hand-run step (RUNBOOK §7.2.5).
   gates:
     runs-on: ubuntu-latest
     services:
@@ -66,6 +71,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
+      - name: Migrate (journaled runner over empty CI DB)
+        run: node apps/gateway/scripts/migrate.mjs
       - name: Build spec contract (dist for workspace consumers)
         run: npm run build --workspace @corvus/spec
       - name: Build ai contract (dist for workspace consumers)

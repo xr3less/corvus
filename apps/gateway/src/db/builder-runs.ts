@@ -586,14 +586,24 @@ export function createBuilderDeps(
       }
       const remainingAttempts = BUILDER_BILLABLE_CEILING - billedSoFar;
 
+      // Existence BEFORE billable work (m-28): confirm the bot row is live
+      // before the first chat() call, so a bot deleted after enqueue fails as
+      // bot_gone with ZERO provider calls instead of one unattributed call.
+      // The post-call attribution reads below stay: a bot deleted mid-run is
+      // still unbilled and surfaces bot_gone. The H4 gate below re-uses this
+      // account read (no second query).
+      const accountId = await loadBotAccount(pool, job.botId);
+      if (accountId === null) {
+        throw new BuilderStepError('bot_gone');
+      }
+
       // Seam H4 pre-call budget gate. Refuse BEFORE the first billable call
       // when the remaining attempts' worst case would cross the account's
       // monthly grant. The grant is the account tier's allowance when a tier is
       // resolvable; otherwise it stays the trial allowance, exactly as before
       // KI-020. A blocked job writes failed/budget_exceeded with attempts:0 and
       // makes ZERO chat() calls; the worker dead-letters it.
-      const accountId = await loadBotAccount(pool, job.botId);
-      if (accountId !== null) {
+      {
         const resolvedTier = getTier === undefined ? undefined : await getTier(accountId);
         const decision = await checkBudget({
           accountId,

@@ -151,10 +151,22 @@ Run these on the server in `/opt/corvus`, in this order:
    before any migration:
    `docker compose --env-file .env -f infra/compose/compose.yml --profile backup run --rm pg-backup`
    It writes `infra/compose/backups/corvus.dump`.
-5. **Migrate (forward-only).** Only if a migration is pending. Apply every new file in
-   `apps/gateway/drizzle/` once, in number order (`0001`, `0002`, ...). There is no
-   migration-runner script yet, so run them by hand, for example:
-   `for f in apps/gateway/drizzle/*.sql; do docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f - < "$f"; done`
+5. **Migrate (forward-only).** Only if a migration is pending. Apply pending files
+   with the journaled runner (from the repo root, `DATABASE_URL` pointing at the
+   target DB):
+   `node apps/gateway/scripts/migrate.mjs`
+   Verify-only (exits non-zero when a file is pending):
+   `node apps/gateway/scripts/migrate.mjs --check`
+   The runner applies each unjournaled file in number order and records it in
+   `public.schema_migrations`; a checksum mismatch on a journaled file fails hard
+   (forward-only tripwire — never edit an applied file).
+   History: `0010_accounts_trial_ends.sql` is the one file in there that was NOT
+   safe to run twice by hand: its `UPDATE` re-arms the trial clock
+   (`now() + interval '3 days'`) for every account whose clock is NULL, turning an
+   account that should never expire into a 3-day lockout (0011's header warns about
+   exactly this). The old hand-per-file rule ("run 0010 only against a database that
+   has never seen it, then never again") retires into the mechanism: journaled once,
+   never re-run. The warning stays here as history.
    Rules: never edit an old migration, never write new DDL by hand. If unsure, stop and
    ask the orchestrator. Skip this step if nothing is pending.
 6. **Pull the images:**

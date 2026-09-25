@@ -13,12 +13,14 @@ import { __resetPool, __setPool, TEST_DATABASE_URL } from '../../../lib/db/pool'
 import type { SessionReader } from '../../../lib/interview/session-bind';
 import {
   CAPABILITY_MAP,
+  DEFAULT_CAPABILITIES,
   VALID_CAPABILITIES,
   capabilityBitfield,
   type Capability,
   type PermissionWithWhy,
 } from '../../../lib/invite/permissions';
 import {
+  EXPECTED_COMMANDS,
   POST,
   PREFLIGHT_INTENTS,
   PREFLIGHT_QUEUE,
@@ -288,13 +290,13 @@ describe('POST /api/preflight/start', () => {
     }
   });
 
-  it('returns 422 with the valid list for a missing, empty, or unknown capability set', async () => {
+  it('returns 422 with the valid list for an empty or unknown capability set', async () => {
     const owned = stubPool([{ id: BOT }]);
     __setPool(owned.pool);
     setStartBoss(stubBoss({}).factory);
     setStartReader(SIGNED_IN);
 
-    for (const capabilities of [undefined, [], ['welcome', 'root'], ['root'], 'welcome']) {
+    for (const capabilities of [[], ['welcome', 'root'], ['root'], 'welcome']) {
       const res = await POST(postStart({ botId: BOT, guildId: GUILD, capabilities }));
       expect(res.status).toBe(422);
       expect(await readBody(res)).toEqual({
@@ -302,6 +304,26 @@ describe('POST /api/preflight/start', () => {
         valid: [...VALID_CAPABILITIES],
       });
     }
+  });
+
+  it('derives capabilities from the spec (DEFAULT fallback) when omitted', async () => {
+    const owned = stubPool([{ id: BOT }]);
+    __setPool(owned.pool);
+    const boss = stubBoss({});
+    setStartBoss(boss.factory);
+    setStartReader(SIGNED_IN);
+
+    const res = await POST(postStart({ botId: BOT, guildId: GUILD }));
+
+    expect(res.status).toBe(200);
+    expect(await readBody(res)).toEqual({ jobId: 'job-1' });
+    const derived: Capability[] = [...DEFAULT_CAPABILITIES];
+    expect(boss.record.sent).toHaveLength(1);
+    expect(boss.record.sent[0].data).toMatchObject({
+      required: expectedRequired(derived),
+      bitfield: capabilityBitfield(derived).toString(),
+      expectedCommands: EXPECTED_COMMANDS,
+    });
   });
 
   it('enqueues the mapper-derived payload with the locked queue, key, and retry options', async () => {
@@ -330,7 +352,7 @@ describe('POST /api/preflight/start', () => {
       required,
       bitfield: capabilityBitfield(caps).toString(),
       intents: PREFLIGHT_INTENTS,
-      expectedCommands: required.length,
+      expectedCommands: EXPECTED_COMMANDS,
     });
     expect(PREFLIGHT_INTENTS).toEqual([
       'Guilds',
@@ -363,7 +385,7 @@ describe('POST /api/preflight/start', () => {
     expect(sent.data).toMatchObject({
       required: expectedRequired(caps),
       bitfield: capabilityBitfield(caps).toString(),
-      expectedCommands: expectedRequired(caps).length,
+      expectedCommands: EXPECTED_COMMANDS,
     });
   });
 

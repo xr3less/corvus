@@ -449,9 +449,16 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     expect(find(db, 'INSERT INTO spec_versions')).toBeUndefined();
   });
 
-  it('fails bot_gone with nothing written when the bot row is missing at sync', async () => {
+  it('fails bot_gone with nothing written when the bot row is missing at generate (m-28)', async () => {
+    // m-28 moved the existence check before the first chat() call: a missing
+    // bot row now fails at generate (was: sync), with zero billable calls.
     const db = fakeDb({ botAccount: null });
-    const chatFn = artifactText('{"version":1,"behaviors":[]}');
+    let chatCalls = 0;
+    const base = artifactText('{"version":1,"behaviors":[]}');
+    const chatFn: typeof chat = async (options) => {
+      chatCalls += 1;
+      return base(options);
+    };
     const deps = createBuilderDeps(db.pool as unknown as Pool, chatFn);
 
     const result = await runBuilderJob(deps, {
@@ -461,16 +468,24 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     });
 
     expect(result).toEqual({ error: 'builder_failed' });
-    expect(failedDetail(db)).toEqual({ error: 'bot_gone', step: 'sync' });
+    expect(chatCalls).toBe(0);
+    expect(failedDetail(db)).toEqual({ error: 'bot_gone', step: 'generate' });
     expect(find(db, 'INSERT INTO spec_versions')).toBeUndefined();
     expect(find(db, 'UPDATE bots SET draft_spec_id')).toBeUndefined();
     expect(find(db, 'INSERT INTO ai_spend')).toBeUndefined();
-    expect(db.log.some((entry) => entry.text === 'ROLLBACK')).toBe(true);
+    expect(db.log.some((entry) => entry.text === 'ROLLBACK')).toBe(false);
   });
 
-  it('fails bot_gone before writing anything when the bot is missing on a parse failure', async () => {
+  it('fails bot_gone before any billable work when the bot row is missing (m-28)', async () => {
+    // The pre-generate existence check fires before the first chat() call: the
+    // parse outcome no longer matters and no chat call is made.
     const db = fakeDb({ botAccount: null });
-    const chatFn = artifactText('garbage', 'glm/5-2', 0.05);
+    let chatCalls = 0;
+    const base = artifactText('garbage', 'glm/5-2', 0.05);
+    const chatFn: typeof chat = async (options) => {
+      chatCalls += 1;
+      return base(options);
+    };
     const deps = createBuilderDeps(db.pool as unknown as Pool, chatFn);
 
     const result = await runBuilderJob(deps, {
@@ -480,6 +495,7 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     });
 
     expect(result).toEqual({ error: 'builder_failed' });
+    expect(chatCalls).toBe(0);
     expect(failedDetail(db)).toEqual({ error: 'bot_gone', step: 'generate' });
     expect(find(db, 'INSERT INTO ai_spend')).toBeUndefined();
   });
@@ -869,9 +885,9 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     expect(detail['spanCredits']).toBeCloseTo(3 * toCredits(0.01), 10);
   });
 
-  it('H4: a missing account skips the gate rather than blocking an unattributable run', async () => {
-    // No bot row -> no account -> nothing to check against; the run proceeds and
-    // sync surfaces bot_gone exactly as before the gate existed.
+  it('m-28: a bot deleted after enqueue fails bot_gone with ZERO chat calls', async () => {
+    // Existence is checked before the first billable call: no bot row means no
+    // provider call, no budget read, and no ledger row.
     const db = fakeDb({ botAccount: null });
     let chatCalls = 0;
     const base = artifactText('{"version":1,"behaviors":[]}');
@@ -888,11 +904,38 @@ describe('runBuilderJob — real generate + sync over a fake pool', () => {
     });
 
     expect(result).toEqual({ error: 'builder_failed' });
-    expect(chatCalls).toBe(1);
+    expect(chatCalls).toBe(0);
+    expect(failedDetail(db)).toEqual({ error: 'bot_gone', step: 'generate' });
+    expect(find(db, 'INSERT INTO ai_spend')).toBeUndefined();
+    expect(find(db, 'SUM(credits)')).toBeUndefined();
+    expect(find(db, 'INSERT INTO spec_versions')).toBeUndefined();
+  });
+
+  it('H4: a missing account fails bot_gone before the budget read (m-28)', async () => {
+    // No bot row -> no account -> the m-28 existence check fires at generate
+    // before any billable work: zero chat calls, no budget SUM read, and the
+    // KI-020 in-job ceiling never burns a ledger row.
+    const db = fakeDb({ botAccount: null });
+    let chatCalls = 0;
+    const base = artifactText('{"version":1,"behaviors":[]}');
+    const chatFn: typeof chat = async (options) => {
+      chatCalls += 1;
+      return base(options);
+    };
+    const deps = createBuilderDeps(db.pool as unknown as Pool, chatFn);
+
+    const result = await runBuilderJob(deps, {
+      runId: RUN_ID,
+      botId: BOT_ID,
+      brief: 'welcome bot',
+    });
+
+    expect(result).toEqual({ error: 'builder_failed' });
+    expect(chatCalls).toBe(0);
     // No account -> the allowance SUM is never read; the KI-020 attempt count
     // still runs (it is account-independent).
     expect(find(db, 'SUM(credits)')).toBeUndefined();
-    expect(failedDetail(db)).toEqual({ error: 'bot_gone', step: 'sync' });
+    expect(failedDetail(db)).toEqual({ error: 'bot_gone', step: 'generate' });
   });
 
   // --- KI-020: billable-retry ceiling + idempotent attempt billing ---

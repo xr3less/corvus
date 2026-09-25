@@ -22,7 +22,7 @@ import { chatStream } from '@/lib/ai/stream';
 import type { StreamEvent } from '@/lib/ai/stream';
 import { LANES } from '@/lib/ai/lanes';
 import { recordSpend, USD_PER_CREDIT } from '@/lib/ai/cost';
-import { checkBudget, isPlanTier } from '@corvus/ai';
+import { buildPersonaPrompt, checkBudget, isPlanTier } from '@corvus/ai';
 import { getPool, mapDbError, __setPool } from '@/lib/db/pool';
 import { isUuid } from '@/lib/editor/drafts';
 import { defaultSessionReader } from '@/lib/interview/session-bind';
@@ -110,13 +110,23 @@ function budgetRefusalMessage(tier: string | null | undefined, allowance: number
 }
 
 // One persona call's worst-case output cost (seam H4's shape, ported to chat).
-// The most expensive persona route is wiro `xai/grok-4-1-fast` at $0.50 / 1M
-// output tokens (lanes.ts), and PERSONA_MAX_TOKENS bounds ONE reply. As in
+// The most expensive persona route is wiro `glm/5-2` at $4.40 / 1M output
+// tokens (lanes.ts), and PERSONA_MAX_TOKENS bounds ONE reply. As in
 // builder-runs.ts this file states no credit count of its own except by reading
 // the shared allowance table: USD -> credits goes through the shared meter.
-const PERSONA_MAX_OUTPUT_USD_PER_MTOKEN = 0.5;
+const PERSONA_MAX_OUTPUT_USD_PER_MTOKEN = 4.4;
 const PERSONA_CALL_CREDITS =
   (PERSONA_MAX_TOKENS / 1_000_000) * (PERSONA_MAX_OUTPUT_USD_PER_MTOKEN / USD_PER_CREDIT);
+
+// Failover-aware reservation (m-24): chatStream tries each persona route in turn
+// before yielding (stream.ts lane loop), so a failure-heavy turn can cost up to
+// one worst-case call PER route. The pre-call estimate therefore reserves
+// CALL_CREDITS x route count — the same remaining-attempts idiom the builder
+// worker pre-authorizes with (remaining x CALL_CREDITS). USD -> credits still
+// goes through the shared meter; no credit count is stated except via that
+// product.
+const PERSONA_RESERVE_CALLS = LANES.persona.length;
+const PERSONA_RESERVE_CREDITS = PERSONA_CALL_CREDITS * PERSONA_RESERVE_CALLS;
 
 // Credits already spent this calendar month, scoped to the account. Identical
 // arithmetic to the builder worker's SPENT_CREDITS_SQL (ai_spend has no period
@@ -278,6 +288,58 @@ async function recordChatSpend(
   }
 }
 
+// m-23: the allowance gate is read-then-record, so two concurrent turns can both
+// pass before either records. The reservation closes it: a hold row for the
+// turn's worst case is inserted BEFORE the model call, so a concurrent turn's
+// SUM read sees it. After the done frame the hold is trued up to the actual
+// cost with one UPDATE (M-11: a turn ending without `done` simply keeps the
+// hold as its estimated row — no second write). Same row shape as the success
+// path (model/reason/refId), so the ledger stays one row per turn.
+async function reserveChatSpend(accountId: string, refId: string | null): Promise<string | null> {
+  try {
+    return await recordSpend(getPool(), {
+      accountId,
+      model: PERSONA_LANE,
+      usdCost: PERSONA_RESERVE_CREDITS * USD_PER_CREDIT,
+      reason: PERSONA_REASON,
+      refId: refId ?? undefined,
+    });
+  } catch (error) {
+    // A hold that cannot land must never break the reply (same rule as
+    // recordChatSpend above); the post-stream write still tries, so the miss is
+    // bounded to one estimate. The cause is logged, never swallowed silently.
+    const mapped = mapDbError(error);
+    const message = mapped
+      ? `chat: cannot reserve ai_spend - ${mapped.error}`
+      : 'chat: failed to reserve ai_spend';
+    console.error(message, error);
+    return null;
+  }
+}
+
+// True-up for a metered turn: the hold becomes the actual cost (or NULL when
+// the provider reported no usage, mirroring recordChatSpend). One UPDATE keeps
+// the turn at exactly one ledger row; a failure leaves the hold standing
+// (a conservative overcount) and is logged, never thrown into the stream.
+async function trueUpChatSpend(reservationId: string, done: DoneEvent): Promise<void> {
+  const metered = done.note !== 'usage-unavailable';
+  const usdCost = metered ? done.credits * USD_PER_CREDIT : null;
+  const credits = metered ? done.credits : null;
+  try {
+    await getPool().query('UPDATE ai_spend SET usd_cost = $1, credits = $2 WHERE id = $3', [
+      usdCost,
+      credits,
+      reservationId,
+    ]);
+  } catch (error) {
+    const mapped = mapDbError(error);
+    const message = mapped
+      ? `chat: cannot true-up ai_spend - ${mapped.error}`
+      : 'chat: failed to true-up ai_spend';
+    console.error(message, error);
+  }
+}
+
 export async function POST(req: Request): Promise<Response> {
   const session = await sessionReader.getSession(req);
   if (!session) {
@@ -317,7 +379,13 @@ export async function POST(req: Request): Promise<Response> {
   try {
     budget = await checkBudget({
       accountId: session.accountId,
-      estimatedCredits: PERSONA_CALL_CREDITS,
+      // Failover-aware reservation (m-24): mirror the builder worker's
+      // remaining-attempts idiom — the check must cover the turn's WORST case
+      // (one worst-case call per persona route), not a single call, so a
+      // failure-heavy turn is refused before it can cross the grant. A turn
+      // landing exactly on the allowance is still allowed; one over is still
+      // refused — only the reserved headroom changes, never the gate semantics.
+      estimatedCredits: PERSONA_RESERVE_CREDITS,
       getSpent: () => loadSpentCredits(session.accountId),
       // Unknown/absent tier falls back to the guard's own trial default.
       tier: isPlanTier(session.tier) ? session.tier : undefined,
@@ -345,6 +413,11 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
+  // m-23: reserve the turn's worst case BEFORE opening the model call, so a
+  // concurrent turn admitted next reads this hold in its SUM. A blocked turn
+  // (above) never reaches here, so no hold is wasted on a refusal.
+  const reservationId = await reserveChatSpend(session.accountId, botId);
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let done: DoneEvent | null = null;
@@ -352,7 +425,11 @@ export async function POST(req: Request): Promise<Response> {
         try {
           for await (const event of chatStream({
             lane: PERSONA_LANE,
-            messages: [...history, { role: 'user', content: message }],
+            messages: [
+              { role: 'system', content: buildPersonaPrompt() },
+              ...history,
+              { role: 'user', content: message },
+            ],
             maxTokens: PERSONA_MAX_TOKENS,
             signal: req.signal,
           })) {
@@ -361,16 +438,38 @@ export async function POST(req: Request): Promise<Response> {
             }
             controller.enqueue(sse(event));
           }
-        } catch {
+        } catch (streamError) {
           // A failure after the first frame stays inside the open stream: the
           // client renders it and offers Retry rather than seeing it as a clean
-          // end. Never a fabricated answer.
+          // end. Never a fabricated answer. Every other failure path in this
+          // route logs its cause, and a lost cause here would hide which lane
+          // died — so this catch logs too (m-25).
+          console.error('chat: persona stream failed mid-turn', streamError);
           controller.enqueue(sse({ t: 'error', message: 'The reply stopped unexpectedly.' }));
         }
         if (done) {
-          // After the done frame, before close: the write is guarded so a DB
-          // failure can never turn into a stream error (see recordChatSpend).
-          await recordChatSpend(done, session.accountId, botId);
+          // Metered turn: the hold becomes the actual cost (one UPDATE, still
+          // exactly one ledger row). After the done frame, before close: the
+          // write is guarded so a DB failure can never turn into a stream
+          // error (see trueUpChatSpend).
+          if (reservationId !== null) {
+            await trueUpChatSpend(reservationId, done);
+          } else {
+            await recordChatSpend(done, session.accountId, botId);
+          }
+        } else if (reservationId === null) {
+          // M-11: a turn ending without a `done` frame (client abort via
+          // req.signal, mid-stream provider throw converted to the error frame
+          // above) still incurred provider cost, so it must still write an
+          // estimated spend row — same shape as the success path — before
+          // close. An aborted (signal-fired) turn reserves the full worst
+          // case; a provider throw with unknown metering writes the
+          // usage-unavailable NULL row. With a hold the kept estimate is
+          // already the row and no second write is needed.
+          const fallback: DoneEvent = req.signal.aborted
+            ? { t: 'done', credits: PERSONA_RESERVE_CREDITS }
+            : { t: 'done', credits: 0, note: 'usage-unavailable' };
+          await recordChatSpend(fallback, session.accountId, botId);
         }
       } finally {
         controller.close();

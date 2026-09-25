@@ -3,14 +3,28 @@
 /* Bot detail page (D-118): header, actions, Overview/Activity/Pre-flight
    tabs, and the AI composer with a live thread. Unknown ids get an honest
    empty state, never a guessed bot. KI-030: empty, not example — no mock
-   bots, specs, activity, or pre-flight rows are presented as real data. */
+   bots, specs, activity, or pre-flight rows are presented as real data.
+
+   Turkish copy (F6, 2026-09-24): the owner reads Turkish, so every string
+   this file renders is Turkish, with the wording mirrored from the shipped
+   Turkish on `/dashboard/new` and `/dashboard/bots` (`Tekrar dene`,
+   `Giriş yap`, `Önerilen değişiklikler`, `Her değişiklik kredi harcar…`)
+   instead of inventing a second wording for the same idea. Two English
+   sources stay, both owned by other files: the KI-033 trial sentences
+   (byte-locked in `lib/bots.ts`, shared with `/dashboard` and the bots list)
+   and everything the shared components render (PromptInput,
+   BuilderProgress, ErrorCard, ThinkingTrace, and chat-thread's HTTP-error
+   line in `lib/chat/thread.ts`). */
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { explain } from '@corvus/spec';
 import { PromptInput } from '@/components/ui/ai-chat-input';
+import { BuilderProgress } from '@/components/ui/builder-progress';
+import { ErrorCard } from '@/components/ui/error-card';
 import { Input } from '@/components/ui/Input';
 import { ChatAssistantRow } from '@/components/ui/chat-thread';
 import { useChatStream } from '@/components/ui/use-chat-stream';
+import { stitchBrief } from '@/lib/chat/thread';
 import threadStyles from '@/components/ui/chat-thread.module.css';
 import {
   fetchBots,
@@ -22,28 +36,31 @@ import {
   type LiveActivityItem,
   type MockBot,
 } from '@/lib/bots';
+import { readRefusalMessage } from '@/lib/http/refusal';
 import styles from './page.module.css';
 
+/* Owner-language labels (Turkish), matching the bots list page and the
+   sidebar rail — 'Canlı' / 'Deneme' / 'Çevrimdışı' name the same states. */
 const STATUS_LABEL: Record<BotStatus, string> = {
-  online: 'Live',
-  trial: 'Trial',
-  offline: 'Offline',
+  online: 'Canlı',
+  trial: 'Deneme',
+  offline: 'Çevrimdışı',
 };
 
 type DetailTab = 'overview' | 'activity' | 'preflight';
 
 const DETAIL_TABS: { value: DetailTab; label: string }[] = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'activity', label: 'Activity' },
-  { value: 'preflight', label: 'Pre-flight' },
+  { value: 'overview', label: 'Genel bakış' },
+  { value: 'activity', label: 'Etkinlik' },
+  { value: 'preflight', label: 'Ön kontrol' },
 ];
 
 function validTab(value: string | null): DetailTab {
   return value === 'activity' || value === 'preflight' ? value : 'overview';
 }
 
-/* Starter prompts — a click fills the composer; the composer is the only place a change is sent from. */
-const SUGGESTIONS = ['Welcome message', 'Moderation rule', 'XP rewards'];
+/* Starter prompts — a click fills the composer; the composer is the only place a change is sent from. Wording mirrors `/dashboard/new`'s shipped Turkish chips. */
+const SUGGESTIONS = ['Karşılama mesajı', 'Moderasyon kuralı', 'XP ödülleri'];
 
 /* loading — request in flight; live — API rows; empty — API said none;
    error — 401/network/anything else, so an honest empty state is shown
@@ -56,19 +73,18 @@ type ActivityState =
 
 const ACTIVITY_LIMIT = 20;
 
-/* One builder run costs about this much; a simulation bills nothing. */
-const CREDITS_PER_CHANGE = 1.1;
-
 const LOGIN_HREF = '/api/auth/login';
-const LOGGED_OUT_LINE = 'You are logged out — log in again, then try again.';
+/* Same wording the bots list page ships for the same state. */
+const LOGGED_OUT_LINE = 'Oturumun kapanmış — yeniden giriş yap, sonra tekrar dene.';
 const PREFLIGHT_POLL_MS = 1000;
 const PREFLIGHT_TIMEOUT_MS = 60000;
 const GUILD_ID_RE = /^\d{17,20}$/;
 
 /* Local-only ids are not on the server, so every write answers 404 — the UI
-     says that honestly instead of faking a success. */
+     says that honestly instead of faking a success. `action` is the Turkish
+     gerund of the write being attempted ('yayınlama', 'tarama çalıştırma', …). */
 function notSavedYet(action: string): string {
-  return `This bot is not saved on the server yet, so ${action} is unavailable.`;
+  return `Bu bot henüz sunucuya kaydedilmedi, bu yüzden ${action} kullanılamıyor.`;
 }
 
 interface ActionNote {
@@ -98,22 +114,48 @@ function failingNames(payload: Record<string, unknown>): string[] {
   );
 }
 
+/* Refusal reader lives in lib/http/refusal.ts (shared import above). This
+   page's ONE deliberate difference travels as the call-site option
+   ({ allowErrorFallback: false }): every `error` value this route can
+   answer is a machine code ('could not start build', 'invalid brief', 'bot
+   not found', …) and this page's locked copy already rules that a code is
+   shown as the honest generic line instead ("a failed start shows the
+   honest error"). So a message wins, and anything else keeps the caller's
+   own sentence. */
+
 interface ScanRow {
-  tone: 'pass' | 'warn';
+  /* Severity-aware presentation (E5): red maps to the ErrorCard action card,
+     yellow to a secondary fix line, green to a plain pass row. The scan
+     semantics behind these (counts, red-block decisions) are unchanged. */
+  tone: 'red' | 'yellow' | 'green';
   text: string;
+  fix: string | null;
 }
 
-function rowToneOf(record: Record<string, unknown>): string {
-  if (typeof record.severity === 'string') return record.severity.toLowerCase();
-  if (typeof record.tone === 'string') return record.tone.toLowerCase();
-  return '';
+function rowToneOf(record: Record<string, unknown>): 'red' | 'yellow' | 'green' {
+  const raw =
+    typeof record.severity === 'string'
+      ? record.severity.toLowerCase()
+      : typeof record.tone === 'string'
+        ? record.tone.toLowerCase()
+        : '';
+  if (raw === 'red') return 'red';
+  if (raw === 'green') return 'green';
+  /* Anything else (yellow, unknown, missing) renders as the caution row —
+     identical to the previous pass/warn mapping where only green passed. */
+  return 'yellow';
 }
 
-/* Worker rows carry { tone|severity, check, detail }. Anything malformed is
-   shown as-is, never dropped silently. */
+function readFixOf(record: Record<string, unknown>): string | null {
+  return typeof record.fix === 'string' && record.fix.length > 0 ? record.fix : null;
+}
+
+/* Worker rows carry { tone|severity, check, detail, fix }. The fix string is
+   consumed by the preflight UI (ErrorCard / secondary line) — never dropped.
+   Anything malformed is shown as-is, never dropped silently. */
 function toScanRow(row: unknown): ScanRow {
   if (typeof row !== 'object' || row === null) {
-    return { tone: 'warn', text: 'A check finished with no details.' };
+    return { tone: 'yellow', text: 'Bir kontrol ayrıntı vermeden bitti.', fix: null };
   }
   const record = row as Record<string, unknown>;
   const check = typeof record.check === 'string' && record.check.length > 0 ? record.check : null;
@@ -122,8 +164,16 @@ function toScanRow(row: unknown): ScanRow {
   const text =
     check !== null && detail !== null
       ? `${check}: ${detail}`
-      : (detail ?? check ?? 'A check finished with no details.');
-  return { tone: rowToneOf(record) === 'green' ? 'pass' : 'warn', text };
+      : (detail ?? check ?? 'Bir kontrol ayrıntı vermeden bitti.');
+  return { tone: rowToneOf(record), text, fix: readFixOf(record) };
+}
+
+/* A Red row renders its fix as a card title in the `check: detail` shape the
+   page's Red-block publish note already names (`Save blocked — failing
+   checks: <check>`); Yellow rows keep the compact one-line shape with the
+   fix appended as a secondary line; Green stays a plain pass row. */
+function scanRowTitle(row: ScanRow): string {
+  return row.tone === 'red' ? `İlgilenilmeli — ${row.text}` : row.text;
 }
 
 type ScanState =
@@ -139,7 +189,7 @@ function ActionNoteLine({ note }: { note: ActionNote }) {
       {note.login === true ? (
         <>
           {' '}
-          <a href={LOGIN_HREF}>Log in</a>
+          <a href={LOGIN_HREF}>Giriş yap</a>
         </>
       ) : null}
     </p>
@@ -278,24 +328,91 @@ function BotDetailInner({
      never a fabricated one (KI-014). */
   const [startedRunId, setStartedRunId] = useState<string | null>(null);
 
-  async function refreshDraft(botId: string, signal?: AbortSignal): Promise<number | null> {
+  /* Load the server's current draft head. The CALLER gets the loaded data back,
+     never only the version: a write that runs in the same turn as this read
+     cannot see the state these setters queue, and POST /api/spec/patch is a
+     full replacement (the posted behaviors become the new head) — so building
+     a patch body from stale closure state is how a save wipes a draft it never
+     read.
+
+     The three outcomes are kept apart on purpose. `absent` is the server
+     answering definitively that there is no draft to read — nothing to
+     protect, and the same two 404 codes the patch route answers with.
+     `unreadable` is everything else (failed or aborted read), where the server
+     may still hold a draft this page cannot see: a write built on it must be
+     refused, not guessed. */
+  type DraftRead =
+    | { status: 'loaded'; version: number; behaviors: unknown[] }
+    | { status: 'absent'; error: string }
+    | { status: 'unreadable' };
+
+  async function refreshDraft(botId: string, signal?: AbortSignal): Promise<DraftRead> {
     try {
       const response = await fetch(`/api/spec/draft?botId=${encodeURIComponent(botId)}`, {
         ...(signal === undefined ? {} : { signal }),
       });
-      if (signal !== undefined && signal.aborted) return null;
-      if (!response.ok) return null;
+      if (signal !== undefined && signal.aborted) return { status: 'unreadable' };
+      if (response.status === 404) {
+        const body = readJsonPayload(await response.json().catch(() => ({})));
+        const code = typeof body.error === 'string' ? body.error : '';
+        return { status: 'absent', error: code };
+      }
+      if (!response.ok) return { status: 'unreadable' };
       const payload = readJsonPayload(await response.json());
-      if (signal !== undefined && signal.aborted) return null;
-      if (typeof payload.version !== 'number') return null;
+      if (signal !== undefined && signal.aborted) return { status: 'unreadable' };
+      if (typeof payload.version !== 'number') return { status: 'unreadable' };
       const behaviors = readJsonPayload(payload.spec).behaviors;
-      if (!Array.isArray(behaviors)) return null;
+      if (!Array.isArray(behaviors)) return { status: 'unreadable' };
       setDraftVersion(payload.version);
       setDraftBehaviors(behaviors);
-      return payload.version;
+      return { status: 'loaded', version: payload.version, behaviors };
+    } catch {
+      return { status: 'unreadable' };
+    }
+  }
+
+  /* Rollback target derivation (M-10). The draft head is NOT production, so
+     the page needs the prod pointer too. No pointer endpoint exists; the
+     activity feed (GET /api/bots/[botId]/activity, activity/route.ts:263-271)
+     lists every publish/rollback move newest-first, so the latest published
+     version is the newest feed item whose kind is publish or rollback. The
+     text carries the version as 'Published vN' / 'Rolled back to vN'
+     (buildPublishText/buildRollbackText); only that exact shape is read, and
+     anything else resolves to null — never guessed. A null means "the pointer
+     is unknown", never "there is no production history". */
+  function publishedVersionFromFeed(items: unknown): number | null {
+    if (!Array.isArray(items)) return null;
+    for (const entry of items) {
+      if (typeof entry !== 'object' || entry === null) continue;
+      const record = entry as Record<string, unknown>;
+      if (record.kind !== 'publish' && record.kind !== 'rollback') continue;
+      if (typeof record.text !== 'string') return null;
+      const match = /v(\d+)\s*$/.exec(record.text);
+      if (match === null) return null;
+      const version = Number(match[1]);
+      return Number.isInteger(version) && version >= 1 ? version : null;
+    }
+    return null;
+  }
+
+  async function readPublishedVersion(botId: string): Promise<number | null> {
+    try {
+      const response = await fetch(`/api/bots/${botId}/activity?limit=${ACTIVITY_LIMIT}`);
+      if (!response.ok) return null;
+      const payload: unknown = await response.json().catch(() => ({}));
+      if (typeof payload !== 'object' || payload === null) return null;
+      return publishedVersionFromFeed((payload as Record<string, unknown>).items);
     } catch {
       return null;
     }
+  }
+
+  /* The cached draft head when the mount load already landed; otherwise one
+     fresh draft read (which also repopulates the cache for the next write). */
+  async function readDraftVersion(botId: string): Promise<number | null> {
+    if (draftVersion !== null) return draftVersion;
+    const read = await refreshDraft(botId);
+    return read.status === 'loaded' ? read.version : null;
   }
 
   async function pollScan(jobId: string): Promise<void> {
@@ -304,7 +421,7 @@ function BotDetailInner({
       if (!scanActive.current) return;
       if (Date.now() > deadline) {
         if (scanActive.current) {
-          setScan({ status: 'error', text: 'The scan is taking too long — try again later.' });
+          setScan({ status: 'error', text: 'Tarama çok uzun sürüyor — sonra tekrar dene.' });
         }
         return;
       }
@@ -319,7 +436,7 @@ function BotDetailInner({
         if (scanActive.current) {
           setScan({
             status: 'error',
-            text: 'Could not read the scan — check your connection and try again.',
+            text: 'Tarama okunamadı — bağlantını kontrol edip tekrar dene.',
           });
         }
         return;
@@ -336,7 +453,7 @@ function BotDetailInner({
         if (!Array.isArray(envelope.rows)) {
           setScan({
             status: 'error',
-            text: 'The scan finished, but the results were unreadable — run it again.',
+            text: 'Tarama bitti ama sonuçlar okunamadı — yeniden çalıştır.',
           });
           return;
         }
@@ -348,23 +465,23 @@ function BotDetailInner({
           status: 'live',
           rows: envelope.rows.map(toScanRow),
           summary: counts.every((count): count is number => typeof count === 'number')
-            ? `Scan finished: ${counts[2]} green, ${counts[1]} yellow, ${counts[0]} red.`
+            ? `Tarama bitti: ${counts[2]} yeşil, ${counts[1]} sarı, ${counts[0]} kırmızı.`
             : null,
         });
         return;
       }
       if (state === 'failed') {
-        setScan({ status: 'error', text: 'The scan failed — try again.' });
+        setScan({ status: 'error', text: 'Tarama başarısız oldu — tekrar dene.' });
         return;
       }
       if (state === 'created' || state === 'retry' || state === 'active') {
         continue;
       }
       if (response.status === 404) {
-        setScan({ status: 'error', text: 'The scan went missing — run it again.' });
+        setScan({ status: 'error', text: 'Tarama kayboldu — yeniden çalıştır.' });
         return;
       }
-      setScan({ status: 'error', text: 'Could not read the scan — try again.' });
+      setScan({ status: 'error', text: 'Tarama okunamadı — tekrar dene.' });
       return;
     }
   }
@@ -456,7 +573,8 @@ function BotDetailInner({
     setPublishing(true);
     setPublishNote(null);
     try {
-      const version = draftVersion ?? (await refreshDraft(botId));
+      const read = draftVersion === null ? await refreshDraft(botId) : null;
+      const version = draftVersion ?? (read?.status === 'loaded' ? read.version : null);
       const response = await fetch('/api/spec/publish', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -474,8 +592,8 @@ function BotDetailInner({
         setPublishNote({
           text:
             published === null
-              ? 'Version saved. Your bot isn’t live on Discord yet.'
-              : `Version ${published} saved. Your bot isn’t live on Discord yet.`,
+              ? 'Sürüm kaydedildi. Botun Discord’da henüz canlıya alınmadı.'
+              : `Sürüm ${published} kaydedildi. Botun Discord’da henüz canlıya alınmadı.`,
         });
         return;
       }
@@ -484,16 +602,18 @@ function BotDetailInner({
         setPublishNote({
           text:
             failing.length > 0
-              ? `Save blocked — failing checks: ${failing.join(', ')}. Fix them and run the scan again.`
-              : 'Save blocked — a pre-flight check is failing. Fix it and run the scan again.',
+              ? `Kaydetme engellendi — başarısız kontroller: ${failing.join(', ')}. Bunları düzelt ve taramayı yeniden çalıştır.`
+              : 'Kaydetme engellendi — bir ön kontrol başarısız. Düzelt ve taramayı yeniden çalıştır.',
         });
         return;
       }
       if (response.status === 409) {
-        setPublishNote({ text: 'Someone changed the draft — loading the latest version.' });
-        const fresh = await refreshDraft(botId);
-        if (fresh !== null) {
-          setPublishNote({ text: `Loaded v${fresh} — press Save version to retry.` });
+        setPublishNote({ text: 'Taslağı biri değiştirdi — en son sürüm yükleniyor.' });
+        const reloaded = await refreshDraft(botId);
+        if (reloaded.status === 'loaded') {
+          setPublishNote({
+            text: `v${reloaded.version} yüklendi — tekrar denemek için Sürümü kaydet’e bas.`,
+          });
         }
         return;
       }
@@ -501,14 +621,14 @@ function BotDetailInner({
         setPublishNote({
           text:
             payload.error === 'no draft yet'
-              ? 'No draft exists for this bot yet.'
-              : notSavedYet('publishing'),
+              ? 'Bu bot için henüz taslak yok.'
+              : notSavedYet('yayınlama'),
         });
         return;
       }
-      setPublishNote({ text: 'Could not save — try again.' });
+      setPublishNote({ text: 'Kaydedilemedi — tekrar dene.' });
     } catch {
-      setPublishNote({ text: 'Could not save — check your connection and try again.' });
+      setPublishNote({ text: 'Kaydedilemedi — bağlantını kontrol edip tekrar dene.' });
     } finally {
       setPublishing(false);
     }
@@ -520,20 +640,47 @@ function BotDetailInner({
     setRollingBack(true);
     setRollbackNote(null);
     try {
-      let known = draftVersion;
-      let target = known !== null && known > 1 ? known - 1 : null;
-      if (target === null && known === null) {
-        known = await refreshDraft(botId);
-        if (known !== null && known > 1) target = known - 1;
-      }
-      if (target === null) {
-        setRollbackNote({
-          text:
-            known !== null && known <= 1
-              ? 'Nothing to roll back to yet.'
-              : 'Could not roll back — the current version is unknown. Reload and try again.',
-        });
+      /* M-10: the rollback route accepts ONLY a previously-published version
+         strictly older than production (rollback/route.ts:222-234). The draft
+         head is NOT production — every save-as-draft inserts a new draft row
+         while the prod pointer stays where the last publish left it — so
+         `draftVersion - 1` 404s whenever a draft-only save runs ahead of prod
+         (publish v5 → save-as-draft v6 must target v5, and v6-minus-one is only
+         right by coincidence). No API today exposes the prod pointer, so the
+         page asks the activity feed — the one client-visible history of every
+         publish/rollback move (activity/route.ts:263-271) — for the latest
+         published version, and falls back to draft-minus-one only when the
+         feed is unreadable. 'Nothing to roll back to yet' fires only on real
+         signals: prod is v1, or the feed is empty AND there is no usable draft
+         head. A 404 from the server is its own answer — never the false
+         "not saved yet" line (that copy fires only when the bot truly has no
+         published version, which the branches above already proved). */
+      const prodKnown = await readPublishedVersion(botId);
+      const draftKnown = await readDraftVersion(botId);
+      let target: number | null = null;
+      if (prodKnown === null) {
+        /* The feed is unreadable here (or empty: a bot with zero published
+           versions has no publish/rollback item to read). Only the empty-feed
+           case means "no production history" — and then, with no draft either,
+           there is honestly nothing to roll back to; a draft head of v1 means
+           the same. When the feed failed but a draft head exists, the legacy
+           draft-minus-one is the only number on hand: it still 404s exactly
+           when it is wrong, and the 404 branch below reports the server's
+           answer honestly instead of the false "not saved yet" line. */
+        if (draftKnown === null) {
+          setRollbackNote({ text: 'Henüz geri dönebileceğin bir sürüm yok.' });
+          return;
+        }
+        target = draftKnown > 1 ? draftKnown - 1 : null;
+        if (target === null) {
+          setRollbackNote({ text: 'Henüz geri dönebileceğin bir sürüm yok.' });
+          return;
+        }
+      } else if (prodKnown <= 1) {
+        setRollbackNote({ text: 'Henüz geri dönebileceğin bir sürüm yok.' });
         return;
+      } else {
+        target = prodKnown - 1;
       }
       const response = await fetch('/api/spec/rollback', {
         method: 'POST',
@@ -547,24 +694,33 @@ function BotDetailInner({
       const payload = await readJsonSafe(response);
       if (response.ok) {
         const restored = typeof payload.version === 'number' ? payload.version : target;
-        setRollbackNote({ text: `Rolled back to v${restored}.` });
+        setRollbackNote({ text: `v${restored} sürümüne dönüldü.` });
         return;
       }
       if (response.status === 409) {
-        setRollbackNote({ text: 'Someone changed the draft — loading the latest version.' });
-        const fresh = await refreshDraft(botId);
-        if (fresh !== null) {
-          setRollbackNote({ text: `Loaded v${fresh} — press Rollback to retry.` });
+        setRollbackNote({ text: 'Taslağı biri değiştirdi — en son sürüm yükleniyor.' });
+        const reloaded = await refreshDraft(botId);
+        if (reloaded.status === 'loaded') {
+          setRollbackNote({
+            text: `v${reloaded.version} yüklendi — tekrar denemek için Geri al’a bas.`,
+          });
         }
         return;
       }
       if (response.status === 404) {
-        setRollbackNote({ text: notSavedYet('rolling back') });
+        const publishedKnown =
+          prodKnown ?? (draftKnown !== null && draftKnown > 1 ? draftKnown - 1 : null);
+        setRollbackNote({
+          text:
+            publishedKnown === null
+              ? 'Henüz geri dönebileceğin bir sürüm yok.'
+              : 'Geri alınamadı — tekrar dene.',
+        });
         return;
       }
-      setRollbackNote({ text: 'Could not roll back — try again.' });
+      setRollbackNote({ text: 'Geri alınamadı — tekrar dene.' });
     } catch {
-      setRollbackNote({ text: 'Could not roll back — check your connection and try again.' });
+      setRollbackNote({ text: 'Geri alınamadı — bağlantını kontrol edip tekrar dene.' });
     } finally {
       setRollingBack(false);
     }
@@ -572,10 +728,11 @@ function BotDetailInner({
 
   async function runOpen(): Promise<void> {
     if (bot === null || inviteLoading) return;
+    const botId = bot.id;
     setInviteLoading(true);
     setInviteNote(null);
     try {
-      const response = await fetch('/api/invite');
+      const response = await fetch(`/api/invite?botId=${encodeURIComponent(botId)}`);
       const payload = await readJsonSafe(response);
       if (response.ok) {
         const url = typeof payload.url === 'string' ? payload.url : '';
@@ -594,10 +751,10 @@ function BotDetailInner({
           return;
         }
       }
-      setInviteNote({ text: 'Could not prepare the install link — try again.' });
+      setInviteNote({ text: 'Kurulum bağlantısı hazırlanamadı — tekrar dene.' });
     } catch {
       setInviteNote({
-        text: 'Could not prepare the install link — check your connection and try again.',
+        text: 'Kurulum bağlantısı hazırlanamadı — bağlantını kontrol edip tekrar dene.',
       });
     } finally {
       setInviteLoading(false);
@@ -610,7 +767,7 @@ function BotDetailInner({
     if (!GUILD_ID_RE.test(trimmedGuild)) {
       setScan({
         status: 'error',
-        text: 'Enter the server ID from the server settings — 17 to 20 digits.',
+        text: 'Sunucu ayarlarındaki sunucu kimliğini gir — 17-20 haneli sayı.',
       });
       return;
     }
@@ -623,7 +780,6 @@ function BotDetailInner({
         body: JSON.stringify({
           botId: writeBotId,
           guildId: trimmedGuild,
-          capabilities: ['welcome'],
         }),
       });
       if (!scanActive.current) return;
@@ -638,15 +794,15 @@ function BotDetailInner({
       }
       if (!scanActive.current) return;
       if (response.status === 404) {
-        setScan({ status: 'error', text: notSavedYet('running a scan') });
+        setScan({ status: 'error', text: notSavedYet('tarama çalıştırma') });
         return;
       }
-      setScan({ status: 'error', text: 'Could not start the scan — try again.' });
+      setScan({ status: 'error', text: 'Tarama başlatılamadı — tekrar dene.' });
     } catch {
       if (scanActive.current) {
         setScan({
           status: 'error',
-          text: 'Could not start the scan — check your connection and try again.',
+          text: 'Tarama başlatılamadı — bağlantını kontrol edip tekrar dene.',
         });
       }
     }
@@ -678,7 +834,9 @@ function BotDetailInner({
               ? record.title
               : `#${index}`;
           const reason =
-            typeof record.reason === 'string' && record.reason.length > 0 ? record.reason : 'fired';
+            typeof record.reason === 'string' && record.reason.length > 0
+              ? record.reason
+              : 'tetiklendi';
           list.push({ title, reason });
         });
         setFired(list);
@@ -688,14 +846,14 @@ function BotDetailInner({
         setSimNote({
           text:
             payload.error === 'no draft yet'
-              ? 'No draft exists for this bot yet.'
-              : notSavedYet('running a simulation'),
+              ? 'Bu bot için henüz taslak yok.'
+              : notSavedYet('simülasyon çalıştırma'),
         });
         return;
       }
-      setSimNote({ text: 'Could not run the simulation — try again.' });
+      setSimNote({ text: 'Simülasyon çalıştırılamadı — tekrar dene.' });
     } catch {
-      setSimNote({ text: 'Could not run the simulation — check your connection and try again.' });
+      setSimNote({ text: 'Simülasyon çalıştırılamadı — bağlantını kontrol edip tekrar dene.' });
     } finally {
       setSimulating(false);
     }
@@ -704,13 +862,55 @@ function BotDetailInner({
   async function runSaveDraft(): Promise<void> {
     if (bot === null || savingDraft) return;
     const botId = bot.id;
-    const text = draft.trim();
+    /* KI-036twin: the streamed thread is content too — stitch thread user
+       turns plus the live composer text, exactly like the brief below. The
+       composer-only empty return is preserved for the empty stitch. */
+    const text = stitchBrief(messages, draft);
     if (text.length === 0) return;
     setSavingDraft(true);
     setPatchNote(null);
     try {
-      const base = draftVersion ?? (await refreshDraft(botId)) ?? 1;
-      const behaviors = [...(draftBehaviors ?? []), { kind: 'note', title: 'Note', detail: text }];
+      /* DATA-LOSS GUARD: POST /api/spec/patch replaces the whole head, so the
+         behaviors posted here ARE the new draft. When the mount load has not
+         landed (404/500/aborted, or a save before it resolves) the local cache
+         is empty — posting a note-only array would silently wipe a draft the
+         server still holds, and this page has no history UI to recover it.
+         So the base comes from what the read RETURNED (not the state it queued,
+         which this closure cannot see), and only a DEFINITIVE 'no draft yet'
+         read lets a save proceed with no base to append to. */
+      const cached = draftBehaviors !== null && draftVersion !== null;
+      let base = draftVersion;
+      let existing = draftBehaviors;
+      if (!cached) {
+        const read = await refreshDraft(botId);
+        if (read.status === 'unreadable') {
+          setPatchNote({
+            text: 'Mevcut taslak yüklenemedi — hiçbir şey kaydedilmedi. Tekrar dene.',
+          });
+          return;
+        }
+        if (read.status === 'absent') {
+          /* The server has no draft to protect (its own 'no draft yet' /
+             'not found'), so there is no head to append to and no head to
+             overwrite. */
+          setPatchNote({
+            text:
+              read.error === 'no draft yet'
+                ? 'Bu bot için henüz taslak yok.'
+                : notSavedYet('kaydetme'),
+          });
+          return;
+        }
+        base = read.version;
+        existing = read.behaviors;
+      }
+      if (base === null || existing === null) {
+        setPatchNote({
+          text: 'Mevcut taslak yüklenemedi — hiçbir şey kaydedilmedi. Tekrar dene.',
+        });
+        return;
+      }
+      const behaviors = [...existing, { kind: 'note', title: 'Note', detail: text }];
       const response = await fetch('/api/spec/patch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -729,14 +929,19 @@ function BotDetailInner({
       if (response.ok && typeof payload.version === 'number') {
         setDraftVersion(payload.version);
         setDraftBehaviors(behaviors);
-        setPatchNote({ text: `Saved as draft v${payload.version}.` });
+        setPatchNote({ text: `Taslak olarak kaydedildi: v${payload.version}.` });
         return;
       }
       if (response.status === 409) {
-        setPatchNote({ text: 'Someone changed the draft — loading the latest version.' });
-        const fresh = await refreshDraft(botId);
-        if (fresh !== null) {
-          setPatchNote({ text: 'Loaded the latest version — press Save as draft to retry.' });
+        setPatchNote({ text: 'Taslağı biri değiştirdi — en son sürüm yükleniyor.' });
+        const reloaded = await refreshDraft(botId);
+        /* Only claim the reload when it actually happened: a 409 means the
+           server holds a head, so anything but 'loaded' is an unread state and
+           the honest line above stands. */
+        if (reloaded.status === 'loaded') {
+          setPatchNote({
+            text: 'En son sürüm yüklendi — tekrar denemek için Taslak olarak kaydet’e bas.',
+          });
         }
         return;
       }
@@ -744,35 +949,39 @@ function BotDetailInner({
         setPatchNote({
           text:
             payload.error === 'no draft yet'
-              ? 'No draft exists for this bot yet.'
-              : notSavedYet('saving'),
+              ? 'Bu bot için henüz taslak yok.'
+              : notSavedYet('kaydetme'),
         });
         return;
       }
-      setPatchNote({ text: 'Could not save — try again.' });
+      setPatchNote({ text: 'Kaydedilemedi — tekrar dene.' });
     } catch {
-      setPatchNote({ text: 'Could not save — check your connection and try again.' });
+      setPatchNote({ text: 'Kaydedilemedi — bağlantını kontrol edip tekrar dene.' });
     } finally {
       setSavingDraft(false);
     }
   }
 
-  /* Start a real builder run for this bot, from the text in the composer, then
-     hand back the link to its live progress. A local-only bot has no server
-     id, so no run can start — that is said plainly, never faked. */
+  /* Start a real builder run for this bot, from the stitched thread plus the
+     text in the composer, then show live progress inline. A local-only bot
+     has no server id, so no run can start — that is said plainly, never
+     faked. */
   async function runStartBuild(): Promise<void> {
     if (bot === null || startingBuild) return;
-    const brief = draft.trim();
+    /* KI-036twin: brief is the stitched thread + composer, never the composer
+       alone — refined conversation reaches the builder. Guards and ALL
+       user-facing copy below are verbatim. */
+    const brief = stitchBrief(messages, draft);
     if (brief.length === 0) {
-      setBuildNote({ text: 'Describe the change you want, then start the build.' });
+      setBuildNote({ text: 'İstediğin değişikliği anlat, sonra kurulumu başlat.' });
       return;
     }
     if (brief.length > 2000) {
-      setBuildNote({ text: 'That is too long to build from — keep it under 2000 characters.' });
+      setBuildNote({ text: 'Kurulum için bu çok uzun — 2000 karakterin altında tut.' });
       return;
     }
     if (writeBotId === null) {
-      setBuildNote({ text: notSavedYet('starting a build') });
+      setBuildNote({ text: notSavedYet('kurulum başlatma') });
       return;
     }
     setStartingBuild(true);
@@ -795,12 +1004,19 @@ function BotDetailInner({
         return;
       }
       if (response.status === 404) {
-        setBuildNote({ text: notSavedYet('starting a build') });
+        setBuildNote({ text: notSavedYet('kurulum başlatma') });
         return;
       }
-      setBuildNote({ text: 'Could not start the build — try again.' });
+      /* KI-033: a refused start says what the server said — the trial gate's
+         locked sentence, byte for byte — instead of swallowing it behind the
+         generic line. Unknown errors keep the generic line. */
+      setBuildNote({
+        text:
+          readRefusalMessage(payload, { allowErrorFallback: false }) ??
+          'Kurulum başlatılamadı — tekrar dene.',
+      });
     } catch {
-      setBuildNote({ text: 'Could not start the build — check your connection and try again.' });
+      setBuildNote({ text: 'Kurulum başlatılamadı — bağlantını kontrol edip tekrar dene.' });
     } finally {
       setStartingBuild(false);
     }
@@ -808,7 +1024,7 @@ function BotDetailInner({
 
   const composer = (
     <>
-      <div role="group" aria-label="Suggested changes" className={threadStyles.suggestionRow}>
+      <div role="group" aria-label="Önerilen değişiklikler" className={threadStyles.suggestionRow}>
         {SUGGESTIONS.map((label) => (
           <button
             key={label}
@@ -822,13 +1038,16 @@ function BotDetailInner({
       </div>
       <PromptInput
         ref={composerRef}
-        placeholder="Describe a change…"
+        placeholder="İstediğin değişikliği anlat…"
         value={draft}
         onChange={setDraft}
         onSubmit={(value, meta) => submit(value, meta.attachments)}
       />
+      {/* Honest cost line, same wording as `/dashboard/new`: a change spends
+          credits and the amount follows what the change actually costs to
+          build — the old "about 1.1" read as a fixed price no run can promise. */}
       <p className={threadStyles.composerCost}>
-        About {CREDITS_PER_CHANGE} credits per change · platform failures retry free.
+        Her değişiklik kredi harcar · platform kaynaklı hata olursa tekrar denemek ücretsiz.
       </p>
     </>
   );
@@ -840,7 +1059,7 @@ function BotDetailInner({
         <div className={styles.detailScroll}>
           <div className={styles.detailInner}>
             <a href="/dashboard/bots" className={styles.backLink}>
-              ← All bots
+              ← Tüm botlar
             </a>
           </div>
         </div>
@@ -853,20 +1072,20 @@ function BotDetailInner({
         <div className={styles.detailScroll}>
           <div className={styles.detailInner}>
             <a href="/dashboard/bots" className={styles.backLink}>
-              ← All bots
+              ← Tüm botlar
             </a>
             <div className={styles.empty}>
               <p className={styles.emptyText}>{LOGGED_OUT_LINE}</p>
               <div className={styles.actionRow}>
                 <a href={LOGIN_HREF} className={styles.ghostAction}>
-                  Log in
+                  Giriş yap
                 </a>
                 <button
                   type="button"
                   className={styles.ghostAction}
                   onClick={() => setLookupNonce((nonce) => nonce + 1)}
                 >
-                  Retry
+                  Tekrar dene
                 </button>
               </div>
             </div>
@@ -878,12 +1097,12 @@ function BotDetailInner({
       <div className={styles.detailScroll}>
         <div className={styles.detailInner}>
           <a href="/dashboard/bots" className={styles.backLink}>
-            ← All bots
+            ← Tüm botlar
           </a>
           <div className={styles.empty}>
-            <p className={styles.emptyText}>No bot with this address — it may have been deleted.</p>
+            <p className={styles.emptyText}>Bu adreste bir bot yok — silinmiş olabilir.</p>
             <a href="/dashboard/bots" className={styles.ghostAction}>
-              Back to your bots
+              Botlarına dön
             </a>
           </div>
         </div>
@@ -897,7 +1116,7 @@ function BotDetailInner({
       <div className={styles.detailScroll}>
         <div className={styles.detailInner}>
           <a href="/dashboard/bots" className={styles.backLink}>
-            ← All bots
+            ← Tüm botlar
           </a>
           <div className={styles.detailHead}>
             <div className={styles.detailTitleRow}>
@@ -920,10 +1139,22 @@ function BotDetailInner({
                 onClick={() => void runOpen()}
                 disabled={inviteLoading}
               >
-                Open
+                Aç
               </button>
-              <button type="button" className={styles.ghostAction}>
-                Continue interview
+              {/* D-118 kept the panel interview reachable from this header, but
+                  /interview starts a NEW round with the bot name typed in; it
+                  cannot resume an existing bot's interview (no botId param, no
+                  read-back of answered questions). An enabled button that goes
+                  nowhere is not allowed, so it is honestly disabled with the
+                  same marker the Upgrade control uses. */}
+              <button
+                type="button"
+                className={styles.ghostAction}
+                disabled
+                aria-disabled="true"
+                title="Yakında"
+              >
+                Görüşmeyi sürdür · Yakında
               </button>
               <button
                 type="button"
@@ -931,7 +1162,7 @@ function BotDetailInner({
                 onClick={() => void runPublish()}
                 disabled={publishing}
               >
-                Save version
+                Sürümü kaydet
               </button>
               <button
                 type="button"
@@ -939,8 +1170,14 @@ function BotDetailInner({
                 onClick={() => void runRollback()}
                 disabled={rollingBack}
               >
-                Rollback
+                Geri al
               </button>
+              <a
+                className={styles.ghostAction}
+                href={`/dashboard/bots/${encodeURIComponent(bot.id)}/token`}
+              >
+                Bot jetonu
+              </a>
             </div>
             {inviteLoading ||
             inviteUrl !== null ||
@@ -950,7 +1187,7 @@ function BotDetailInner({
               <div>
                 {inviteLoading ? (
                   <p role="status" className={styles.todaySentence}>
-                    preparing invite…
+                    davet hazırlanıyor…
                   </p>
                 ) : null}
                 {inviteUrl !== null ? (
@@ -961,7 +1198,8 @@ function BotDetailInner({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Open install link (shared test app — your own bot install isn’t wired yet)
+                      Kurulum bağlantısını aç (ortak test uygulaması — kendi botunun kurulumu henüz
+                      bağlı değil)
                     </a>
                     {inviteWhys.length > 0 ? (
                       <ul className={styles.activityList}>
@@ -980,7 +1218,7 @@ function BotDetailInner({
               </div>
             ) : null}
           </div>
-          <div role="tablist" aria-label="Bot detail" className={styles.detailTabs}>
+          <div role="tablist" aria-label="Bot detayı" className={styles.detailTabs}>
             {DETAIL_TABS.map((entry) => (
               <button
                 key={entry.value}
@@ -1003,8 +1241,8 @@ function BotDetailInner({
             className={styles.detailPanel}
           >
             {detailTab === 'overview' ? (
-              <section aria-label="What this bot does" className={styles.card}>
-                <h2 className={styles.cardTitle}>What this bot does</h2>
+              <section aria-label="Bu bot ne yapıyor" className={styles.card}>
+                <h2 className={styles.cardTitle}>Bu bot ne yapıyor</h2>
                 {explainerSentences.length > 0 ? (
                   <ul className={styles.activityList}>
                     {explainerSentences.map((sentence, index) => (
@@ -1015,18 +1253,18 @@ function BotDetailInner({
                   </ul>
                 ) : (
                   <p className={styles.todaySentence}>
-                    No description yet — the saved draft will describe it here.
+                    Henüz açıklama yok — kaydedilen taslak burada anlatacak.
                   </p>
                 )}
               </section>
             ) : null}
             {detailTab === 'activity' ? (
-              <section aria-label="Recent activity" className={styles.card}>
+              <section aria-label="Son etkinlik" className={styles.card}>
                 <div className={styles.panelHead}>
-                  <h2 className={styles.cardTitle}>Recent activity</h2>
+                  <h2 className={styles.cardTitle}>Son etkinlik</h2>
                 </div>
                 {activity.status === 'loading' ? (
-                  <p className={styles.todaySentence}>Loading live activity…</p>
+                  <p className={styles.todaySentence}>Etkinlik yükleniyor…</p>
                 ) : activity.status === 'live' ? (
                   <ul className={styles.activityList}>
                     {activity.items.map((item, index) => (
@@ -1036,25 +1274,25 @@ function BotDetailInner({
                           {item.text}
                         </span>
                         <span className={styles.activityTime}>
-                          {item.credits !== undefined ? `${item.credits} credits · ` : ''}
+                          {item.credits !== undefined ? `${item.credits} kredi · ` : ''}
                           {formatActivityTime(item.at)}
                         </span>
                       </li>
                     ))}
                   </ul>
                 ) : activity.status === 'empty' ? (
-                  <p className={styles.todaySentence}>No activity yet.</p>
+                  <p className={styles.todaySentence}>Henüz etkinlik yok.</p>
                 ) : (
                   <p className={styles.todaySentence}>
-                    Could not load activity — check your connection and try again.
+                    Etkinlik yüklenemedi — bağlantını kontrol edip tekrar dene.
                   </p>
                 )}
               </section>
             ) : null}
             {detailTab === 'preflight' ? (
-              <section aria-label="Pre-flight" className={styles.card}>
+              <section aria-label="Ön kontrol" className={styles.card}>
                 <div className={styles.panelHead}>
-                  <h2 className={styles.cardTitle}>Pre-flight</h2>
+                  <h2 className={styles.cardTitle}>Ön kontrol</h2>
                 </div>
                 {scan.status === 'live' ? (
                   <>
@@ -1062,27 +1300,46 @@ function BotDetailInner({
                       <p className={styles.todaySentence}>{scan.summary}</p>
                     ) : null}
                     <ul className={styles.activityList}>
-                      {scan.rows.map((row, index) => (
-                        <li key={`scan-row-${index}`} className={styles.preflightRow}>
-                          <span
-                            aria-hidden="true"
-                            className={`${styles.preDot} ${row.tone === 'pass' ? styles.prePass : styles.preWarn}`}
-                          />
-                          {row.text}
-                        </li>
-                      ))}
+                      {scan.rows.map((row, index) =>
+                        row.tone === 'red' ? (
+                          <li key={`scan-row-${index}`} className={styles.preflightRow}>
+                            <ErrorCard
+                              title={scanRowTitle(row)}
+                              whatHappened={row.text}
+                              fix={row.fix}
+                              onRetry={() => void runScan()}
+                            />
+                          </li>
+                        ) : (
+                          <li key={`scan-row-${index}`} className={styles.preflightRow}>
+                            <span
+                              aria-hidden="true"
+                              className={`${styles.preDot} ${row.tone === 'green' ? styles.prePass : styles.preWarn}`}
+                            />
+                            <span>
+                              {row.text}
+                              {row.tone === 'yellow' && row.fix !== null ? (
+                                <>
+                                  <br />
+                                  <span>{row.fix}</span>
+                                </>
+                              ) : null}
+                            </span>
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </>
                 ) : scan.status === 'idle' ? (
                   <p className={styles.todaySentence}>
-                    No scan yet — enter a server ID and run a scan.
+                    Henüz tarama yok — bir sunucu kimliği gir ve tarama çalıştır.
                   </p>
                 ) : null}
                 <div className={styles.actionRow}>
                   <Input
                     id="preflight-guild"
-                    label="Server ID"
-                    placeholder="Server ID"
+                    label="Sunucu kimliği"
+                    placeholder="Sunucu kimliği"
                     value={guildId}
                     onChange={(event) => setGuildId(event.target.value)}
                     inputMode="numeric"
@@ -1094,12 +1351,12 @@ function BotDetailInner({
                     onClick={() => void runScan()}
                     disabled={scan.status === 'scanning'}
                   >
-                    Run scan
+                    Taramayı çalıştır
                   </button>
                 </div>
                 {scan.status === 'scanning' ? (
                   <p role="status" className={styles.todaySentence}>
-                    Scanning…
+                    Taranıyor…
                   </p>
                 ) : null}
                 {scan.status === 'error' ? <ActionNoteLine note={scan} /> : null}
@@ -1111,14 +1368,14 @@ function BotDetailInner({
       <div className={styles.aiBar}>
         <div className={styles.aiBarInner}>
           {messages.length > 0 ? (
-            <ul aria-label="Submitted changes" className={styles.activityList}>
+            <ul aria-label="Gönderilen değişiklikler" className={styles.activityList}>
               {messages.map((message) =>
                 message.role === 'user' ? (
                   <li key={message.id} className={styles.activityRow}>
-                    <span className={styles.activityText}>You: {message.text}</span>
+                    <span className={styles.activityText}>Sen: {message.text}</span>
                     {message.attachmentCount > 0 ? (
                       <span className={styles.activityTime}>
-                        {message.attachmentCount} attachment(s)
+                        {message.attachmentCount} ek dosya
                       </span>
                     ) : null}
                   </li>
@@ -1138,28 +1395,30 @@ function BotDetailInner({
               onClick={() => void runSimulate()}
               disabled={simulating}
             >
-              Simulate join
+              Katılımı simüle et
             </button>
+            {/* KI-036twin: a full thread with an empty composer can still save
+                and build — the streamed user turns count, not just the box. */}
             <button
               type="button"
               className={styles.ghostAction}
               onClick={() => void runSaveDraft()}
-              disabled={savingDraft || draft.trim().length === 0}
+              disabled={savingDraft || stitchBrief(messages, draft).length === 0}
             >
-              Save as draft
+              Taslak olarak kaydet
             </button>
             <button
               type="button"
               className={styles.primaryAction}
               onClick={() => void runStartBuild()}
-              disabled={startingBuild || draft.trim().length === 0}
+              disabled={startingBuild || stitchBrief(messages, draft).length === 0}
             >
-              {startingBuild ? 'Starting…' : 'Start build'}
+              {startingBuild ? 'Başlatılıyor…' : 'Kurulumu başlat'}
             </button>
           </div>
           {fired !== null ? (
             fired.length > 0 ? (
-              <ul aria-label="Simulation result" className={styles.activityList}>
+              <ul aria-label="Simülasyon sonucu" className={styles.activityList}>
                 {fired.map((entry, index) => (
                   <li key={`fired-${index}`} className={styles.activityRow}>
                     <span className={styles.activityText}>
@@ -1170,7 +1429,7 @@ function BotDetailInner({
               </ul>
             ) : (
               <p role="status" className={styles.todaySentence}>
-                No draft entries would fire for a new member joining.
+                Yeni bir üye katıldığında tetiklenecek taslak kaydı yok.
               </p>
             )
           ) : null}
@@ -1178,10 +1437,18 @@ function BotDetailInner({
           {patchNote !== null ? <ActionNoteLine note={patchNote} /> : null}
           {buildNote !== null ? <ActionNoteLine note={buildNote} /> : null}
           {startedRunId !== null ? (
-            <p role="status" className={styles.todaySentence}>
-              Build started.{' '}
-              <a href={`/dashboard?runId=${encodeURIComponent(startedRunId)}`}>Follow the build</a>
-            </p>
+            /* KI-036twin: a started build shows the EXISTING server-polled
+               stepper inline — the same shape as the creation page — next to
+               the kept ?runId= link. No new timers, no faked phases. */
+            <section aria-label="Kurulum ilerlemesi">
+              <BuilderProgress runId={startedRunId} />
+              <p role="status" className={styles.todaySentence}>
+                Kurulum başladı.{' '}
+                <a href={`/dashboard?runId=${encodeURIComponent(startedRunId)}`}>
+                  Kurulum ilerlemesini aç
+                </a>
+              </p>
+            </section>
           ) : null}
         </div>
       </div>

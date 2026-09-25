@@ -7,6 +7,7 @@
 // once by spawning the real entry file and asserting a non-zero exit.
 
 import { spawn } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,11 +19,26 @@ const mocks = vi.hoisted(() => ({
   createSupervisor: vi.fn(),
   startPreflightWorker: vi.fn(),
   startBuilderWorker: vi.fn(),
+  startSyncCommandsWorker: vi.fn(),
+  startSweeper: vi.fn(),
+  attachBotModules: vi.fn(),
   poolEnd: vi.fn(async () => undefined),
   poolConstructed: 0,
+  // Fake discord.js Client instances, in construction order. The adapter under
+  // test builds them through createDiscordClient, so this is how a test reaches
+  // the client the gateway would have driven (emit ready, count listeners).
+  clientInstances: [] as unknown[],
+  // One stop handle per attachBotModules call, in call order: the adapter's
+  // module-lifecycle contract is "the stored stop is consumed exactly once".
+  stops: [] as ReturnType<typeof vi.fn>[],
 }));
 
 vi.mock('./gateway.js', () => ({ createGateway: mocks.createGateway }));
+
+vi.mock('./runtime/boot-modules.js', () => ({
+  BOOT_CONFIG_SQL: 'SELECT 1',
+  attachBotModules: mocks.attachBotModules,
+}));
 
 // start.ts imports the REAL createSupervisor; mock it like the workers so boot
 // stays DB-free and the constructed supervisor can be asserted.
@@ -37,6 +53,17 @@ vi.mock('./preflight/worker.js', () => ({
 
 vi.mock('./db/builder-runs.js', () => ({
   startBuilderWorker: mocks.startBuilderWorker,
+}));
+
+vi.mock('./deploy/worker.js', () => ({
+  startSyncCommandsWorker: mocks.startSyncCommandsWorker,
+}));
+
+// The sweeper interval driver boots last in boot() and is handed to the gateway
+// via attachSweeper. Mocked so boot stays timer-free and DB-free; the sweeper's
+// own decisions are proven in runtime/sweeper.test.ts, not here.
+vi.mock('./runtime/sweeper.js', () => ({
+  startSweeper: mocks.startSweeper,
 }));
 
 vi.mock('pg', () => ({
@@ -55,22 +82,91 @@ vi.mock('pg', () => ({
   },
 }));
 
-// createDiscordClient is never called in these tests (the gateway factory is
-// mocked), but the module import must resolve.
-vi.mock('discord.js', () => ({
-  Client: class Client {},
-  GatewayIntentBits: { Guilds: 1 },
-}));
+// The bot-lifecycle suite below drives createDiscordClient for real, so this
+// fake carries the listener surface the adapter uses (once/on/off/emit). Events
+// values must match the installed discord.js 14.27.0 exactly — `ClientReady` is
+// the string 'clientReady' there (verified against the installed package), and
+// the adapter arms its ready listener with it.
+//
+// EventEmitter backs the fake on purpose: it reproduces the real Client's
+// listener-count semantics (`listenerCount('clientReady')` is 0 once a one-shot
+// once() listener has fired), which is exactly the property this suite asserts.
+//
+// Partial mock (importOriginal), not a bare stub. A stub returning only the
+// four names below leaves every other discord.js export undefined, and start.ts's
+// import graph reaches modules that dereference real exports while loading. The
+// concrete failure this fixes: `deploy-commands.ts` builds the whole
+// FEATURE_MODULES registry at module scope (`new SlashCommandBuilder()` at
+// moderation/index.ts:586 and its siblings), reached through start.ts →
+// deploy/worker → deploy-commands, which killed this file at COLLECTION with
+// "No 'SlashCommandBuilder' export is defined on the 'discord.js' mock" before a
+// single test ran. The deploy/worker mock below now also cuts that particular
+// path; the passthrough is what keeps every other export real for the rest of
+// the graph. Same idiom as deploy/worker.test.ts.
+vi.mock('discord.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('discord.js')>();
+  const { EventEmitter } = await import('node:events');
+  class FakeClient extends EventEmitter {
+    destroyed = 0;
+    login = vi.fn(async () => undefined);
+    constructor() {
+      super();
+      mocks.clientInstances.push(this);
+    }
+    async destroy(): Promise<void> {
+      this.destroyed += 1;
+    }
+  }
+  return {
+    ...actual,
+    Client: FakeClient,
+    GatewayIntentBits: { Guilds: 1 },
+    // Wiring 2026-09-20: start.ts (via boot-modules → loaders) reads Events at
+    // module load; the values mirror the installed package.
+    Events: {
+      ClientReady: 'clientReady',
+      GuildCreate: 'guildCreate',
+      GuildMemberAdd: 'guildMemberAdd',
+      GuildMemberRemove: 'guildMemberRemove',
+      MessageCreate: 'messageCreate',
+      MessageDelete: 'messageDelete',
+      MessageUpdate: 'messageUpdate',
+      MessageReactionAdd: 'messageReactionAdd',
+      InteractionCreate: 'interactionCreate',
+    },
+    Partials: { GuildMember: 2 },
+  };
+});
 
 import { auditEvents, type NewAuditEvent } from './db/audit-events.js';
 import { CryptoError, encryptToken } from './lib/crypto.js';
 import { boot, handleShutdownSignal, main, restartBotFromVault } from './start.js';
-import type { GatewayLogger, LogRecord } from './gateway.js';
+import type { GatewayClient, GatewayLogger, LogRecord } from './gateway.js';
 
 const DB_URL = 'postgresql://corvus:supersecret@localhost:5432/corvus';
 
-function makeGateway(): { shutdown: ReturnType<typeof vi.fn> } {
-  return { shutdown: vi.fn(async () => undefined) };
+function makeGateway(): {
+  shutdown: ReturnType<typeof vi.fn>;
+  attachSweeper: ReturnType<typeof vi.fn>;
+} {
+  // attachSweeper is part of the Gateway surface boot() calls (the sweeper's
+  // lifecycle is gateway-owned: a later attach stops the previous handle, and
+  // shutdown() stops the current one). The fake carries it so boot() can wire
+  // the sweeper without a real gateway.
+  return { shutdown: vi.fn(async () => undefined), attachSweeper: vi.fn() };
+}
+
+// The sweeper handle the mocked startSweeper returns: stop() is sync in the
+// real contract (SweeperHandle.stop(): void), and sweepNow() is the on-demand
+// reconcile the sweeper's own suite exercises.
+function makeSweeperHandle(): {
+  stop: ReturnType<typeof vi.fn>;
+  sweepNow: ReturnType<typeof vi.fn>;
+} {
+  return {
+    stop: vi.fn(),
+    sweepNow: vi.fn(async () => ({ sleep: [], wake: [] })),
+  };
 }
 
 function makeSupervisor(): Record<string, ReturnType<typeof vi.fn>> {
@@ -126,9 +222,23 @@ function runProcess(
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.poolConstructed = 0;
+  mocks.clientInstances.length = 0;
+  mocks.stops.length = 0;
+  // A fresh stop per attach, so "was it consumed exactly once" is answerable.
+  mocks.attachBotModules.mockImplementation(() => {
+    const stop = vi.fn();
+    mocks.stops.push(stop);
+    return stop;
+  });
   // The builder worker boots beside the preflight worker; default it to a
   // healthy handle so boot tests never open a real pg-boss connection.
   mocks.startBuilderWorker.mockResolvedValue(makeWorkerHandle());
+  // Same for the sync-commands worker: it boots beside the other two, so an
+  // unstubbed default would open a real pg-boss connection on every boot test.
+  mocks.startSyncCommandsWorker.mockResolvedValue(makeWorkerHandle());
+  // The sweeper starts last and hands its handle to the gateway; default it to
+  // a safe handle so no test leaves a real interval running.
+  mocks.startSweeper.mockReturnValue(makeSweeperHandle());
   // boot always constructs a supervisor; default one so tests that don't care
   // still get a valid object.
   mocks.createSupervisor.mockReturnValue(makeSupervisor());
@@ -368,6 +478,180 @@ describe('entry point', () => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// Bot-lifecycle ownership (fix-gateway-start). Two defects lived in
+// createDiscordClient: `readyAttached` latched per botId forever, so a bot
+// resurrected by relogin never got a ClientReady listener and never ran
+// attachBotModules again (no dispatcher, no slash commands, no feature events);
+// and `moduleStops` was written but never consumed, so a destroyed client's
+// module polls (tempban 60s, giveaway, connector) kept firing against it —
+// tempban keeps a row whose guild cannot be fetched, so a scheduled unban never
+// drained. The adapter now releases both on destroy() and re-arms ready for the
+// replacement client. These tests drive the real adapter through boot()'s
+// gateway factory and assert those ownership edges.
+// ---------------------------------------------------------------------------
+
+interface FakeDiscordClient extends EventEmitter {
+  destroyed: number;
+  destroy(): Promise<void>;
+}
+
+describe('discord client lifecycle ownership', () => {
+  // boot hands the gateway a factory over the real createDiscordClient; capture
+  // it exactly as the gateway core would.
+  async function bootCaptureFactory(): Promise<(botId: string) => GatewayClient> {
+    mocks.createGateway.mockReturnValue(makeGateway());
+    mocks.startPreflightWorker.mockResolvedValue(makeWorkerHandle());
+    await boot({ DATABASE_URL: DB_URL });
+    const options = mocks.createGateway.mock.calls[0]?.[0] as
+      { createClient: (id: string) => GatewayClient } | undefined;
+    if (options === undefined) {
+      throw new Error('boot did not build a gateway');
+    }
+    return options.createClient;
+  }
+
+  function fakeClientAt(index: number): FakeDiscordClient {
+    const client = mocks.clientInstances[index];
+    if (client === undefined) {
+      throw new Error(`no fake client constructed at index ${index}`);
+    }
+    return client as FakeDiscordClient;
+  }
+
+  it('attaches modules on the first ready and stops them exactly once on destroy', async () => {
+    const createClient = await bootCaptureFactory();
+    const gatewayClient = createClient('bot-a');
+    const real = fakeClientAt(0);
+
+    // Exactly one ready arm; the fake's login is a no-op, so the arm is what we
+    // observe rather than an emitted event.
+    expect(real.listenerCount('clientReady')).toBe(1);
+    expect(mocks.attachBotModules).not.toHaveBeenCalled();
+
+    real.emit('clientReady');
+    await vi.waitFor(() => {
+      expect(mocks.attachBotModules).toHaveBeenCalledTimes(1);
+    });
+    expect(mocks.attachBotModules.mock.calls[0]?.[0]).toBe(real);
+    // One-shot consumed: the client holds no live ready listener afterwards.
+    expect(real.listenerCount('clientReady')).toBe(0);
+    expect(mocks.stops).toHaveLength(1);
+
+    await gatewayClient.destroy();
+    expect(mocks.stops[0]).toHaveBeenCalledTimes(1);
+    expect(real.destroyed).toBe(1);
+  });
+
+  it('re-arms ready for the replacement client on relogin and stops the old modules first', async () => {
+    const createClient = await bootCaptureFactory();
+    const first = createClient('bot-a');
+    const firstReal = fakeClientAt(0);
+    firstReal.emit('clientReady');
+    await vi.waitFor(() => {
+      expect(mocks.attachBotModules).toHaveBeenCalledTimes(1);
+    });
+
+    // relogin's shape: destroy the old client, then build a fresh one through
+    // the same factory (gateway.relogin does exactly this).
+    await first.destroy();
+    // The replacement client, built through the same factory relogin uses.
+    const second = createClient('bot-a');
+    const secondReal = fakeClientAt(1);
+
+    // The latch is gone with the old client: the replacement armed its own
+    // listener instead of inheriting a permanent "already attached" verdict.
+    expect(secondReal.listenerCount('clientReady')).toBe(1);
+    // The old client's polls were stopped as it went away, not orphaned.
+    expect(mocks.stops[0]).toHaveBeenCalledTimes(1);
+
+    // The resurrected bot gets its modules back: the whole point of the fix.
+    secondReal.emit('clientReady');
+    await vi.waitFor(() => {
+      expect(mocks.attachBotModules).toHaveBeenCalledTimes(2);
+    });
+    expect(mocks.attachBotModules.mock.calls[1]?.[0]).toBe(secondReal);
+    expect(mocks.stops[1]).not.toHaveBeenCalled();
+
+    await second.destroy();
+    expect(mocks.stops[1]).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a late ready from a client that is no longer the registered one', async () => {
+    const createClient = await bootCaptureFactory();
+    const first = createClient('bot-a');
+    const firstReal = fakeClientAt(0);
+
+    // Swap in a replacement before the old client's ready ever fired — the
+    // real-world case is a login that resolves after relogin already began.
+    await first.destroy();
+    // The replacement client, built through the same factory relogin uses.
+    createClient('bot-a');
+    const secondReal = fakeClientAt(1);
+
+    firstReal.emit('clientReady');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The superseded client must not attach: doing so would bind modules to a
+    // dead client and overwrite the live attach's stop, orphaning its polls.
+    expect(mocks.attachBotModules).not.toHaveBeenCalled();
+    // The live client keeps its single arm.
+    expect(secondReal.listenerCount('clientReady')).toBe(1);
+
+    secondReal.emit('clientReady');
+    await vi.waitFor(() => {
+      expect(mocks.attachBotModules).toHaveBeenCalledTimes(1);
+    });
+    expect(mocks.attachBotModules.mock.calls[0]?.[0]).toBe(secondReal);
+  });
+
+  it('never leaves a predecessor attach running when its destroy failed', async () => {
+    const createClient = await bootCaptureFactory();
+    const first = createClient('bot-a');
+    const firstReal = fakeClientAt(0);
+    firstReal.emit('clientReady');
+    await vi.waitFor(() => {
+      expect(mocks.attachBotModules).toHaveBeenCalledTimes(1);
+    });
+    // A destroy that throws means the old client's stop was never consumed
+    // (the stop call itself happens first, so make the real destroy fail here).
+    firstReal.destroy = async () => {
+      throw new Error('socket already gone');
+    };
+    await expect(first.destroy()).rejects.toThrow('socket already gone');
+    // The stop was still consumed before the failing disconnect.
+    expect(mocks.stops[0]).toHaveBeenCalledTimes(1);
+
+    createClient('bot-a');
+    const secondReal = fakeClientAt(1);
+    secondReal.emit('clientReady');
+    await vi.waitFor(() => {
+      expect(mocks.attachBotModules).toHaveBeenCalledTimes(2);
+    });
+
+    // One live attach per botId: the predecessor's stop is not re-run (it was
+    // consumed once already) and the new attach owns the slot.
+    expect(mocks.stops[0]).toHaveBeenCalledTimes(1);
+    expect(mocks.stops[1]).not.toHaveBeenCalled();
+  });
+
+  it('stops modules but attaches nothing when the client dies before ready', async () => {
+    const createClient = await bootCaptureFactory();
+    const gatewayClient = createClient('bot-a');
+    const real = fakeClientAt(0);
+
+    await gatewayClient.destroy();
+
+    // Nothing was ever attached, so there is nothing to stop.
+    expect(mocks.stops).toHaveLength(0);
+    // A ready arriving after destroy attaches nothing.
+    real.emit('clientReady');
+    await Promise.resolve();
+    expect(mocks.attachBotModules).not.toHaveBeenCalled();
+  });
+});
+
 function recordingLogger(): { logger: GatewayLogger; lines: string[] } {
   const lines: string[] = [];
   const capture = (record: LogRecord): void => {
@@ -394,6 +678,20 @@ describe('restartBotFromVault', () => {
     expect(record.event).toBe('restart-no-row');
     expect(record.botId).toBe('bot-missing');
     expect(lines[0]).not.toContain('token');
+  });
+
+  it('m-34: the supervisor vault reader filters to status=live (mirrors BOOT_LIVE_BOTS_SQL)', async () => {
+    // The vault reader inside boot() is DB-backed, so assert on its SQL shape:
+    // bootLiveBots and the restart vault reader must both carry the live
+    // filter or a paused bot is resurrected by the supervisor path.
+    const { readFileSync } = await import('node:fs');
+    const { dirname, join } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const here = dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(join(here, 'start.ts'), 'utf8');
+    expect(src).toContain("WHERE b.status = 'live'");
+    // The vault reader (drizzle) must carry the same status=live constraint.
+    expect(src).toMatch(/eq\(bots\.status,\s*'live'\)/);
   });
 
   it('propagates a decrypt failure instead of swallowing it', async () => {

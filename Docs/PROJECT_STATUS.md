@@ -6,11 +6,17 @@
 
 ---
 
-## Current state — 2026-09-19 evening (KI-033 DONE — deneme saati takılı)
+## Current state — 2026-09-24 night (verdict-combo + :523neg DONE — live E2E deferred to tomorrow)
 
 **Canlı adres (yabancılara paylaşma — KI-030 açık):** `https://13-140-181-113.nip.io/`
 
+**KI-036 sohbet-inşası DONE (2026-09-21 gece):** yeni bot sayfasındaki sohbet artık gerçekten inşa ediyor — Build'e basınca tüm konuşma taslağa gidiyor, ilerleme aynı ekranda canlı izleniyor, yapay zekâ komutları olmuş gibi anlatmıyor. Canlı denendi: Zorba botu taslağa dönüştü (3 davranış: karşılama + XP + rank komutu), maliyet kuruşun altında (~0.45 kredi). Kayıt: `Agent Reports/2026-09-21-2238_orchestrator_SPEC_new-chat-build.md`. UNCOMMITTED — bir sonraki kayda biner. Takip: detay sayfasındaki aynı sınıf sorun (SPEC §8) hâlâ açık.
+
+**KI-036 AI-hüküm dalgası DONE (2026-09-23, kurucu emri):** kelime-listesi tetikleyici çöpe — plana "evet" denip denmediğine artık model karar veriyor, inşa talimatını da model yazıyor; tek başına "evet/ok" asla başlatmıyor. Bağımsız denetim GEÇTİ: birleşik ağaçta typecheck 5/5 + eslint 0 + prettier temiz + ai 132/132 + hüküm-rotası 19/19 + sayfa 30/30 + full web 726/0; canlı giriş-kontrolü giriş→oturum→sayfa akışı tamam. Kayıtlar: `Agent Reports/2026-09-22-1939_orchestrator_SPEC_aibuild-verdict.md` + 3 yapımcı + `..._reviewer_REVIEW_aibuild.md`. UNCOMMITTED — bir sonraki kayda biner.
+
 **KI-033 deneme saati DONE (D-145, bu gece, A seçeneği):** site artık söylediğini yapıyor — 3 günlük deneme gerçekten 3 gün, 1 hesap 1 bot, ayda 100 kredi; süresi dolanın kapısı dürüst bir "duraklatıldı, hiçbir şey silinmedi" yazısıyla kapanıyor. 5 ajan + 2 denetim, karar kaydı D-145. Dürüst artık: veritabanlı testlerin bir kısmı bu bilgisayarda koşamadı (kayıtlı, test makinesinde koşacak); süresi dolan botun Discord'daki hali yerinde duruyor (kapatma işi KI-035'e kaldı).
+
+**KI-031 belge-doğruluk DONE (2026-09-20):** 8 belgenin gövdesi gerçeğe çekildi, her biri bağımsız denetimden geçti — boru hattındaki en büyük yalan dahil. Uyarı şeritleri kalktı, karar defterindeki kayık yazı yerine oturdu. Artık yeni gelen kimse eski belgeye kanıp yanlış iş yapmaz.
 
 Bot yapma motoru bu akşam gerçekten çalıştı. Kısa anahtar adayı kutuya takıldı, 24 saniyede ilk taslak üretildi: 1 çağrı, ~0.3 kredi (kuruşun altında), sahte test botu silindi, kimseye bir şey yayınlanmadı. Yani "bot olusturma vs calisiyor mu" sorusunun cevabı artık **evet** — motor tarafta çalışıyor. Rapor: `Docs/2026-09-19-1730_live-smoke-003_CREATE_builder-resmoke2.md`.
 
@@ -21,9 +27,9 @@ Bot yapma motoru bu akşam gerçekten çalıştı. Kısa anahtar adayı kutuya t
 - Grab kurulumu + 7 rapor bu bilgisayarda kayıtsız duruyor — bir sonraki kayda binecek, itilmedi.
 - `:3000` düz HTTP hâlâ yayında (bilinen artık); GHCR `:stable` itilmedi (kutu yerel yapımla çalışıyor); yedekleme yardımcısı takılıyor (elle yedek alındı).
 - Retry satırları birikiyor (001/002 işleri `retry`de; zararsız, `run_gone`, 7 günde silinir; 003 `completed`).
-- KI-033 deneme saati DONE (D-145, bu gece, A seçeneği — 5 kapı kilitli, 2 denetim, kayıtlı artıklarla). KI-031 gövdeler — yazılmadı, sırada.
+- KI-033 deneme saati DONE (D-145, bu gece, A seçeneği — 5 kapı kilitli, 2 denetim, kayıtlı artıklarla). KI-031 belge-doğruluk DONE 2026-09-20 (8 gövde + karar-defteri düzeltmesi, hepsi denetimli, UNCOMMITTED — bir sonraki kayda biner).
 - KI-018 kapanmaz: Discord giriş bağlantısı kaydı (kurucu tıkı) + `lint`/`format` kanıtı kaldı.
-- KI-034 kapanmaz: `07` haritası hâlâ eski sayfa adını yazıyor (KI-031 işi).
+- KI-034 KAPANDI 2026-09-20 (`07` haritası düzeltildi, silinen sayfa düşüldü — KI-031 işiyle birlikte).
 
 Önceki banner ("kutu eski kodla çalışıyor") **artık yanlış** — kutu yeni kodla çalışıyor, üstteki satırlar güncel durumu söylüyor.
 
@@ -87,6 +93,10 @@ New-bot creation is now a ChatGPT-style chat (D-107): the circled "Your draft" c
 
 > Keep the last ~10 meaningful changes. Older history lives in `DECISIONS.md`.
 
+- 2026-09-24 gece — Verdict-combo + :523neg DONE, canlı E2E yarına (D-148..D-151): konuşarak-bot kapısındaki 500 hatası kapandı (kapanış cümlesi + dil-tesisatı, 41/41 + tam web 925+73atlanan, denetim GEÇTİ) + boş bekçi-testi gerçek bekçiye çevrildi (`:552`, 49/49, tek-yakalayıcı kanıtlı) + çeviri sınırı kaydedildi (4 CANLI + 1 ÖLÜ). Canlı Türkçe deneme yarın birlikte (anahtar sende). Hepsi UNCOMMITTED — HEAD `d9cf8d7`, commit/push yok.
+- 2026-09-21 local-trial — Discord'suz deneme yolu açıldı (UNCOMMITTED): `POST /api/auth/dev-login` (çift korumalı, üretimde 404, denetimli) + publish artık `bot_runtime_config` satırlarını aynı işlemde yazıyor (27/27 canlı PG'de yeşil) + `corvus-dev-pg`/`corvus_dev` 16 tabloya göçtü + web `localhost:3000`'da dev-login ile giriş yapıyor (sepet `[]`, trial `false`). Sırada kurucuda: gateway anahtarları + davet + A8 canlı kanıt.
+- 2026-09-21 persona + composer — persona GLM 5.2 + Corvus kimliği (D-146, canlı doğrulandı) → v2 işletim modeli (dil/token/kod yasakları) → dürüstlük yaması (taslak/simülasyon/canlı iddiası yasak, 112 test yeşil); `/dashboard/new` bestecisi: halka yok, akış sürerken yazılır + gönderme kapalı; hero CTA üst-hizalı. Hepsi UNCOMMITTED. Kalan: A8 + galeri + KI-035 (aşağıda).
+- 2026-09-20 overnight — Money+harness wave RUNNING (spec `Agent Reports/2026-09-20-0013_orchestrator_SPEC_overnight-money-harness.md`; gitignore-backups DONE + reviewer SUCCESS; ledger/checkout/webhook/ci-guard building; test-mode only, no box recreate, no live keys).
 - 2026-09-19 morning — New-chat handoff: living docs trued (this banner, KNOWN_ISSUES KI-018/029/034 amended, PLAN shareable-URL ticked with residuals, D-136, L-023/L-024). Single start file: `Agent Reports/2026-09-19-0800_orchestrator_SPEC_new-chat-handoff.md`. No product code, no commit.
 - 2026-09-19 night — FIRST DEPLOY LIVE (D-136): `https://13-140-181-113.nip.io/` 200 + Let's Encrypt + login 307. Box Dockerfiles patched in `/opt/corvus` only. Repo follow-ups uncommitted (Docker COPY, parked `notFound()`, compose-036 closes 5432 in git not on box). Do not share the URL (KI-030).
 - 2026-09-19 — Teknik borç klasörü + drift damgaları: `Docs/Teknik_Borc/` (KI-029…KI-034 dosyaları); 02/04/05/06/07/08/09/10 tepesine DRIFT banner; L-021 başlığı restore; D-128 boş gövde notu. KI-031 hâlâ açık (gövde yeniden yazılmadı).

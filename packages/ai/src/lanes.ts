@@ -9,9 +9,11 @@
 // the task report): an ordered route table per lane, tried top to bottom,
 // first healthy response wins. Hand-rolled fetch only — no provider SDKs.
 //
-// Locked order (orchestrator contract): builder starts on wiro `glm/5-2`
-// ($1.40/$4.40 per 1M in/out, live 2026-09-09), persona starts on wiro
-// `xai/grok-4-1-fast` ($0.20/$0.50). Off-wiro prices are config, not code.
+// Locked order (orchestrator contract): builder and persona both start on
+// wiro `glm/5-2` ($1.40/$4.40 per 1M in/out, live 2026-09-09); grok-4-1-fast
+// ($0.20/$0.50) is the persona fallback. Off-wiro prices are config, not code.
+// Founder order 2026-09-21: persona answers as Corvus on GLM 5.2 with the
+// buildPersonaPrompt system prompt — partially supersedes D-026 (persona=grok).
 
 export type LaneName = 'builder' | 'persona';
 
@@ -107,19 +109,25 @@ export const LANES: Record<LaneName, ProviderRoute[]> = {
   persona: [
     {
       baseURL: WIRO_DEFAULT_BASE_URL,
+      model: 'glm/5-2',
+      keyEnv: 'WIRO_API_KEY',
+      label: 'wiro-glm-5-2',
+      // Probed live 2026-09-15: sending reasoning_effort:'low' to wiro glm/5-2
+      // returns HTTP 400 invalid_request_error / unsupported_capability
+      // ("Model 'glm/5-2' does not support reasoning effort 'low'"). The exact
+      // same body WITHOUT reasoning_effort returns HTTP 200, so this route
+      // omits the flag (same handling as the builder GLM route).
+      // Founder order 2026-09-21: persona defaults to GLM 5.2 answering as
+      // Corvus (see buildPersonaPrompt) — partially supersedes D-026.
+      baseURLEnv: WIRO_ENV,
+    },
+    {
+      baseURL: WIRO_DEFAULT_BASE_URL,
       model: 'xai/grok-4-1-fast',
       keyEnv: 'WIRO_API_KEY',
       label: 'wiro-grok-4-1-fast',
       // D-114: grok streams no reasoning deltas without this flag, which left
       // the chat trace permanently on "Starting…". Probed live 2026-09-13.
-      reasoningLow: true,
-      baseURLEnv: WIRO_ENV,
-    },
-    {
-      baseURL: WIRO_DEFAULT_BASE_URL,
-      model: 'glm/5-2',
-      keyEnv: 'WIRO_API_KEY',
-      label: 'wiro-glm-5-2',
       reasoningLow: true,
       baseURLEnv: WIRO_ENV,
     },

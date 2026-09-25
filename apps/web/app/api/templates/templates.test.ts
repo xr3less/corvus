@@ -46,6 +46,13 @@ if (!probe.ok) {
   );
 }
 
+/* The 0008 migration adds the column; this is the fallback-DDL equivalent for
+   a database where the sibling file could not be applied (0001+0002 create
+   `accounts` with no `tier`, so without this the gate's MINT_ACCOUNT_SQL read
+   `SELECT tier, ...` fails with `column "tier" does not exist`). */
+const TIER_COLUMN_DDL =
+  "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS tier text NOT NULL DEFAULT 'trial'";
+
 /* The 0010 migration adds the column; this is the fallback-DDL equivalent for
    a database where the sibling file could not be applied. */
 const TRIAL_COLUMN_DDL = 'ALTER TABLE accounts ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz';
@@ -127,6 +134,11 @@ async function ensureSchema(pool: Pool): Promise<void> {
       ? '0001_init.sql + 0002_v11.sql (sibling migrations)'
       : `inline-fallback (${applied}/${sources.length} sibling files applied)`;
   await pool.query(FALLBACK_DDL);
+  try {
+    await pool.query(TIER_COLUMN_DDL);
+  } catch (error) {
+    console.warn(`[templates.test] self-heal accounts.tier failed: ${(error as Error).message}`);
+  }
   // Self-heal for the cross-workspace shared-DB path (KI-033): the shared test
   // container may already hold `accounts` from an older tree whose migrations
   // stop before 0010, in which case the CREATE TABLE above is a no-op and the
@@ -338,9 +350,10 @@ describe('template routes with DATABASE_URL absent', () => {
     return counted.rows[0].count;
   }
 
-  /* A separate fork account per gate test: the shared `session` account carries
-     the file's other assertions, and mutating its clock or tier would reach
-     across tests (vitest runs a file's tests in order, in one pool). */
+  /* A separate fork account per minting test: the shared `session` account
+     never mints (it would hit the one-bot cap on the second mint), and
+     mutating its clock or tier would reach across tests (vitest runs a file's
+     tests in order, in one pool). */
   async function gateAccount(
     discordId: string,
     trialEndsAt: string | null = NOW_PLUS_HOUR,
@@ -350,6 +363,25 @@ describe('template routes with DATABASE_URL absent', () => {
       [discordId, trialEndsAt],
     );
     return row.rows[0].id;
+  }
+
+  /* Fork as a fresh trial owner and restore the shared `session` reader, so
+     minting tests never consume the shared account's single cap slot. */
+  async function forkAsFreshOwner(
+    slug: string,
+    body?: unknown,
+  ): Promise<{ status: number; body: Record<string, unknown> }> {
+    const tag = `tfork-mint-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await gateAccount(`${tag}-owner`);
+    setForkReader({ getSession: async () => ({ accountId, discordId: `${tag}-owner` }) });
+    try {
+      const res = await forkTemplate(postFork(slug, body), {
+        params: Promise.resolve({ slug }),
+      });
+      return { status: res.status, body: await readJson(res) };
+    } finally {
+      setForkReader({ getSession: async () => session });
+    }
   }
 
   beforeAll(async () => {
@@ -366,6 +398,14 @@ describe('template routes with DATABASE_URL absent', () => {
       [NOW_PLUS_HOUR],
     );
     session.accountId = account.rows[0].id;
+    // Fresh-owner isolation for the minting fork tests (KI-033 one-bot cap):
+    // the production gate refuses a second live bot on the SAME owner
+    // (`mintGate`, `liveBotCount >= 1` → 403 in apps/web/lib/bots.ts:111), so
+    // the shared `session` account can only ever fork once per file run. Each
+    // minting test below forks as its own gateAccount owner, and the reader is
+    // restored to `session` afterwards — order-independent, deterministic, and
+    // the cap itself is never weakened. `session` itself never mints: it only
+    // serves the read-only list/detail/404/422/500 tests plus the seam test.
     await seedTemplate({
       slug: 'tfork-alpha',
       name: 'Tfork Alpha',
@@ -387,9 +427,9 @@ describe('template routes with DATABASE_URL absent', () => {
     if (probe.ok && pool) {
       await pool.query('DELETE FROM bots WHERE account_id = $1', [session.accountId]);
       await pool.query(
-        "DELETE FROM bots WHERE account_id IN (SELECT id FROM accounts WHERE discord_id LIKE 'tfork-gate-%')",
+        "DELETE FROM bots WHERE account_id IN (SELECT id FROM accounts WHERE discord_id LIKE 'tfork-%')",
       );
-      await pool.query("DELETE FROM accounts WHERE discord_id LIKE 'tfork-gate-%'");
+      await pool.query("DELETE FROM accounts WHERE discord_id LIKE 'tfork-%'");
       await pool.query("DELETE FROM templates WHERE slug LIKE 'tfork-%'");
       await pool.query('DELETE FROM accounts WHERE discord_id = $1', ['tfork-discord-1']);
       await pool.end().catch(() => {});
@@ -454,74 +494,85 @@ describe('template routes with DATABASE_URL absent', () => {
   });
 
   it('fork happy path mints a draft bot + spec v1 + pointer + forks+1 + inviteUrl', async () => {
-    const before = await forksOf('tfork-alpha');
-    const res = await forkTemplate(postFork('tfork-alpha', {}), {
-      params: Promise.resolve({ slug: 'tfork-alpha' }),
-    });
-    expect(res.status).toBe(200);
-    const body = await readJson(res);
-    expect(body.version).toBe(1);
-    const botId = body.botId as string;
-    const draftSpecId = body.draftSpecId as string;
-    expect(typeof botId).toBe('string');
-    expect(typeof draftSpecId).toBe('string');
+    // Forks as a fresh trial owner: the shared `session` account never mints,
+    // so this passes regardless of which other minting tests ran before it.
+    const tag = `tfork-happy-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await gateAccount(`${tag}-owner`);
+    setForkReader({ getSession: async () => ({ accountId, discordId: `${tag}-owner` }) });
+    let botAccountId: string;
+    let authorDiscordId: string;
+    try {
+      const before = await forksOf('tfork-alpha');
+      const res = await forkTemplate(postFork('tfork-alpha', {}), {
+        params: Promise.resolve({ slug: 'tfork-alpha' }),
+      });
+      expect(res.status).toBe(200);
+      const body = await readJson(res);
+      expect(body.version).toBe(1);
+      const botId = body.botId as string;
+      const draftSpecId = body.draftSpecId as string;
+      expect(typeof botId).toBe('string');
+      expect(typeof draftSpecId).toBe('string');
 
-    const inviteUrl = body.inviteUrl as string;
-    expect(inviteUrl).toContain('permissions=');
-    const inviteMatch = /permissions=(\d+)/.exec(inviteUrl);
-    expect(inviteMatch).not.toBeNull();
-    expect(BigInt(inviteMatch?.[1] ?? '0') & ADMINISTRATOR_BIT).toBe(0n);
-    expect(inviteMatch?.[1]).not.toBe('8');
+      const inviteUrl = body.inviteUrl as string;
+      expect(inviteUrl).toContain('permissions=');
+      const inviteMatch = /permissions=(\d+)/.exec(inviteUrl);
+      expect(inviteMatch).not.toBeNull();
+      expect(BigInt(inviteMatch?.[1] ?? '0') & ADMINISTRATOR_BIT).toBe(0n);
+      expect(inviteMatch?.[1]).not.toBe('8');
 
-    const bot = await pool.query<{
-      name: string;
-      status: string;
-      account_id: string;
-      draft_spec_id: string | null;
-    }>('SELECT name, status, account_id, draft_spec_id FROM bots WHERE id = $1', [botId]);
-    expect(bot.rowCount).toBe(1);
-    expect(bot.rows[0].name).toBe('Tfork Alpha');
-    expect(bot.rows[0].status).toBe('draft');
-    expect(bot.rows[0].account_id).toBe(session.accountId);
-    expect(bot.rows[0].draft_spec_id).toBe(draftSpecId);
+      botAccountId = accountId;
+      authorDiscordId = `${tag}-owner`;
+      const bot = await pool.query<{
+        name: string;
+        status: string;
+        account_id: string;
+        draft_spec_id: string | null;
+      }>('SELECT name, status, account_id, draft_spec_id FROM bots WHERE id = $1', [botId]);
+      expect(bot.rowCount).toBe(1);
+      expect(bot.rows[0].name).toBe('Tfork Alpha');
+      expect(bot.rows[0].status).toBe('draft');
+      expect(bot.rows[0].account_id).toBe(botAccountId);
+      expect(bot.rows[0].draft_spec_id).toBe(draftSpecId);
 
-    const spec = await pool.query<{
-      version: number;
-      state: string;
-      author: string;
-      diff_summary: string;
-      spec: unknown;
-    }>('SELECT version, state, author, diff_summary, spec FROM spec_versions WHERE id = $1', [
-      draftSpecId,
-    ]);
-    expect(spec.rowCount).toBe(1);
-    expect(spec.rows[0].version).toBe(1);
-    expect(spec.rows[0].state).toBe('draft');
-    expect(spec.rows[0].author).toBe('owner:tfork-discord-1');
-    expect(spec.rows[0].diff_summary).toBe('Forked from tfork-alpha v1.0.0');
-    const minted = spec.rows[0].spec as { version: number; behaviors: unknown[] };
-    expect(minted.version).toBe(1);
-    expect(minted.behaviors.length).toBe(3);
+      const spec = await pool.query<{
+        version: number;
+        state: string;
+        author: string;
+        diff_summary: string;
+        spec: unknown;
+      }>('SELECT version, state, author, diff_summary, spec FROM spec_versions WHERE id = $1', [
+        draftSpecId,
+      ]);
+      expect(spec.rowCount).toBe(1);
+      expect(spec.rows[0].version).toBe(1);
+      expect(spec.rows[0].state).toBe('draft');
+      expect(spec.rows[0].author).toBe(`owner:${authorDiscordId}`);
+      expect(spec.rows[0].diff_summary).toBe('Forked from tfork-alpha v1.0.0');
+      const minted = spec.rows[0].spec as { version: number; behaviors: unknown[] };
+      expect(minted.version).toBe(1);
+      expect(minted.behaviors.length).toBe(3);
 
-    expect(await forksOf('tfork-alpha')).toBe(before + 1);
+      expect(await forksOf('tfork-alpha')).toBe(before + 1);
+    } finally {
+      setForkReader({ getSession: async () => session });
+    }
   });
 
   it('fork honors a botName override and bare POSTs use the template name', async () => {
-    const named = await forkTemplate(postFork('tfork-beta', { botName: 'My Mod Bot' }), {
-      params: Promise.resolve({ slug: 'tfork-beta' }),
-    });
+    // Two fresh owners: one owner can only ever hold one live bot, so the
+    // override fork and the bare fork each mint under their own account.
+    const named = await forkAsFreshOwner('tfork-beta', { botName: 'My Mod Bot' });
     expect(named.status).toBe(200);
-    const namedBody = await readJson(named);
+    const namedBody = named.body;
     const namedBot = await pool.query<{ name: string }>('SELECT name FROM bots WHERE id = $1', [
       namedBody.botId as string,
     ]);
     expect(namedBot.rows[0].name).toBe('My Mod Bot');
 
-    const bare = await forkTemplate(postFork('tfork-beta'), {
-      params: Promise.resolve({ slug: 'tfork-beta' }),
-    });
+    const bare = await forkAsFreshOwner('tfork-beta');
     expect(bare.status).toBe(200);
-    const bareBody = await readJson(bare);
+    const bareBody = bare.body;
     const bareBot = await pool.query<{ name: string }>('SELECT name FROM bots WHERE id = $1', [
       bareBody.botId as string,
     ]);
@@ -529,17 +580,11 @@ describe('template routes with DATABASE_URL absent', () => {
   });
 
   it('double fork of one template yields two independent drafts', async () => {
+    // Two fresh owners (see above): asserting two independent drafts from ONE
+    // owner would assert the cap is broken, so each fork mints separately.
     const before = await forksOf('tfork-beta');
-    const first = await readJson(
-      await forkTemplate(postFork('tfork-beta', { botName: 'Fork One' }), {
-        params: Promise.resolve({ slug: 'tfork-beta' }),
-      }),
-    );
-    const second = await readJson(
-      await forkTemplate(postFork('tfork-beta', { botName: 'Fork Two' }), {
-        params: Promise.resolve({ slug: 'tfork-beta' }),
-      }),
-    );
+    const first = (await forkAsFreshOwner('tfork-beta', { botName: 'Fork One' })).body;
+    const second = (await forkAsFreshOwner('tfork-beta', { botName: 'Fork Two' })).body;
     expect(first.botId).not.toBe(second.botId);
     expect(first.draftSpecId).not.toBe(second.draftSpecId);
     const names = await pool.query<{ name: string }>(

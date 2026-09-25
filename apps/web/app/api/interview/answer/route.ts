@@ -1,6 +1,13 @@
 import type { Pool, PoolClient } from 'pg';
+import { PgBoss } from 'pg-boss';
+import type { SendOptions } from 'pg-boss';
 import { parseSpec } from '@corvus/spec';
-import { getPool, mapDbError, __setPool as setSharedPool } from '../../../../lib/db/pool';
+import {
+  getPool,
+  mapDbError,
+  requireDatabaseUrl,
+  __setPool as setSharedPool,
+} from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { getDefaultProgressStore } from '../../../../lib/interview/progress-store';
 import {
@@ -40,6 +47,35 @@ export function __resetSessionReader(): void {
 // keeps the historical __setPool injection name working by delegating.
 export function __setPool(pool: Pool): void {
   setSharedPool(pool);
+}
+
+export const BUILDER_QUEUE = 'builder';
+
+export interface BuilderBoss {
+  start(): Promise<unknown>;
+  stop(): Promise<unknown>;
+  createQueue(name: string): Promise<unknown>;
+  send(name: string, data: object, options?: SendOptions): Promise<string | null>;
+}
+
+function defaultBossFactory(): BuilderBoss {
+  const boss = new PgBoss({ connectionString: requireDatabaseUrl() });
+  return {
+    start: () => boss.start(),
+    stop: () => boss.stop(),
+    createQueue: (name) => boss.createQueue(name),
+    send: (name, data, options) => boss.send(name, data, options),
+  };
+}
+
+let bossFactory: () => BuilderBoss = defaultBossFactory;
+
+export function __setBossFactory(factory: () => BuilderBoss): void {
+  bossFactory = factory;
+}
+
+export function __resetBossFactory(): void {
+  bossFactory = defaultBossFactory;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -185,7 +221,20 @@ export async function POST(req: Request): Promise<Response> {
     // fail the mint; the row expires on its own (~24h) and the
     // UNIQUE(bot_id, version) backstop below stays authoritative either way.
     await progress.reset(interviewId).catch(() => undefined);
-    return Response.json({ done: true, draftSpecId, version: 1 }, { status: 200 });
+    const queued = await enqueueInterviewRun(interviewId, entries);
+    if (queued.ok) {
+      return Response.json(
+        { done: true, draftSpecId, version: 1, runId: queued.runId, phase: 'queued' },
+        { status: 200 },
+      );
+    }
+    // Best-effort enqueue: the draft-spec write above is authoritative, so an
+    // enqueue failure still answers done with the minted spec and names the
+    // enqueue failure honestly (enqueue_failed) for BuilderProgress wiring.
+    return Response.json(
+      { done: true, draftSpecId, version: 1, enqueue: 'enqueue_failed' },
+      { status: 200 },
+    );
   } catch (queryError) {
     await client.query('ROLLBACK').catch(() => undefined);
     const mapped = mapDbError(queryError);
@@ -200,5 +249,95 @@ export async function POST(req: Request): Promise<Response> {
     return error(500, 'could not mint draft spec');
   } finally {
     client.release();
+  }
+}
+
+// Panel interviews join the working build paths: after the draft-spec commit,
+// INSERT builder_runs (phase queued) + pg-boss `builder` send, IDENTICAL to
+// builder/start (same queue, same singleton/retry/expiry options, same
+// { runId, botId, brief } job shape). Best-effort — the draft-spec write is
+// authoritative, so an enqueue failure never fails the mint; the caller still
+// gets done + draftSpecId with an honest enqueue marker. The brief is the
+// recorded interview answers stitched deterministically (one line per
+// question:answer, clamped to the 1..2000 builder contract).
+async function enqueueInterviewRun(
+  botId: string,
+  entries: { questionId: QuestionId; answer: string }[],
+): Promise<{ ok: true; runId: string } | { ok: false }> {
+  const brief = interviewBrief(entries);
+  if (brief === null) {
+    return { ok: false };
+  }
+  let runId: string;
+  try {
+    const inserted = await getPool().query<{ id: string }>(
+      'INSERT INTO builder_runs (bot_id) VALUES ($1) RETURNING id',
+      [botId],
+    );
+    const id = inserted.rows[0]?.id;
+    if (typeof id !== 'string' || id.length === 0) {
+      return { ok: false };
+    }
+    runId = id;
+  } catch {
+    return { ok: false };
+  }
+
+  let boss: BuilderBoss;
+  try {
+    boss = bossFactory();
+  } catch {
+    await markEnqueueFailed(runId);
+    return { ok: false };
+  }
+  try {
+    await boss.start();
+    await boss.createQueue(BUILDER_QUEUE);
+    const jobId = await boss.send(
+      BUILDER_QUEUE,
+      { runId, botId, brief },
+      {
+        singletonKey: runId,
+        retryLimit: 3,
+        retryDelay: 30,
+        expireInSeconds: 3600,
+        deleteAfterSeconds: 604800,
+      },
+    );
+    if (!jobId) {
+      await markEnqueueFailed(runId);
+      return { ok: false };
+    }
+    return { ok: true, runId };
+  } catch {
+    await markEnqueueFailed(runId);
+    return { ok: false };
+  } finally {
+    try {
+      await boss.stop();
+    } catch {
+      // Best-effort: the outcome above stands; never mask it.
+    }
+  }
+}
+
+function interviewBrief(entries: { questionId: QuestionId; answer: string }[]): string | null {
+  const lines = entries
+    .map((entry) => `${entry.questionId}: ${entry.answer}`.trim())
+    .filter((line) => line.length > 0);
+  const brief = lines.join('\n').slice(0, 2000).trim();
+  return brief.length > 0 ? brief : null;
+}
+
+// The row exists before the job does. If enqueueing fails the row would sit
+// `queued` forever, so it is flipped to `failed` — identical to builder/start.
+async function markEnqueueFailed(runId: string): Promise<void> {
+  try {
+    await getPool().query(
+      "UPDATE builder_runs SET phase = 'failed', detail = $2::jsonb, updated_at = now() WHERE id = $1",
+      [runId, JSON.stringify({ error: 'enqueue_failed' })],
+    );
+  } catch {
+    // Caller still receives the done mint; the enqueue marker names the failure.
   }
 }

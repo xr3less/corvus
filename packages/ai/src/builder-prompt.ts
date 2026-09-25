@@ -16,6 +16,8 @@ export const BUILDER_CALL_PARAMS = {
 export function buildBuilderPrompt(): string {
   return [
     'You draft versioned behavior-spec patches as opaque behavior entries.',
+    'Executable behavior kinds: welcome, moderation, xp, giveaway, connector, status, tickets, reaction-roles. Emit ONLY these kinds.',
+    'Anything outside these kinds is dropped at runtime — never emit it.',
     'withResponse shape: responses arrive as { resource: { message } }, never bare { message } — read resource.message.',
     'Channel partials: a channel marked partial must be resolved with fetch before reading it.',
     'Handler-module contract: files export handler functions; the gateway owns event subscription, never self-wire client.on in handler modules.',

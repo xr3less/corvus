@@ -41,9 +41,9 @@ export default function TermsOfServicePage() {
             <ul className={styles.list}>
               <li>Corvus builds and runs a Discord bot from your plain-English description.</li>
               <li>
-                Billing isn&apos;t live yet. A 3-day trial with full access and no card is planned.
-                When plans ship, your bot naps when a plan ends and you can upgrade whenever you
-                want.
+                Billing isn&apos;t live yet. A 3-day trial of Pro features, limited to one bot and
+                100 AI credits with no card required, is planned. When plans ship, your bot naps
+                when a plan ends and you can upgrade whenever you want.
               </li>
               <li>You are responsible for what your bot does in your server.</li>
               <li>You can leave whenever you want and take your data with you.</li>
@@ -86,8 +86,8 @@ export default function TermsOfServicePage() {
             </p>
             <ul className={styles.list}>
               <li>
-                <span className={styles.strong}>Trial (live):</span> 3 days of full Pro access, one
-                bot, no card required.
+                <span className={styles.strong}>Trial (live):</span> 3 days of Pro features, limited
+                to one bot and 100 AI credits, no card required.
               </li>
               <li>
                 <span className={styles.strong}>Planned: Paid plans:</span> Pro is $10 a month and

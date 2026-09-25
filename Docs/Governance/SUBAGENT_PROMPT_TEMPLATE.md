@@ -88,6 +88,11 @@ Check every box before replying with your completion summary. The Reviewer will 
 # OUTPUT
 Reply to the orchestrator with a short summary: status (SUCCESS | PARTIAL | FAILED), files touched (created / modified / deleted), assumptions, open questions, and known limitations.
 
+**100-word rule (founder order 2026-09-21):** the summary is at most 100 words — status, deliverable, and open questions only. No transcripts, no logs, no repeated context, no prose padding. Anything beyond 100 words is cut, not skimmed. The same cap applies to any report FILE the brief explicitly asks for (verdict first, then facts); a file report nobody asked for is itself a scope violation.
+
+# BULK REPORT MAINTENANCE (how past report debt is cleared)
+When report files pile up (e.g. the 2026-09-19/20 batch, 131 files): the orchestrator stages them in git first (so originals survive), then fans out N condenser agents with DISJOINT file lists — each file owned by exactly one agent, each agent rewriting only its list to the 100-word note shape above. No agent runs any git command, ever. Full detail lives in git history, not in the working tree.
+
 # TOKEN BUDGET
 If completing this task would require reading more context than listed above, do NOT silently expand your reading list. Stop, set Status = PARTIAL, record the missing context in "Open Questions for Orchestrator," and return.
 ```

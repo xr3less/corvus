@@ -9,7 +9,10 @@
 //
 // Deliberately dependency-free and DB-free: `getSpent` is injected by the
 // caller, so the ledger read (and the account scope it owns) stays with the
-// caller and this module stays pure and unit-testable.
+// caller and this module stays pure and unit-testable. Refill reads go through
+// the same injection idea via a module-level pool seam (`__setRefillPool`,
+// test-only): production wires a pool once, tests inject a fake, and absence
+// (no pool, missing table) reads as zero refills — never as a failure.
 
 export type PlanTier = 'trial' | 'pro' | 'studio' | 'scale';
 
@@ -42,6 +45,71 @@ export function isPlanTier(value: unknown): value is PlanTier {
 
 /** Warn once the projected spend reaches this share of the allowance. */
 export const BUDGET_WARN_RATIO = 0.8;
+
+/** Ledger reason for refill packs (Docs/06 vocabulary, terms $5 / 1,000 / 90-day promise). */
+export const REFILL_REASON = 'refill';
+
+/** Refill packs extend the allowance for this many days (terms promise). */
+export const REFILL_WINDOW_DAYS = 90;
+
+/**
+ * Active refill grants: SUM of `refill` rows within the window, scoped to the
+ * account. Mirrors the credits route's REFILL_CREDITS_SQL — same table, same
+ * reason, same window — so the budget gate and the balance read agree on what
+ * "active refills" means.
+ */
+export const REFILL_CREDITS_SQL =
+  'SELECT COALESCE(SUM(amount_cr), 0) AS refills FROM credit_ledger ' +
+  "WHERE account_id = $1 AND reason = $2 AND created_at >= now() - interval '90 days'";
+
+interface RefillQueryable {
+  query(text: string, params: unknown[]): Promise<{ rows: unknown[] }>;
+}
+
+let refillPool: RefillQueryable | null = null;
+
+/** Test-only seam (mirrors the webhook's __setPool): production wires a real pool, tests inject a fake. */
+export function __setRefillPool(pool: RefillQueryable | null): void {
+  refillPool = pool;
+}
+
+export function __resetRefillPool(): void {
+  refillPool = null;
+}
+
+function readRefillCredits(row: unknown): number {
+  if (typeof row === 'object' && row !== null) {
+    const value = (row as Record<string, unknown>).refills;
+    const parsed =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string' && value.trim() !== ''
+          ? Number(value)
+          : Number.NaN;
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 0;
+}
+
+/**
+ * Active refill allowance for one account: SUM of `credit_ledger` refill rows
+ * within the last 90 days. Absence-tolerant by contract (the refill rows are a
+ * sibling writer's scope and the table may not exist yet): anything unreadable —
+ * no pool, missing table, null, garbage — reads as zero refills, never as a
+ * failure. Only a genuine positive number widens the allowance.
+ */
+export async function refillAllowance(accountId: string): Promise<number> {
+  if (typeof accountId !== 'string' || accountId.trim() === '') {
+    throw new TypeError('refillAllowance: accountId must be a non-empty string');
+  }
+  if (refillPool === null) return 0;
+  try {
+    const result = await refillPool.query(REFILL_CREDITS_SQL, [accountId, REFILL_REASON]);
+    return readRefillCredits(result.rows[0]);
+  } catch {
+    return 0;
+  }
+}
 
 export interface CheckBudgetInput {
   readonly accountId: string;
@@ -96,12 +164,14 @@ function resolveAllowance(input: CheckBudgetInput): number {
 
 /**
  * Pre-call budget gate. Resolves `{ok: true, warn}` when the projected spend
- * (already-spent + this call's estimate) stays within the monthly allowance,
- * and `{ok: false, reason: 'budget_exceeded'}` when it would cross it. A call
- * landing exactly on the allowance is allowed; one credit over is blocked.
- * Invalid input and a failing/negative `getSpent()` throw rather than degrade
- * into a silent allow (a fake success at a billing boundary is the one
- * failure mode this guard exists to prevent).
+ * (already-spent + this call's estimate) stays within the allowance
+ * (monthly grant for the tier — or the explicit override — PLUS active refill
+ * grants from the last 90 days), and `{ok: false, reason: 'budget_exceeded'}`
+ * when it would cross it. A call landing exactly on the allowance is allowed;
+ * one credit over is blocked. Invalid input and a failing/negative `getSpent()`
+ * throw rather than degrade into a silent allow (a fake success at a billing
+ * boundary is the one failure mode this guard exists to prevent). Refill reads
+ * are absence-tolerant and contribute zero when unreadable.
  */
 export async function checkBudget(input: CheckBudgetInput): Promise<BudgetDecision> {
   if (typeof input !== 'object' || input === null) {
@@ -115,7 +185,7 @@ export async function checkBudget(input: CheckBudgetInput): Promise<BudgetDecisi
     throw new TypeError('checkBudget: getSpent must be a function');
   }
   const estimatedCredits = requireFiniteNonNegative(input.estimatedCredits, 'estimatedCredits');
-  const allowance = resolveAllowance(input);
+  const baseAllowance = resolveAllowance(input);
   let warnRatio = BUDGET_WARN_RATIO;
   if (input.warnRatio !== undefined) {
     warnRatio = requireFiniteNonNegative(input.warnRatio, 'warnRatio');
@@ -124,6 +194,7 @@ export async function checkBudget(input: CheckBudgetInput): Promise<BudgetDecisi
     }
   }
   const spent = requireFiniteNonNegative(await input.getSpent(), 'getSpent() result');
+  const allowance = baseAllowance + (await refillAllowance(accountId));
   const projected = spent + estimatedCredits;
   const base = { spent, projected, allowance };
   if (projected > allowance) {

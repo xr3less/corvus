@@ -7,8 +7,10 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { bots } from './schema.js';
 
 // Accounts table — SPEC section 4 (V1-1), verbatim.
@@ -83,3 +85,116 @@ export const specVersions = pgTable(
 
 export type SpecVersion = typeof specVersions.$inferSelect;
 export type NewSpecVersion = typeof specVersions.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Billing foundation (0011) — credit_ledger + subscriptions +
+// webhook_receipts. Drizzle is the TYPE CATALOG only (06_data_model.md §1);
+// runtime stays a raw `pg` Pool and migrations stay hand-written SQL, so these
+// definitions must match drizzle/0011_credit_ledger_subscriptions.sql
+// column-for-column (KI-025 convention, enforced by 0011-billing.test.ts).
+// ---------------------------------------------------------------------------
+
+// Append-only credit ledger — the money meter. Never UPDATEd, never DELETEd.
+// - `amount_cr` is SIGNED in credits (numeric, never float): positive for a
+//   grant/refill/sale, negative for a burn. No default — every writer states
+//   the sign explicitly; a silent 0 would be a lie about a money movement.
+// - `reason` is the closed vocabulary (trial_grant | monthly_grant | refill |
+//   burn:builder | burn:persona | sale:template | fee), app-enforced — no CHECK
+//   constraint, same convention as accounts.tier (0008).
+// - `ref_id` links back to what produced the row (run id / message batch /
+//   order); nullable, and deliberately WITHOUT an FK so a ledger row survives
+//   whatever it points at — money history must outlive its subject.
+// - `attempt` is the run-global billable attempt number (KI-026 shape); NULL
+//   for grants, refills and webhook-driven rows.
+// - `meta` carries the opaque provider payload (Creem event bits, model id);
+//   defaults to an empty object so a writer may omit it.
+// - ON DELETE CASCADE: deleting an account wipes its money history (same
+//   convention as ai_spend).
+// - The partial unique index on (ref_id, reason, attempt) WHERE both are NOT
+//   NULL makes a double-counted attempt an idempotent no-op instead of a
+//   second credit movement (0009 mirror).
+export const creditLedger = pgTable(
+  'credit_ledger',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    refId: uuid('ref_id'),
+    reason: text('reason').notNull(),
+    attempt: integer('attempt'),
+    amountCr: numeric('amount_cr').notNull(),
+    meta: jsonb('meta').$type<unknown>().notNull().default({}),
+    createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('credit_ledger_account_created_idx').on(t.accountId, t.createdAt),
+    uniqueIndex('credit_ledger_ref_reason_attempt_uidx')
+      .on(t.refId, t.reason, t.attempt)
+      .where(sql`${t.refId} IS NOT NULL AND ${t.attempt} IS NOT NULL`),
+  ],
+);
+
+export type CreditLedger = typeof creditLedger.$inferSelect;
+export type NewCreditLedger = typeof creditLedger.$inferInsert;
+
+// One subscription row per account, keyed by account_id (06_model §3:
+// accounts 1—1 subscriptions). Written ONLY by the Creem webhook path.
+// - `tier` mirrors the plan the provider last confirmed (trial | pro | studio),
+//   default 'trial' so a row created before a plan is known is not a claim of
+//   payment. accounts.tier stays the reader-facing column; this one records
+//   what the provider said.
+// - `creem_subscription_id` is nullable until a subscription event arrives.
+// - `status` is the provider vocabulary (trialing | active | past_due | paused
+//   | canceled), app-enforced, no CHECK (0008 convention).
+// - The partial unique index on creem_subscription_id keeps one Creem
+//   subscription from being attached to two accounts.
+// - ON DELETE CASCADE: deleting an account deletes its subscription row.
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    accountId: uuid('account_id')
+      .primaryKey()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    tier: text('tier').default('trial').notNull(),
+    creemSubscriptionId: text('creem_subscription_id'),
+    status: text('status').notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('subscriptions_creem_subscription_id_uidx')
+      .on(t.creemSubscriptionId)
+      .where(sql`${t.creemSubscriptionId} IS NOT NULL`),
+  ],
+);
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+
+// Replay ledger for provider webhooks. The row is INSERTed FIRST, before any
+// ledger or tier write: a duplicate event_id is a primary-key conflict, so a
+// provider retry becomes a no-op instead of a double credit.
+// - `event_id` is the provider's event id, TEXT on purpose — Creem ids are
+//   strings ("evt_…"), not uuid, and the PK is the replay guard.
+// - `payload_hash` is the hash of the raw request body as received (never the
+//   re-serialized JSON — byte order is what was signed); it is what lets a
+//   later audit prove which bytes this decision was made on.
+// - `type` is the provider event type as delivered.
+// - INBOUND, so deliberately NO FK to accounts: a receipt must be recordable
+//   even when the event names no account we know.
+// - `received_at` is our clock, not the provider's.
+export const webhookReceipts = pgTable(
+  'webhook_receipts',
+  {
+    eventId: text('event_id').primaryKey(),
+    type: text('type').notNull(),
+    receivedAt: timestamp('received_at', { mode: 'date', withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    payloadHash: text('payload_hash').notNull(),
+  },
+  (t) => [index('webhook_receipts_received_at_idx').on(t.receivedAt)],
+);
+
+export type WebhookReceipt = typeof webhookReceipts.$inferSelect;
+export type NewWebhookReceipt = typeof webhookReceipts.$inferInsert;

@@ -11,6 +11,7 @@ import { Input, Select, Textarea } from '../../components/ui/Input';
 import { DiffView } from '../../components/ui/DiffView';
 import type { DiffChange } from '../../components/ui/DiffView';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { readErrorMessage } from '@/lib/http/refusal';
 import styles from './page.module.css';
 
 interface MockQuestion {
@@ -68,14 +69,14 @@ interface DraftHead {
   draftSpecId: string;
 }
 
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await res.json()) as { error?: unknown };
-    return typeof body.error === 'string' && body.error.length > 0 ? body.error : fallback;
-  } catch {
-    return fallback;
-  }
-}
+/* Refusal readers live in lib/http/refusal.ts (shared import above): a
+   KI-033 trial refusal arrives as { error: <code>, message: <the honest
+   sentence> } — POST /api/interview/start writes both, so the person reads
+   the reason in words instead of a code like 'trial_bot_limit'. `message`
+   is preferred for that reason; `error` stays the fallback for the
+   code-only shape the other routes in this flow write (answer,
+   spec/patch), and a body with neither keeps the caller's own fallback
+   rather than printing an empty alert. */
 
 export default function InterviewPage() {
   const [skipped, setSkipped] = useState<string[]>([]);

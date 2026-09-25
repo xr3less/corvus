@@ -11,8 +11,12 @@ import { Pool } from 'pg';
 import { __resetPool, __setPool } from '../../../../lib/db/pool';
 import {
   POST,
+  RUNTIME_KINDS,
   __resetSessionReader,
+  __resetTranslator,
   __setSessionReader,
+  __setTranslator,
+  defaultTranslateProdSpec,
   validatePublishBody,
   type EditorSession,
 } from './route';
@@ -94,7 +98,29 @@ CREATE TABLE IF NOT EXISTS audit_events (
   action text NOT NULL,
   detail jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
-);`;
+);
+-- bot_runtime_config mirrors apps/gateway/drizzle/0012_bot_runtime_config.sql
+-- verbatim (the publish hook writes it; ensurePg also tries the real file
+-- first — this copy covers an unreadable sibling tree).
+CREATE TABLE IF NOT EXISTS bot_runtime_config (
+  bot_id uuid NOT NULL,
+  guild_id text,
+  kind text NOT NULL,
+  params jsonb NOT NULL DEFAULT '{}'::jsonb,
+  spec_version integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT "bot_runtime_config_kind_check"
+    CHECK ("kind" IN ('welcome', 'moderation', 'xp', 'giveaway', 'connector', 'status', 'tickets', 'reaction-roles')),
+  CONSTRAINT "bot_runtime_config_bot_guild_kind_unique"
+    UNIQUE NULLS NOT DISTINCT ("bot_id", "guild_id", "kind")
+);
+-- E1 widening applied to databases created from this fallback before 0013 lands:
+-- the standalone CREATE TABLE above pins the 6-kind CHECK on first creation, so
+-- re-assert the 8-kind fence here (idempotent on fresh trees where 0013 runs).
+ALTER TABLE IF EXISTS bot_runtime_config DROP CONSTRAINT IF EXISTS "bot_runtime_config_kind_check";
+ALTER TABLE IF EXISTS bot_runtime_config ADD CONSTRAINT "bot_runtime_config_kind_check"
+  CHECK ("kind" IN ('welcome', 'moderation', 'xp', 'giveaway', 'connector', 'status', 'tickets', 'reaction-roles'));`;
 
 let pool: Pool | null = null;
 let owner: EditorSession;
@@ -111,6 +137,8 @@ async function ensurePg(): Promise<void> {
     '../../../../../gateway/drizzle/0001_init.sql',
     '../../../../../gateway/drizzle/0002_v11.sql',
     '../../../../../gateway/drizzle/0005_guilds.sql',
+    '../../../../../gateway/drizzle/0012_bot_runtime_config.sql',
+    '../../../../../gateway/drizzle/0013_runtime_kinds_tickets.sql',
   ];
   for (const relative of sources) {
     try {
@@ -152,20 +180,14 @@ async function mintVersion(
   version: number,
   discordId: string,
   state = 'draft',
+  spec: unknown = { version: 1, behaviors: [{ v: version }] },
 ): Promise<string> {
   const active = pool as Pool;
   const row = await active.query<{ id: string }>(
     `INSERT INTO spec_versions (bot_id, version, spec, diff_summary, author, state)
      VALUES ($1, $2, $3::jsonb, $4, $5, $6)
      RETURNING id`,
-    [
-      botId,
-      version,
-      JSON.stringify({ version: 1, behaviors: [{ v: version }] }),
-      `v${version}`,
-      `owner:${discordId}`,
-      state,
-    ],
+    [botId, version, JSON.stringify(spec), `v${version}`, `owner:${discordId}`, state],
   );
   return row.rows[0].id;
 }
@@ -356,7 +378,7 @@ describe('publish against Postgres (loud skip when unreachable)', () => {
 
     const res = await POST(publishRequest({ botId }));
     expect(res.status).toBe(200);
-    expect(await readJson(res)).toEqual({ version: 1, state: 'published' });
+    expect(await readJson(res)).toEqual({ version: 1, state: 'published', runtimeRows: 0 });
 
     const bot = await (pool as Pool).query<{ prod_spec_id: string }>(
       'SELECT prod_spec_id FROM bots WHERE id = $1',
@@ -455,7 +477,7 @@ describe('publish against Postgres (loud skip when unreachable)', () => {
 
     const res = await POST(publishRequest({ botId, version: 1 }));
     expect(res.status).toBe(200);
-    expect(await readJson(res)).toEqual({ version: 1, state: 'published' });
+    expect(await readJson(res)).toEqual({ version: 1, state: 'published', runtimeRows: 0 });
     const bot = await (pool as Pool).query<{ prod_spec_id: string }>(
       'SELECT prod_spec_id FROM bots WHERE id = $1',
       [botId],
@@ -570,5 +592,339 @@ describe('publish against Postgres (loud skip when unreachable)', () => {
       [botId],
     );
     expect(audit.rowCount).toBe(1);
+  });
+});
+
+// --- Publish-hook runtime-row sync -------------------------------------------
+// The web package must not import gateway internals, so the boot reader's
+// row validation (validateRuntimeConfigRow in
+// apps/gateway/src/runtime/config.ts:39-83) is mirrored here column-for-column
+// instead of imported. If that contract changes, this mirror must change too.
+
+interface BootRow {
+  botId: unknown;
+  guildId: unknown;
+  kind: unknown;
+  params: unknown;
+  specVersion: unknown;
+}
+
+function assertValidBootRow(row: BootRow): void {
+  expect(typeof row.botId).toBe('string');
+  expect((row.botId as string).length).toBeGreaterThan(0);
+  expect(row.guildId === null || typeof row.guildId === 'string').toBe(true);
+  expect((RUNTIME_KINDS as readonly string[]).includes(row.kind as string)).toBe(true);
+  expect(typeof row.params).toBe('object');
+  expect(row.params).not.toBeNull();
+  expect(Array.isArray(row.params)).toBe(false);
+  expect(Number.isInteger(row.specVersion)).toBe(true);
+  expect((row.specVersion as number) >= 1).toBe(true);
+}
+
+// Same SELECT shape as BOOT_CONFIG_SQL in
+// apps/gateway/src/runtime/boot-modules.ts:21-23 (copied, not imported —
+// that module pulls in discord.js).
+const BOOT_CONFIG_SELECT =
+  'SELECT bot_id AS "botId", guild_id AS "guildId", kind, params, spec_version AS "specVersion" ' +
+  'FROM bot_runtime_config WHERE bot_id = $1 ORDER BY kind';
+
+async function readBootRows(botId: string): Promise<BootRow[]> {
+  const found = await (pool as Pool).query<BootRow>(BOOT_CONFIG_SELECT, [botId]);
+  return found.rows;
+}
+
+describe('publish-hook translator (pure)', () => {
+  it('groups canonical kinds and aliases into one row per kind', () => {
+    const rows = defaultTranslateProdSpec(
+      {
+        version: 1,
+        behaviors: [
+          { kind: 'welcome', title: 'Hello' },
+          { kind: 'greeting', title: 'Hi again' },
+          { kind: 'xp', count: 5 },
+        ],
+      },
+      'bot-1',
+      3,
+    );
+    expect(rows.map((row) => row.kind)).toEqual(['welcome', 'xp']);
+    const welcome = rows[0];
+    expect(welcome.specVersion).toBe(3);
+    expect(welcome.params['count']).toBe(2);
+    expect((welcome.params['items'] as unknown[]).length).toBe(2);
+    for (const row of rows) {
+      assertValidBootRow({ botId: 'bot-1', guildId: null, ...row });
+    }
+  });
+
+  it('skips unknown kinds and token-carrying entries without throwing', () => {
+    const rows = defaultTranslateProdSpec(
+      {
+        version: 1,
+        behaviors: [
+          { kind: 'teleport', title: 'Beam me up' },
+          { kind: 'welcome', token: 'abc', title: 'Leak' },
+          'not-an-object',
+          { kind: 'status', detail: 'Alive' },
+        ],
+      },
+      'bot-1',
+      1,
+    );
+    expect(rows.map((row) => row.kind)).toEqual(['status']);
+  });
+
+  it('preserves ticket and reaction-role rows through the mirror (E1 8-kind sync)', () => {
+    const rows = defaultTranslateProdSpec(
+      {
+        version: 1,
+        behaviors: [
+          { kind: 'panel', title: 'Tickets' },
+          { kind: 'picker', title: 'Roles' },
+        ],
+      },
+      'bot-1',
+      1,
+    );
+    expect(rows.map((row) => row.kind)).toEqual(['tickets', 'reaction-roles']);
+  });
+
+  it('floors connector poll intervals at 60s', () => {
+    const rows = defaultTranslateProdSpec(
+      {
+        version: 1,
+        behaviors: [
+          { kind: 'weather', intervalSec: 10 },
+          { kind: 'connector', intervalSec: 120 },
+        ],
+      },
+      'bot-1',
+      1,
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0].params['intervalSec']).toBe(60);
+  });
+
+  it('throws on a malformed envelope, an empty botId, or a bad specVersion', () => {
+    const good = { version: 1, behaviors: [] };
+    for (const spec of [null, [], 'x', {}, { version: 1 }, { version: 1, behaviors: 'no' }]) {
+      expect(() => defaultTranslateProdSpec(spec, 'bot-1', 1)).toThrow();
+    }
+    expect(() => defaultTranslateProdSpec(good, '', 1)).toThrow();
+    expect(() => defaultTranslateProdSpec(good, 'bot-1', 0)).toThrow();
+  });
+});
+
+describe('publish runtime-row sync against Postgres (loud skip when unreachable)', () => {
+  it('writes bot-global rows matching the boot query columns', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    actAs(owner);
+    const botId = await createBot(owner.accountId, 'RuntimeWriter');
+    const v1 = await mintVersion(botId, 1, owner.discordId, 'draft', {
+      version: 1,
+      behaviors: [
+        { kind: 'welcome', title: 'Hello', channel: 'general' },
+        { kind: 'greeting', title: 'Hi again' },
+        { kind: 'xp', count: 5 },
+        { kind: 'panel', title: 'Tickets' },
+        { kind: 'picker', title: 'Roles' },
+      ],
+    });
+    await setDraft(botId, v1);
+
+    const res = await POST(publishRequest({ botId }));
+    expect(res.status).toBe(200);
+    expect(await readJson(res)).toEqual({ version: 1, state: 'published', runtimeRows: 4 });
+
+    const rows = await readBootRows(botId);
+    expect(rows.length).toBe(4);
+    for (const row of rows) {
+      assertValidBootRow(row);
+      expect(row.guildId).toBeNull();
+      expect(row.specVersion).toBe(1);
+    }
+    const byKind = new Map(rows.map((row) => [row.kind, row]));
+    const welcome = byKind.get('welcome') as unknown as {
+      params: { items: unknown[]; count: number };
+    };
+    expect(welcome.params.count).toBe(2);
+    expect(welcome.params.items.length).toBe(2);
+    const xp = byKind.get('xp') as unknown as { params: { items: unknown[]; count: number } };
+    expect(xp.params.count).toBe(1);
+    // Canonical kinds, not source aliases, land in the table.
+    expect(byKind.has('panel')).toBe(false);
+    expect(byKind.has('picker')).toBe(false);
+    const tickets = byKind.get('tickets') as unknown as {
+      params: { items: unknown[]; count: number };
+    };
+    expect(tickets.params.count).toBe(1);
+    const reactionRoles = byKind.get('reaction-roles') as unknown as {
+      params: { items: unknown[]; count: number };
+    };
+    expect(reactionRoles.params.count).toBe(1);
+  });
+
+  it('publishes a spec with zero translatable behaviors and zero rows', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    actAs(owner);
+    const botId = await createBot(owner.accountId, 'RuntimeEmpty');
+    const v1 = await mintVersion(botId, 1, owner.discordId, 'draft', {
+      version: 1,
+      behaviors: [{ kind: 'teleport' }],
+    });
+    await setDraft(botId, v1);
+
+    const res = await POST(publishRequest({ botId }));
+    expect(res.status).toBe(200);
+    expect(await readJson(res)).toEqual({ version: 1, state: 'published', runtimeRows: 0 });
+    expect(await readBootRows(botId)).toEqual([]);
+
+    const bot = await (pool as Pool).query<{ prod_spec_id: string }>(
+      'SELECT prod_spec_id FROM bots WHERE id = $1',
+      [botId],
+    );
+    expect(bot.rows[0].prod_spec_id).toBe(v1);
+  });
+
+  it('preserves tickets/reaction-roles rows through the DELETE-then-INSERT sync', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    actAs(owner);
+    const botId = await createBot(owner.accountId, 'RuntimeTickets');
+    const v1 = await mintVersion(botId, 1, owner.discordId, 'draft', {
+      version: 1,
+      behaviors: [
+        { kind: 'panel', title: 'Tickets' },
+        { kind: 'picker', title: 'Roles' },
+        { kind: 'welcome', title: 'Hi' },
+      ],
+    });
+    await setDraft(botId, v1);
+
+    const res = await POST(publishRequest({ botId }));
+    expect(res.status).toBe(200);
+    expect(await readJson(res)).toEqual({ version: 1, state: 'published', runtimeRows: 3 });
+    const rows = await readBootRows(botId);
+    expect(rows.map((row) => row.kind).sort()).toEqual(
+      ['reaction-roles', 'tickets', 'welcome'].sort(),
+    );
+
+    // Re-publish: rows survive the DELETE-then-INSERT resync verbatim.
+    const again = await POST(publishRequest({ botId }));
+    expect(again.status).toBe(200);
+    expect(await readJson(again)).toEqual({ version: 1, state: 'published', runtimeRows: 3 });
+    expect(await readBootRows(botId)).toEqual(rows);
+  });
+
+  it('re-publishing the same version is idempotent and drops retired kinds', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    actAs(owner);
+    const botId = await createBot(owner.accountId, 'RuntimeIdem');
+    const v1 = await mintVersion(botId, 1, owner.discordId, 'draft', {
+      version: 1,
+      behaviors: [
+        { kind: 'welcome', title: 'Hi' },
+        { kind: 'xp', count: 1 },
+      ],
+    });
+    const v2 = await mintVersion(botId, 2, owner.discordId, 'draft', {
+      version: 1,
+      behaviors: [{ kind: 'welcome', title: 'Hi' }],
+    });
+    await setDraft(botId, v2);
+
+    const first = await POST(publishRequest({ botId, version: 1 }));
+    expect(await readJson(first)).toEqual({ version: 1, state: 'published', runtimeRows: 2 });
+    const pointed = await (pool as Pool).query<{ prod_spec_id: string }>(
+      'SELECT prod_spec_id FROM bots WHERE id = $1',
+      [botId],
+    );
+    expect(pointed.rows[0].prod_spec_id).toBe(v1);
+    const before = await readBootRows(botId);
+    expect(before.length).toBe(2);
+
+    const again = await POST(publishRequest({ botId, version: 1 }));
+    expect(again.status).toBe(200);
+    expect(await readJson(again)).toEqual({ version: 1, state: 'published', runtimeRows: 2 });
+    expect(await readBootRows(botId)).toEqual(before);
+
+    const narrowed = await POST(publishRequest({ botId, version: 2 }));
+    expect(await readJson(narrowed)).toEqual({ version: 2, state: 'published', runtimeRows: 1 });
+    const after = await readBootRows(botId);
+    expect(after.map((row) => row.kind)).toEqual(['welcome']);
+    expect(after[0].specVersion).toBe(2);
+  });
+
+  it('a translator failure rolls back the pointer, the audit row, and the rows', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    actAs(owner);
+    const botId = await createBot(owner.accountId, 'RuntimeBoom');
+    const v1 = await mintVersion(botId, 1, owner.discordId, 'draft', {
+      version: 1,
+      behaviors: [{ kind: 'welcome', title: 'Hi' }],
+    });
+    await setDraft(botId, v1);
+
+    __setTranslator(() => {
+      throw new Error('translator boom');
+    });
+    try {
+      const res = await POST(publishRequest({ botId }));
+      expect(res.status).toBe(500);
+      expect(await readJson(res)).toEqual({ error: 'could not publish' });
+    } finally {
+      __resetTranslator();
+    }
+
+    const bot = await (pool as Pool).query<{ prod_spec_id: string | null }>(
+      'SELECT prod_spec_id FROM bots WHERE id = $1',
+      [botId],
+    );
+    expect(bot.rows[0].prod_spec_id).toBeNull();
+    const audit = await (pool as Pool).query('SELECT id FROM audit_events WHERE bot_id = $1', [
+      botId,
+    ]);
+    expect(audit.rowCount).toBe(0);
+    expect(await readBootRows(botId)).toEqual([]);
+  });
+
+  it('a malformed stored spec fails the publish without moving the pointer', async (ctx) => {
+    if (!probe.ok) {
+      ctx.skip(skipReason);
+      return;
+    }
+    await ensurePg();
+    actAs(owner);
+    const botId = await createBot(owner.accountId, 'RuntimeBad');
+    const v1 = await mintVersion(botId, 1, owner.discordId, 'draft', { bogus: true });
+    await setDraft(botId, v1);
+
+    const res = await POST(publishRequest({ botId }));
+    expect(res.status).toBe(500);
+
+    const bot = await (pool as Pool).query<{ prod_spec_id: string | null }>(
+      'SELECT prod_spec_id FROM bots WHERE id = $1',
+      [botId],
+    );
+    expect(bot.rows[0].prod_spec_id).toBeNull();
   });
 });

@@ -19,29 +19,20 @@
 | ------ | ---------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | KI-029 | P0 deploy  | Repo fix LIVE-proven on box (`5c6c134`, web 313MB + gateway 638MB); local docker-build + deploy.yml run unproven | [KI-029_docker-copy.md](KI-029_docker-copy.md)           |
 | KI-030 | P0 honesty | Unchanged — do not share `https://13-140-181-113.nip.io/`                                                        | [KI-030_honesty.md](KI-030_honesty.md)                   |
-| KI-031 | P0 docs    | Unchanged — banners only; numbered bodies still lie                                                              | [KI-031_docs-stale.md](KI-031_docs-stale.md)             |
+| KI-031 | P0 docs    | **RESOLVED 2026-09-20** — 8 bodies trued + reviewed SUCCESS, banners removed, D-128 restored                     | [KI-031_docs-stale.md](KI-031_docs-stale.md)             |
 | KI-032 | P1 secrets | **RESOLVED (D-137)** — pushed (`4aed2ff` on origin); `.env.example` has shape-only `ENCRYPTION_KEY=`             | [KI-032_encryption-key.md](KI-032_encryption-key.md)     |
-| KI-033 | P1 billing | Unchanged — trial clock / 1-bot / sleep not in product code                                                      | [KI-033_trial-unenforced.md](KI-033_trial-unenforced.md) |
-| KI-034 | P1 ship    | Guards LIVE (prod 404s re-verified 2026-09-19); `07` map leg remains                                             | [KI-034_parked-routes.md](KI-034_parked-routes.md)       |
+| KI-033 | P1 billing | **RESOLVED (D-145)** — trial enforcement option A live (403 `trial_expired`, gateway pause → KI-035)             | [KI-033_trial-unenforced.md](KI-033_trial-unenforced.md) |
+| KI-034 | P1 ship    | **RESOLVED 2026-09-20** — guards LIVE + `07` map leg trued with KI-031 wave                                      | [KI-034_parked-routes.md](KI-034_parked-routes.md)       |
 
 Already-open product debt (not new, still real): KI-016, KI-017, KI-018, KI-019, KI-024 — see [eski-aciklar.md](eski-aciklar.md) and `KNOWN_ISSUES.md`. (KI-015 RESOLVED 2026-09-19 evening, D-140.)
 
 ---
 
-## Stamped numbered docs (do not implement from the stale sentences)
+## Stamped numbered docs (TRUED 2026-09-20 — banners removed)
 
-Each of these carries a `> **DRIFT (2026-09-19)**` banner pointing here:
+KI-031 docs-true wave trued all 8 numbered legs (02/04/05/06/07/08/09/10), each reviewed SUCCESS. No `> **DRIFT (2026-09-19)**` banner remains in any numbered doc (grep-verified; only ledger references to this folder remain in `Teknik_Borc/` files themselves). Detail per leg: [KI-031_docs-stale.md](KI-031_docs-stale.md); closeout: `Agent Reports/2026-09-20-0922_orchestrator_NOTE_ki031-closeout.md`.
 
-- `02_strategy.md` — status line still says K2/K3 unsigned (LOCKED D-032/D-033)
-- `04_design_language.md` — lead still `/pryzm` (production `/` is D-120)
-- `05_architecture.md` — overclaims recipe interpreter, Kuma `/healthz`, Flash-via-OpenRouter, `17.11-bookworm`
-- `06_data_model.md` — ledger/subscriptions as if live; missing `tier`/`attempt`
-- `07_folder_structure_and_standards.md` — clone-pryzm KEPT, bots.ts mock-only, KI-014 open
-- `08_core_pipeline.md` — glance is codegen+sandbox (the bug)
-- `09_auth_and_billing.md` — Creem/ledger/DPA written as the live money path
-- `10_deployment.md` — eval gate, CI GHCR, Kuma on-box, nightly dump NOW, workers-not-started
-
-Also stamped: `DECISIONS.md` D-128 empty heading / body spliced under D-129; `LESSONS.md` L-021 heading missing.
+Also fixed 2026-09-20: `DECISIONS.md` D-128 body restored under its own heading (D-129 untouched). `LESSONS.md` L-021 heading verified present (`Docs/LESSONS.md:309`) — the "heading missing" claim was stale; only numeric order is off, harmless.
 
 ---
 

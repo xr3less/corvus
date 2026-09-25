@@ -10,3 +10,9 @@ coverage/
 .pick-votes/
 # Founder-supplied unlicensed harvest (D-058): never enters version control
 pyrzm.zip
+# Local DB dump backups (pg-backup compose profile): local artifacts, never source
+infra/compose/backups/
+*.dump
+# Test/browser run artifacts: local junk, never source
+apps/web/.vitest/
+.playwright-mcp/

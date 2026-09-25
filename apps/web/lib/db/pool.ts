@@ -4,6 +4,7 @@
 // install (declared; @corvus/web package.json is untouched).
 
 import { Pool } from 'pg';
+import { __setRefillPool } from '@corvus/ai';
 
 // Disposable CI container URL. This is a TEST fixture, never a production
 // default: the hermetic suites inject a pool via `__setPool`, and the live-PG
@@ -73,6 +74,20 @@ export function getPool(): Pool {
   }
   const pool = new Pool({ connectionString: url });
   holder()[POOL_KEY] = pool;
+  // Refill seam (E4b): `@corvus/ai` keeps its refill-allowance read on a
+  // module-level pool setter, so until a pool is handed to it `refillAllowance`
+  // reads as zero and the chat/verdict budget gate enforces the bare tier grant
+  // — a customer who bought a refill pack would get none of it in this
+  // process. This is the one place this process's pool comes into existence
+  // (the branch above returns the cached instance), so setting it here runs
+  // exactly once per process and hands over the SAME pool every route reads.
+  //
+  // Deliberately not at module load: `getPool()` resolves `DATABASE_URL` lazily
+  // on purpose (KI-021), and an import-time call would instead pin the seam to
+  // the unconfigured stand-in — a dead object whose query rejects — for the
+  // life of the process, so a later-supplied URL would leave refills at zero
+  // forever. Wiring at construction means the seam always names a real pool.
+  __setRefillPool(pool);
   return pool;
 }
 

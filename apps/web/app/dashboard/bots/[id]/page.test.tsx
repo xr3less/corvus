@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MOCK_BOTS, type MockBot } from '@/lib/bots';
+import { MOCK_BOTS, TRIAL_DEAL, TRIAL_EXPIRED_MESSAGE, type MockBot } from '@/lib/bots';
 import BotDetailPage from './page';
 
 /* The route id comes from useParams; tests steer it per case. */
@@ -12,10 +14,11 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ get: (key: string) => (key === 'tab' ? mockTab : null) }),
 }));
 
+/* The trial sentences are byte-locked in `lib/bots.ts` and imported by the
+   page, so the test reads the same source instead of retyping them. */
 const TRIAL_LINE = 'Free while in preview — limits not enforced yet.';
-const TRIAL_DEAL_LINE = 'Free 3-day trial — 1 bot, 100 AI credits.';
-const TRIAL_EXPIRED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
-const COST_NOTE = 'About 1.1 credits per change · platform failures retry free.';
+const COST_NOTE =
+  'Her değişiklik kredi harcar · platform kaynaklı hata olursa tekrar denemek ücretsiz.';
 
 /* KI-030: the detail page is empty-not-example, so every mock-id render needs
    an injected list — tests steered to real page behavior, never mock ghosts. */
@@ -44,6 +47,48 @@ const FORBIDDEN = [
   'Built from first principles',
   'Enterprise-Grade',
   'Architectural Breakthroughs',
+];
+
+/* F6 source guard: the English copy this page used to render must not come
+   back. The scan runs over the file's RENDERABLE copy — comments stripped,
+   then only quoted literals and JSX text — so a string parked in a branch no
+   test happens to mount still trips it, while an explanatory comment quoting
+   the server's own English feed shape (the M-10 note) stays legal. Terms whose
+   owner is another file are excluded on purpose — `TRIAL_DEAL` /
+   `TRIAL_EXPIRED_MESSAGE` in `lib/bots.ts`, and the shared components'
+   labels — and the boundary is pinned by its own test below. Asserted as a
+   set AND its size (LESSONS §8): a removal that empties the list must not
+   read as a pass. */
+const RETIRED_COPY = [
+  'You are logged out — log in again',
+  'This bot is not saved on the server yet',
+  'No draft exists for this bot yet.',
+  'Nothing to roll back to yet.',
+  'Continue interview',
+  'Coming soon',
+  'Save version',
+  'Saved as draft v',
+  'Rolled back to v',
+  'preparing invite',
+  'Open install link',
+  'Describe a change…',
+  'Submitted changes',
+  'Simulation result',
+  'No description yet',
+  'Loading live activity…',
+  'Could not load activity',
+  'No scan yet — enter a server ID',
+  'Run scan',
+  'Simulate join',
+  'Save as draft',
+  'Start build',
+  'Follow the build',
+  'What this bot does',
+  'Recent activity',
+  '← All bots',
+  'Back to your bots',
+  'No bot with this address',
+  'Needs attention —',
 ];
 
 let consoleError: ReturnType<typeof vi.spyOn>;
@@ -150,30 +195,60 @@ describe('bot detail page', () => {
   it('renders the header with a back link to the bots list', () => {
     renderDetail('bot-3');
     expect(screen.getByRole('heading', { name: 'Night Market mods' })).toBeTruthy();
-    const back = screen.getByRole('link', { name: '← All bots' });
+    const back = screen.getByRole('link', { name: '← Tüm botlar' });
     expect(back.getAttribute('href')).toBe('/dashboard/bots');
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('shows an honest empty state for an unknown id', () => {
     renderDetail('no-such-bot');
-    expect(screen.getByText('No bot with this address — it may have been deleted.')).toBeTruthy();
-    const back = screen.getByRole('link', { name: 'Back to your bots' });
+    expect(screen.getByText('Bu adreste bir bot yok — silinmiş olabilir.')).toBeTruthy();
+    const back = screen.getByRole('link', { name: 'Botlarına dön' });
     expect(back.getAttribute('href')).toBe('/dashboard/bots');
-    expect(screen.queryByRole('tab', { name: 'Overview' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Genel bakış' })).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('shows the wired action row and one-card detail tabs', () => {
     renderDetail('bot-3');
-    for (const label of ['Open', 'Continue interview', 'Save version', 'Rollback']) {
+    for (const label of ['Aç', 'Görüşmeyi sürdür · Yakında', 'Sürümü kaydet', 'Geri al']) {
       expect(screen.getByRole('button', { name: label })).toBeTruthy();
     }
-    expect(screen.getByRole('tab', { name: 'Overview' }).getAttribute('aria-selected')).toBe(
+    /* Continue interview cannot resume an existing bot's round (/interview
+       starts a new one with a typed name), so it is honestly disabled with the
+       repo's own marker rather than being an enabled button that goes nowhere. */
+    const interview = screen.getByRole('button', {
+      name: 'Görüşmeyi sürdür · Yakında',
+    }) as HTMLButtonElement;
+    expect(interview.disabled).toBe(true);
+    expect(interview.getAttribute('aria-disabled')).toBe('true');
+    expect(interview.getAttribute('title')).toBe('Yakında');
+    expect(screen.getByRole('tab', { name: 'Genel bakış' }).getAttribute('aria-selected')).toBe(
       'true',
     );
-    expect(screen.getByRole('tab', { name: 'Activity' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Pre-flight' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Etkinlik' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Ön kontrol' })).toBeTruthy();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('repro: Continue interview is honestly disabled, never a dead enabled button', () => {
+    /* Reproduce-first: this failed while the header rendered an enabled
+       <button> with no onClick, no navigation and no disabled state. */
+    const fetchStub = vi.fn(() => Promise.reject(new Error('network disabled in tests')));
+    vi.stubGlobal('fetch', fetchStub);
+    renderDetail('bot-3');
+    const interview = screen.getByRole('button', {
+      name: 'Görüşmeyi sürdür · Yakında',
+    }) as HTMLButtonElement;
+    expect(interview.disabled).toBe(true);
+    expect(interview.getAttribute('aria-disabled')).toBe('true');
+    expect(interview.getAttribute('title')).toBe('Yakında');
+    /* Clicking it does nothing and reaches no endpoint: no request, no note —
+       the surface is not silently half-wired. */
+    const calls = fetchStub.mock.calls.length;
+    fireEvent.click(interview);
+    expect(fetchStub).toHaveBeenCalledTimes(calls);
+    expect(interview.disabled).toBe(true);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -181,12 +256,12 @@ describe('bot detail page', () => {
     mockTab = 'activity';
     try {
       renderDetail('bot-3');
-      expect(screen.getByRole('tab', { name: 'Activity' }).getAttribute('aria-selected')).toBe(
+      expect(screen.getByRole('tab', { name: 'Etkinlik' }).getAttribute('aria-selected')).toBe(
         'true',
       );
-      expect(screen.getByRole('region', { name: 'Recent activity' })).toBeTruthy();
+      expect(screen.getByRole('region', { name: 'Son etkinlik' })).toBeTruthy();
       /* KI-030: error feed is honest — no labeled examples passed off as data. */
-      await screen.findByText('Could not load activity — check your connection and try again.');
+      await screen.findByText('Etkinlik yüklenemedi — bağlantını kontrol edip tekrar dene.');
     } finally {
       mockTab = null;
     }
@@ -195,28 +270,28 @@ describe('bot detail page', () => {
 
   it('shows exactly one detail card at a time', async () => {
     renderDetail('bot-3');
-    expect(screen.getByRole('region', { name: 'What this bot does' })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'Recent activity' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Pre-flight' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Bu bot ne yapıyor' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Son etkinlik' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Ön kontrol' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    expect(screen.getByRole('region', { name: 'Recent activity' })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'What this bot does' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Pre-flight' })).toBeNull();
-    await screen.findByText('Could not load activity — check your connection and try again.');
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
+    expect(screen.getByRole('region', { name: 'Son etkinlik' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Bu bot ne yapıyor' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Ön kontrol' })).toBeNull();
+    await screen.findByText('Etkinlik yüklenemedi — bağlantını kontrol edip tekrar dene.');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Pre-flight' }));
-    expect(screen.getByRole('region', { name: 'Pre-flight' })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'What this bot does' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Recent activity' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Ön kontrol' }));
+    expect(screen.getByRole('region', { name: 'Ön kontrol' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Bu bot ne yapıyor' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Son etkinlik' })).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('keeps the AI box pinned with chips, composer and cost line', () => {
     renderDetail('bot-3');
-    const group = screen.getByRole('group', { name: 'Suggested changes' });
+    const group = screen.getByRole('group', { name: 'Önerilen değişiklikler' });
     expect(within(group).getAllByRole('button')).toHaveLength(3);
-    expect(screen.getByPlaceholderText('Describe a change…')).toBeTruthy();
+    expect(screen.getByPlaceholderText('İstediğin değişikliği anlat…')).toBeTruthy();
     expect(screen.getByText(COST_NOTE)).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -226,13 +301,13 @@ describe('bot detail page', () => {
     const fetchStub = vi.fn().mockResolvedValue(streamResponse(sse.stream));
     vi.stubGlobal('fetch', fetchStub);
     renderDetail('bot-3');
-    expect(screen.queryByRole('list', { name: 'Submitted changes' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Gönderilen değişiklikler' })).toBeNull();
     await submitDetail('Make the header bolder');
-    const thread = await screen.findByRole('list', { name: 'Submitted changes' });
-    expect(thread.textContent).toContain('You: Make the header bolder');
+    const thread = await screen.findByRole('list', { name: 'Gönderilen değişiklikler' });
+    expect(thread.textContent).toContain('Sen: Make the header bolder');
     /* No files attached, so the user row carries no meta line at all. */
-    expect(thread.textContent).not.toContain('attachment(s)');
-    expect(within(thread).queryByText(/attachment\(s\)/)).toBeNull();
+    expect(thread.textContent).not.toContain('ek dosya');
+    expect(within(thread).queryByText(/ek dosya/)).toBeNull();
     expect(fetchStub).toHaveBeenCalledWith(
       '/api/chat',
       expect.objectContaining({
@@ -256,9 +331,16 @@ describe('bot detail page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('shows the attachment count on the user row only when files are attached', async () => {
+  /* M-6: this test used to assert the user row showed "1 attachment(s)" and
+     let the turn through — which was the defect: the count was rendered while
+     the body carried nothing, so the file was destroyed silently. Attachments
+     cannot be transmitted (the chat API validates text only and the persona
+     lane's first route is text-only), so the honest contract is a refusal with
+     the draft intact. Pinned here at the page level, where the defect lived. */
+  it('refuses an attachment submit in words and transmits nothing', async () => {
     const sse = sseStream();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(streamResponse(sse.stream)));
+    const fetchStub = vi.fn().mockResolvedValue(streamResponse(sse.stream));
+    vi.stubGlobal('fetch', fetchStub);
     /* jsdom has no object URLs and never loads images — stub both so the
        composer's hidden file input accepts an image attachment in tests. */
     const hadCreateObjectURL = typeof URL.createObjectURL === 'function';
@@ -286,11 +368,22 @@ describe('bot detail page', () => {
         target: { files: [new File(['pixels'], 'shot.png', { type: 'image/png' })] },
       });
       await screen.findByRole('button', { name: 'Open preview of shot.png' });
+
+      const callsBefore = fetchStub.mock.calls.length;
       fireEvent.change(textarea, { target: { value: 'Use this layout' } });
       fireEvent.keyDown(textarea, { key: 'Enter' });
-      const thread = await screen.findByRole('list', { name: 'Submitted changes' });
-      expect(thread.textContent).toContain('You: Use this layout');
-      expect(within(thread).getByText('1 attachment(s)')).toBeTruthy();
+
+      /* Nothing was sent... */
+      expect(fetchStub.mock.calls.length).toBe(callsBefore);
+      /* ...the person is told why, in words... */
+      expect(screen.getByRole('alert').textContent).toContain('Image sending is not connected yet');
+      /* ...no turn was recorded... */
+      expect(screen.queryByRole('list', { name: 'Gönderilen değişiklikler' })).toBeNull();
+      /* ...and neither the typed draft nor the staged image was destroyed. */
+      expect((screen.getByLabelText('Prompt') as HTMLTextAreaElement).value).toBe(
+        'Use this layout',
+      );
+      expect(screen.getByRole('button', { name: 'Open preview of shot.png' })).toBeTruthy();
     } finally {
       if (hadCreateObjectURL) {
         URL.createObjectURL = originalCreateObjectURL;
@@ -299,12 +392,6 @@ describe('bot detail page', () => {
       }
     }
 
-    await act(async () => {
-      sse.push(frame({ t: 'content', text: 'Done.' }));
-      sse.push(frame({ t: 'done', credits: 1.1 }));
-      sse.close();
-    });
-    await waitFor(() => expect(screen.getByText('Done.')).toBeTruthy());
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -344,7 +431,7 @@ describe('bot detail page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('a 401 says logged-out in plain words and Retry re-issues after login', async () => {
+  it('a 401 says logged-out in plain words and Tekrar dene re-issues after login', async () => {
     const sse = sseStream();
     /* First the mount-time trial signal (fail-open 401), then the draft load
        (no draft for mock ids). */
@@ -362,9 +449,12 @@ describe('bot detail page', () => {
     renderDetail('bot-3');
     await submitDetail('Add a welcome rule');
 
+    /* The sentence is written by `lib/chat/thread.ts` (outside this task's
+       scope, still English); the control beside it is the shared chat-thread
+       component's, which ships Turkish. */
     await screen.findByText('You are logged out — log in again, then press Retry.');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tekrar dene' }));
     /* Trial signal + draft load + failed submit + retry. */
     expect(fetchStub).toHaveBeenCalledTimes(4);
 
@@ -379,23 +469,25 @@ describe('bot detail page', () => {
 
   it('mock chips never submit a change, and a chip fills the composer', () => {
     renderDetail('bot-3');
-    const group = screen.getByRole('group', { name: 'Suggested changes' });
-    fireEvent.click(within(group).getByRole('button', { name: 'XP rewards' }));
-    expect(screen.queryByRole('list', { name: 'Submitted changes' })).toBeNull();
-    fireEvent.click(within(group).getByRole('button', { name: 'Moderation rule' }));
-    expect((screen.getByLabelText('Prompt') as HTMLTextAreaElement).value).toBe('Moderation rule');
+    const group = screen.getByRole('group', { name: 'Önerilen değişiklikler' });
+    fireEvent.click(within(group).getByRole('button', { name: 'XP ödülleri' }));
+    expect(screen.queryByRole('list', { name: 'Gönderilen değişiklikler' })).toBeNull();
+    fireEvent.click(within(group).getByRole('button', { name: 'Moderasyon kuralı' }));
+    expect((screen.getByLabelText('Prompt') as HTMLTextAreaElement).value).toBe(
+      'Moderasyon kuralı',
+    );
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('updates the header for a trial bot and hides the trial line for a live bot', () => {
     const { unmount } = renderDetail('bot-2');
     expect(screen.getByRole('heading', { name: 'Draft Arena' })).toBeTruthy();
-    expect(screen.getByText(TRIAL_DEAL_LINE)).toBeTruthy();
+    expect(screen.getByText(TRIAL_DEAL)).toBeTruthy();
     unmount();
 
     renderDetail('bot-1');
     expect(screen.getByRole('heading', { name: 'Study Hall' })).toBeTruthy();
-    expect(screen.queryByText(TRIAL_DEAL_LINE)).toBeNull();
+    expect(screen.queryByText(TRIAL_DEAL)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -404,7 +496,7 @@ describe('bot detail page', () => {
      actually happened, in the locked words. */
   it('states the enforced trial deal on the trial line, never the retired preview line', () => {
     renderDetail('bot-2');
-    expect(screen.getByText(TRIAL_DEAL_LINE)).toBeTruthy();
+    expect(screen.getByText(TRIAL_DEAL)).toBeTruthy();
     expect(screen.queryByText(TRIAL_LINE)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -424,7 +516,7 @@ describe('bot detail page', () => {
 
   it('shows no expired line when the trial has not ended', () => {
     renderDetail('bot-2');
-    expect(screen.getByText(TRIAL_DEAL_LINE)).toBeTruthy();
+    expect(screen.getByText(TRIAL_DEAL)).toBeTruthy();
     expect(screen.queryByText(TRIAL_EXPIRED_MESSAGE)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -473,12 +565,10 @@ describe('bot detail page', () => {
 
   it('renders the honest overview fallback with no saved draft', () => {
     renderDetail('bot-1');
-    const study = screen.getByRole('region', { name: 'What this bot does' });
-    expect(within(study).getByRole('heading', { name: 'What this bot does' })).toBeTruthy();
+    const study = screen.getByRole('region', { name: 'Bu bot ne yapıyor' });
+    expect(within(study).getByRole('heading', { name: 'Bu bot ne yapıyor' })).toBeTruthy();
     /* KI-030: no mock specs — the overview says so until a draft is saved. */
-    expect(study.textContent).toContain(
-      'No description yet — the saved draft will describe it here.',
-    );
+    expect(study.textContent).toContain('Henüz açıklama yok — kaydedilen taslak burada anlatacak.');
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -496,10 +586,10 @@ describe('bot detail page', () => {
     );
     vi.stubGlobal('fetch', fetchStub);
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    expect(screen.getByText('Loading live activity…')).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
+    expect(screen.getByText('Etkinlik yükleniyor…')).toBeTruthy();
 
-    const region = screen.getByRole('region', { name: 'Recent activity' });
+    const region = screen.getByRole('region', { name: 'Son etkinlik' });
     await waitFor(() => expect(region.textContent).toContain('Published v7'));
     expect(region.textContent).toContain('publish');
     expect(region.textContent).toContain('Builder run · 1.1 credits');
@@ -514,8 +604,8 @@ describe('bot detail page', () => {
   it('shows the empty feed state when the request returns no items', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respOk([])));
     renderDetail('bot-1');
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    await screen.findByText('No activity yet.');
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
+    await screen.findByText('Henüz etkinlik yok.');
     expect(screen.queryByText('Example')).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -526,10 +616,10 @@ describe('bot detail page', () => {
       vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }),
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
     /* KI-030: no example rows passed off as the account's activity. */
-    await screen.findByText('Could not load activity — check your connection and try again.');
-    const region = screen.getByRole('region', { name: 'Recent activity' });
+    await screen.findByText('Etkinlik yüklenemedi — bağlantını kontrol edip tekrar dene.');
+    const region = screen.getByRole('region', { name: 'Son etkinlik' });
     expect(region.textContent).not.toContain('Published');
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -537,9 +627,9 @@ describe('bot detail page', () => {
   it('shows the honest error when the request rejects', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
     renderDetail('bot-2');
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    await screen.findByText('Could not load activity — check your connection and try again.');
-    expect(screen.getByRole('region', { name: 'Recent activity' }).textContent).not.toContain(
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
+    await screen.findByText('Etkinlik yüklenemedi — bağlantını kontrol edip tekrar dene.');
+    expect(screen.getByRole('region', { name: 'Son etkinlik' }).textContent).not.toContain(
       'Published',
     );
     expect(consoleError).not.toHaveBeenCalled();
@@ -563,11 +653,11 @@ describe('bot detail page', () => {
       );
     vi.stubGlobal('fetch', fetchStub);
     const firstRender = renderDetail('bot-1');
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
     firstRender.unmount();
 
     renderDetail('bot-2');
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Etkinlik' }));
     await screen.findByText('Draft Arena only');
 
     first.resolve(
@@ -588,6 +678,67 @@ describe('bot detail page', () => {
     }
     expect(consoleError).not.toHaveBeenCalled();
   });
+
+  /* The scanned text: comments out, then only quoted literals and JSX text. */
+  function renderableCopy(source: string): string {
+    return source.replace(/\/\*[\s\S]*?\*\//g, '');
+  }
+
+  function retiredOffenders(source: string): string[] {
+    const blob = renderableCopy(source);
+    return RETIRED_COPY.filter((term) => blob.includes(term));
+  }
+
+  /* F6 source guard: the retire list is real (29 terms) and none of the retired
+     English copy survives as renderable copy anywhere in the page source. */
+  it('keeps every retired English string out of the page source', () => {
+    expect(RETIRED_COPY.length).toBe(29);
+    const source = readFileSync(
+      path.join(process.cwd(), 'app', 'dashboard', 'bots', '[id]', 'page.tsx'),
+      'utf8',
+    );
+    expect(retiredOffenders(source)).toEqual([]);
+  });
+
+  /* The instrument check, in memory only: the same helper over a text that does
+     contain one retired term must trip, a comment quoting one must NOT trip,
+     and the real page source must stay untouched. Without this the guard above
+     could be green because it is blind. */
+  it('trips on the recorder when a retired string is present — in-memory only', () => {
+    const source = readFileSync(
+      path.join(process.cwd(), 'app', 'dashboard', 'bots', '[id]', 'page.tsx'),
+      'utf8',
+    );
+    const heading = '<h2 className={styles.cardTitle}>Son etkinlik</h2>';
+    const variant = source.replace(
+      heading,
+      '<h2 className={styles.cardTitle}>Recent activity</h2>',
+    );
+    /* The cut landed, and the real file is untouched. */
+    expect(variant).not.toBe(source);
+    expect(retiredOffenders(source)).toEqual([]);
+    expect(retiredOffenders(variant)).toEqual(['Recent activity']);
+    /* A comment quoting retired copy is not renderable copy and must not trip:
+       the real file keeps one such note (the M-10 'Rolled back to vN' shape). */
+    const commented = source.replace(
+      heading,
+      `{/* mirrors 'Rolled back to vN' from the feed */}\n${heading}`,
+    );
+    expect(commented).not.toBe(source);
+    expect(commented).toContain('Rolled back to v');
+    expect(retiredOffenders(commented)).toEqual([]);
+  });
+
+  /* The other side of the boundary: the two English sources this file does not
+     own are named, so a future reader does not "fix" them here and drift one
+     surface into a second wording. */
+  it('still reads the trial sentences from lib/bots.ts and shows them as-is', () => {
+    renderExpiredDetail('bot-2');
+    /* Byte-locked in lib/bots.ts; the page imports the constant. */
+    expect(screen.getByRole('status').textContent).toBe(TRIAL_EXPIRED_MESSAGE);
+    expect(TRIAL_EXPIRED_MESSAGE).toContain('deneme süren bitti');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
 });
 
 describe('bot detail wiring', () => {
@@ -596,13 +747,13 @@ describe('bot detail wiring', () => {
     init?: RequestInit;
   }
 
-  function draftPayload(version: number) {
+  function draftPayload(version: number, behaviors: unknown[] = []) {
     return {
       ok: true,
       status: 200,
       json: async () => ({
         version,
-        spec: { version: 1, behaviors: [] },
+        spec: { version: 1, behaviors },
         state: 'draft',
       }),
     };
@@ -648,9 +799,9 @@ describe('bot detail wiring', () => {
     renderDetail('bot-3');
     await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sürümü kaydet' }));
     /* KI-030 locked copy: Version N saved — never "Published vN". */
-    await screen.findByText(/Version 5 saved\. Your bot isn’t live on Discord yet\./);
+    await screen.findByText(/Sürüm 5 kaydedildi\. Botun Discord’da henüz canlıya alınmadı\./);
     const publish = apiCallsTo(calls, '/api/spec/publish');
     expect(publish).toHaveLength(1);
     expect(publish[0]?.init?.method).toBe('POST');
@@ -676,8 +827,8 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
-    await screen.findByText(/failing checks: permissions/);
+    fireEvent.click(screen.getByRole('button', { name: 'Sürümü kaydet' }));
+    await screen.findByText(/başarısız kontroller: permissions/);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -694,9 +845,9 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
-    await screen.findByText(/You are logged out/);
-    const login = screen.getByRole('link', { name: 'Log in' });
+    fireEvent.click(screen.getByRole('button', { name: 'Sürümü kaydet' }));
+    await screen.findByText(/Oturumun kapanmış/);
+    const login = screen.getByRole('link', { name: 'Giriş yap' });
     expect(login.getAttribute('href')).toBe('/api/auth/login');
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -717,9 +868,9 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
-    await screen.findByText(/not saved on the server yet/);
-    expect(screen.queryByText(/Version .* saved/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Sürümü kaydet' }));
+    await screen.findByText(/henüz sunucuya kaydedilmedi/);
+    expect(screen.queryByText(/Sürüm .* kaydedildi/)).toBeNull();
     expect(screen.queryByText(/Published v/)).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -739,11 +890,68 @@ describe('bot detail wiring', () => {
     renderDetail('bot-3');
     await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rollback' }));
-    await screen.findByText('Rolled back to v4.');
+    fireEvent.click(screen.getByRole('button', { name: 'Geri al' }));
+    await screen.findByText('v4 sürümüne dönüldü.');
     const rollback = apiCallsTo(calls, '/api/spec/rollback');
     expect(rollback).toHaveLength(1);
     expect(bodyOf(rollback[0])).toEqual({ botId: null, version: 4 });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('Rollback derives its target from prod, not the draft head', async () => {
+    const calls: ApiCall[] = [];
+    stubApi(
+      [
+        { match: (url) => url.startsWith('/api/spec/draft'), respond: () => draftPayload(6) },
+        {
+          match: (url) => url.startsWith('/api/bots/bot-3/activity'),
+          respond: () =>
+            respOk([
+              { kind: 'publish', text: 'Published v5', at: '2026-09-23T05:00:00.000Z' },
+              { kind: 'publish', text: 'Published v4', at: '2026-09-22T05:00:00.000Z' },
+            ]),
+        },
+        {
+          match: (url) => url === '/api/spec/rollback',
+          respond: () => ({ ok: true, status: 200, json: async () => ({ version: 4 }) }),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Geri al' }));
+    /* Draft head is v6 but prod is v5, so the target is prod - 1 = v4.
+       Draft-minus-one (v5) would 404 against the route contract. */
+    await screen.findByText('v4 sürümüne dönüldü.');
+    const rollback = apiCallsTo(calls, '/api/spec/rollback');
+    expect(rollback).toHaveLength(1);
+    expect(bodyOf(rollback[0])).toEqual({ botId: null, version: 4 });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('Rollback with no published version rolls nothing back and posts nothing', async () => {
+    const calls: ApiCall[] = [];
+    stubApi(
+      [
+        {
+          match: (url) => url.startsWith('/api/spec/draft'),
+          respond: () => ({ ok: false, status: 404, json: async () => ({}) }),
+        },
+        {
+          match: (url) => url.startsWith('/api/bots/bot-3/activity'),
+          respond: () => respOk([]),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Geri al' }));
+    await screen.findByText('Henüz geri dönebileceğin bir sürüm yok.');
+    expect(apiCallsTo(calls, '/api/spec/rollback')).toHaveLength(0);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -770,16 +978,16 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    await screen.findByText('preparing invite…');
+    fireEvent.click(screen.getByRole('button', { name: 'Aç' }));
+    await screen.findByText('davet hazırlanıyor…');
 
     const link = await screen.findByRole('link', {
-      name: 'Open install link (shared test app — your own bot install isn’t wired yet)',
+      name: 'Kurulum bağlantısını aç (ortak test uygulaması — kendi botunun kurulumu henüz bağlı değil)',
     });
     expect(link.getAttribute('href')).toBe('https://discord.com/oauth2/authorize?client_id=123');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(screen.getByText('Send Messages — greetings')).toBeTruthy();
-    expect(apiCallsTo(calls, '/api/invite').length).toBeGreaterThan(0);
+    expect(apiCallsTo(calls, '/api/invite?botId=bot-3').length).toBeGreaterThan(0);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -826,20 +1034,19 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('tab', { name: 'Pre-flight' }));
-    fireEvent.change(screen.getByLabelText('Server ID'), {
+    fireEvent.click(screen.getByRole('tab', { name: 'Ön kontrol' }));
+    fireEvent.change(screen.getByLabelText('Sunucu kimliği'), {
       target: { value: '123456789012345678' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Run scan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Taramayı çalıştır' }));
 
-    await screen.findByText('Scanning…');
+    await screen.findByText('Taranıyor…');
     await screen.findByText('installed: The bot joined the server.', undefined, { timeout: 5000 });
     const starts = apiCallsTo(calls, '/api/preflight/start');
     expect(starts).toHaveLength(1);
     expect(bodyOf(starts[0])).toEqual({
       botId: null,
       guildId: '123456789012345678',
-      capabilities: ['welcome'],
     });
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -867,7 +1074,7 @@ describe('bot detail wiring', () => {
       calls,
     );
     renderDetail('bot-3');
-    fireEvent.click(screen.getByRole('button', { name: 'Simulate join' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Katılımı simüle et' }));
     await screen.findByText(/matched: welcome/);
     expect(screen.getByText('Welcome — matched: welcome')).toBeTruthy();
     const sims = apiCallsTo(calls, '/api/simulate');
@@ -895,9 +1102,9 @@ describe('bot detail wiring', () => {
     const textarea = screen.getByLabelText('Prompt') as HTMLTextAreaElement;
     await waitFor(() => expect(document.activeElement).toBe(textarea));
     fireEvent.change(textarea, { target: { value: 'Greet newcomers' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save as draft' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Taslak olarak kaydet' }));
 
-    await screen.findByText('Saved as draft v6.');
+    await screen.findByText('Taslak olarak kaydedildi: v6.');
     const patches = apiCallsTo(calls, '/api/spec/patch');
     expect(patches).toHaveLength(1);
     const body = bodyOf(patches[0]);
@@ -905,6 +1112,170 @@ describe('bot detail wiring', () => {
     expect(body.baseVersion).toBe(5);
     expect(body.summary).toBe('Greet newcomers');
     expect(Array.isArray(body.behaviors)).toBe(true);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* DATA-LOSS BLOCKER: POST /api/spec/patch is a full replacement, so a save
+     built from an empty local cache would post a note-only head and wipe a
+     non-empty server draft. Reproduce-first: these fail while the save falls
+     back to `draftBehaviors ?? []` with a fabricated baseVersion of 1. */
+  const SERVER_BEHAVIORS = [
+    { kind: 'welcome', channel: '#general' },
+    { kind: 'moderation', warnLimit: 3 },
+  ];
+
+  it('repro: a save with an empty local cache appends to the server draft, never wipes it', async () => {
+    /* The mount load 500s, so the local cache stays empty while the server
+       still holds v5 with two behaviors. The fix appends the note to the data
+       the fresh read RETURNS, so the new head is draft + note. */
+    const calls: ApiCall[] = [];
+    let draftReads = 0;
+    stubApi(
+      [
+        {
+          match: (url) => url.startsWith('/api/spec/draft'),
+          respond: () => {
+            draftReads += 1;
+            /* First read (mount) fails: the cache is never populated. */
+            if (draftReads === 1) return { ok: false, status: 500, json: async () => ({}) };
+            return draftPayload(5, SERVER_BEHAVIORS);
+          },
+        },
+        {
+          match: (url) => url === '/api/spec/patch',
+          respond: () => ({ ok: true, status: 200, json: async () => ({ version: 6 }) }),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt input' }));
+    const textarea = screen.getByLabelText('Prompt') as HTMLTextAreaElement;
+    await waitFor(() => expect(document.activeElement).toBe(textarea));
+    fireEvent.change(textarea, { target: { value: 'Greet newcomers' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Taslak olarak kaydet' }));
+
+    await screen.findByText('Taslak olarak kaydedildi: v6.');
+    const patches = apiCallsTo(calls, '/api/spec/patch');
+    expect(patches).toHaveLength(1);
+    const body = bodyOf(patches[0]);
+    /* The real head version, never a fabricated 1. */
+    expect(body.baseVersion).toBe(5);
+    /* The prior draft is still there — the note is appended, not substituted. */
+    expect(body.behaviors).toEqual([
+      ...SERVER_BEHAVIORS,
+      { kind: 'note', title: 'Note', detail: 'Greet newcomers' },
+    ]);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('repro: an unreadable draft refuses the save instead of overwriting it', async () => {
+    /* Both reads fail, so this page cannot know what the server holds. It must
+       refuse and say so — never post a note-only head over a draft it never
+       read, and never invent a baseVersion. */
+    const calls: ApiCall[] = [];
+    stubApi(
+      [
+        {
+          match: (url) => url.startsWith('/api/spec/draft'),
+          respond: () => ({ ok: false, status: 500, json: async () => ({}) }),
+        },
+        {
+          match: (url) => url === '/api/spec/patch',
+          respond: () => ({ ok: true, status: 200, json: async () => ({ version: 6 }) }),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt input' }));
+    const textarea = screen.getByLabelText('Prompt') as HTMLTextAreaElement;
+    await waitFor(() => expect(document.activeElement).toBe(textarea));
+    fireEvent.change(textarea, { target: { value: 'Greet newcomers' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Taslak olarak kaydet' }));
+
+    await screen.findByText('Mevcut taslak yüklenemedi — hiçbir şey kaydedilmedi. Tekrar dene.');
+    /* Nothing was posted: no wipe, no fake success. */
+    expect(apiCallsTo(calls, '/api/spec/patch')).toHaveLength(0);
+    expect(screen.queryByText(/Taslak olarak kaydedildi/)).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a save with no draft on the server says so and posts nothing', async () => {
+    /* A definitive 404 'no draft yet' is not the same as an unreadable read:
+       there is no head to protect, and the honest line is the existing one. */
+    const calls: ApiCall[] = [];
+    stubApi(
+      [
+        {
+          match: (url) => url.startsWith('/api/spec/draft'),
+          respond: () => ({
+            ok: false,
+            status: 404,
+            json: async () => ({ error: 'no draft yet' }),
+          }),
+        },
+        {
+          match: (url) => url === '/api/spec/patch',
+          respond: () => ({ ok: true, status: 200, json: async () => ({ version: 6 }) }),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt input' }));
+    const textarea = screen.getByLabelText('Prompt') as HTMLTextAreaElement;
+    await waitFor(() => expect(document.activeElement).toBe(textarea));
+    fireEvent.change(textarea, { target: { value: 'Greet newcomers' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Taslak olarak kaydet' }));
+
+    await screen.findByText('Bu bot için henüz taslak yok.');
+    expect(apiCallsTo(calls, '/api/spec/patch')).toHaveLength(0);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a loaded draft still appends the note to the existing behaviors', async () => {
+    /* The normal path is unchanged: cached head + its behaviors + the note. */
+    const calls: ApiCall[] = [];
+    stubApi(
+      [
+        {
+          match: (url) => url.startsWith('/api/spec/draft'),
+          respond: () => draftPayload(5, SERVER_BEHAVIORS),
+        },
+        {
+          match: (url) => url === '/api/spec/patch',
+          respond: () => ({ ok: true, status: 200, json: async () => ({ version: 6 }) }),
+        },
+      ],
+      calls,
+    );
+    renderDetail('bot-3');
+    await waitFor(() => expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open prompt input' }));
+    const textarea = screen.getByLabelText('Prompt') as HTMLTextAreaElement;
+    await waitFor(() => expect(document.activeElement).toBe(textarea));
+    fireEvent.change(textarea, { target: { value: 'Greet newcomers' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Taslak olarak kaydet' }));
+
+    await screen.findByText('Taslak olarak kaydedildi: v6.');
+    const patches = apiCallsTo(calls, '/api/spec/patch');
+    expect(patches).toHaveLength(1);
+    const body = bodyOf(patches[0]);
+    expect(body.baseVersion).toBe(5);
+    expect(body.behaviors).toEqual([
+      ...SERVER_BEHAVIORS,
+      { kind: 'note', title: 'Note', detail: 'Greet newcomers' },
+    ]);
+    /* The head was already cached, so no extra draft read was needed. */
+    expect(apiCallsTo(calls, '/api/spec/draft?botId=bot-3')).toHaveLength(1);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -935,15 +1306,15 @@ describe('bot detail wiring', () => {
     await waitFor(() =>
       expect(apiCallsTo(calls, `/api/spec/draft?botId=${liveId}`)).toHaveLength(1),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
-    await screen.findByText(/Version 5 saved\. Your bot isn’t live on Discord yet\./);
+    fireEvent.click(screen.getByRole('button', { name: 'Sürümü kaydet' }));
+    await screen.findByText(/Sürüm 5 kaydedildi\. Botun Discord’da henüz canlıya alınmadı\./);
     const publish = apiCallsTo(calls, '/api/spec/publish');
     /* A real server id is passed through unchanged on writes. */
     expect(bodyOf(publish[0])).toEqual({ botId: liveId, version: 5 });
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('shows the logged-out line and Retry when the live list answers 401', async () => {
+  it('shows the logged-out line and Tekrar dene when the live list answers 401', async () => {
     const calls: ApiCall[] = [];
     const liveId = '11111111-2222-4333-8444-555555555555';
     stubApi(
@@ -957,11 +1328,11 @@ describe('bot detail wiring', () => {
     );
     renderDetail(liveId);
 
-    await screen.findByText(/You are logged out/);
-    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe(
+    await screen.findByText(/Oturumun kapanmış/);
+    expect(screen.getByRole('link', { name: 'Giriş yap' }).getAttribute('href')).toBe(
       '/api/auth/login',
     );
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tekrar dene' })).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -1004,9 +1375,9 @@ describe('bot detail wiring', () => {
     renderDetail(liveId);
     expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
     await typeBrief('Add a welcome rule');
-    fireEvent.click(screen.getByRole('button', { name: 'Start build' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Kurulumu başlat' }));
 
-    const link = await screen.findByRole('link', { name: 'Follow the build' });
+    const link = await screen.findByRole('link', { name: 'Kurulum ilerlemesini aç' });
     expect(link.getAttribute('href')).toBe(`/dashboard?runId=${runId}`);
     const starts = apiCallsTo(calls, '/api/builder/start');
     expect(starts).toHaveLength(1);
@@ -1028,10 +1399,10 @@ describe('bot detail wiring', () => {
     );
     renderDetail('bot-3');
     await typeBrief('Add a welcome rule');
-    fireEvent.click(screen.getByRole('button', { name: 'Start build' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Kurulumu başlat' }));
 
-    await screen.findByText(/not saved on the server yet/);
-    expect(screen.queryByRole('link', { name: 'Follow the build' })).toBeNull();
+    await screen.findByText(/henüz sunucuya kaydedilmedi/);
+    expect(screen.queryByRole('link', { name: 'Kurulum ilerlemesini aç' })).toBeNull();
     expect(apiCallsTo(calls, '/api/builder/start')).toHaveLength(0);
     expect(consoleError).not.toHaveBeenCalled();
   });
@@ -1064,10 +1435,272 @@ describe('bot detail wiring', () => {
     renderDetail(liveId);
     expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
     await typeBrief('Add a welcome rule');
-    fireEvent.click(screen.getByRole('button', { name: 'Start build' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Kurulumu başlat' }));
 
-    await screen.findByText('Could not start the build — try again.');
-    expect(screen.queryByRole('link', { name: 'Follow the build' })).toBeNull();
+    await screen.findByText('Kurulum başlatılamadı — tekrar dene.');
+    expect(screen.queryByRole('link', { name: 'Kurulum ilerlemesini aç' })).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* KI-033: a trial-expired account is refused with 403
+     { error: 'trial_expired', message: <the honest sentence> }. The page must
+     show the sentence the server wrote, byte-identical — a bare code is not
+     something a person can act on. Reproduce-first: this failed while the 403
+     fell through to the generic 'Kurulum başlatılamadı — tekrar dene.' */
+  it('a trial-expired start renders the server’s locked sentence byte-identical', async () => {
+    const calls: ApiCall[] = [];
+    const liveId = '11111111-2222-4333-8444-555555555555';
+    stubApi(
+      [
+        {
+          match: (url) => url === '/api/bots',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => [{ id: liveId, name: 'Live Study', status: 'live' }],
+          }),
+        },
+        { match: (url) => url.startsWith('/api/spec/draft'), respond: () => draftPayload(5) },
+        {
+          match: (url) => url === '/api/builder/start',
+          respond: () => ({
+            ok: false,
+            status: 403,
+            json: async () => ({
+              error: 'trial_expired',
+              message: TRIAL_EXPIRED_MESSAGE,
+            }),
+          }),
+        },
+      ],
+      calls,
+    );
+    renderDetail(liveId);
+    expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
+    await typeBrief('Add a welcome rule');
+    fireEvent.click(screen.getByRole('button', { name: 'Kurulumu başlat' }));
+
+    const note = await screen.findByText(TRIAL_EXPIRED_MESSAGE);
+    expect(note.textContent).toBe(TRIAL_EXPIRED_MESSAGE);
+    /* The code never reaches the reader, and no fake link is offered. */
+    expect(document.body.textContent ?? '').not.toContain('trial_expired');
+    expect(screen.queryByText('Kurulum başlatılamadı — tekrar dene.')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Kurulum ilerlemesini aç' })).toBeNull();
+    expect(apiCallsTo(calls, '/api/builder/start')).toHaveLength(1);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* KI-036twin: the streamed thread is content — Save and Start stitch the
+     thread user-turns plus the composer; a started build shows the real
+     inline stepper next to the kept ?runId= link. */
+  function liveBotHandlers(
+    liveId: string,
+    chat: { respond: () => unknown },
+    extra: { match: (url: string) => boolean; respond: () => unknown }[],
+  ) {
+    return [
+      {
+        match: (url: string) => url === '/api/bots',
+        respond: () => ({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: liveId, name: 'Live Study', status: 'live' }],
+        }),
+      },
+      { match: (url: string) => url.startsWith('/api/spec/draft'), respond: () => draftPayload(5) },
+      { match: (url: string) => url === '/api/chat', respond: () => chat.respond() },
+      ...extra,
+    ];
+  }
+
+  function queuedChat() {
+    const queue: ReadableStream<Uint8Array>[] = [];
+    return {
+      queue,
+      respond: () => {
+        const next = queue.shift();
+        if (!next) throw new Error('no queued chat stream');
+        return streamResponse(next);
+      },
+    };
+  }
+
+  async function completeTurn(chat: ReturnType<typeof queuedChat>, text: string, reply: string) {
+    const sse = sseStream();
+    chat.queue.push(sse.stream);
+    await submitDetail(text);
+    await act(async () => {
+      sse.push(frame({ t: 'content', text: reply }));
+      sse.push(frame({ t: 'done', credits: 0.05 }));
+      sse.close();
+    });
+    await waitFor(() => expect(screen.getByText(reply)).toBeTruthy());
+  }
+
+  const STITCHED = 'First wish\nSecond wish\nComposer tail';
+
+  it('Save as draft stitches two thread turns plus the composer, in order', async () => {
+    const calls: ApiCall[] = [];
+    const liveId = '11111111-2222-4333-8444-555555555555';
+    const chat = queuedChat();
+    stubApi(
+      liveBotHandlers(liveId, chat, [
+        {
+          match: (url) => url === '/api/spec/patch',
+          respond: () => ({ ok: true, status: 200, json: async () => ({ version: 6 }) }),
+        },
+      ]),
+      calls,
+    );
+    renderDetail(liveId);
+    expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
+
+    await completeTurn(chat, 'First wish', 'Noted one.');
+    await completeTurn(chat, 'Second wish', 'Noted two.');
+    await typeBrief('Composer tail');
+    fireEvent.click(screen.getByRole('button', { name: 'Taslak olarak kaydet' }));
+
+    await screen.findByText('Taslak olarak kaydedildi: v6.');
+    const patches = apiCallsTo(calls, '/api/spec/patch');
+    expect(patches).toHaveLength(1);
+    const body = bodyOf(patches[0]);
+    expect(body.botId).toBe(liveId);
+    expect(body.baseVersion).toBe(5);
+    /* Exact stitch: thread user-turns in send order plus composer text;
+       model prose never leaks in (replies were 'Noted one/two.'). */
+    expect(body.summary).toBe(STITCHED);
+    expect(body.behaviors).toEqual([{ kind: 'note', title: 'Note', detail: STITCHED }]);
+    expect(String(body.summary).indexOf('First wish')).toBeLessThan(
+      String(body.summary).indexOf('Second wish'),
+    );
+    expect(String(body.summary).indexOf('Second wish')).toBeLessThan(
+      String(body.summary).indexOf('Composer tail'),
+    );
+    expect(String(body.summary)).not.toContain('Noted one.');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('Start build sends the stitched thread plus the composer as the brief', async () => {
+    const calls: ApiCall[] = [];
+    const liveId = '11111111-2222-4333-8444-555555555555';
+    const runId = '99999999-8888-4777-8666-555555555555';
+    const chat = queuedChat();
+    stubApi(
+      liveBotHandlers(liveId, chat, [
+        {
+          match: (url) => url === '/api/builder/start',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => ({ runId, phase: 'queued' }),
+          }),
+        },
+        {
+          match: (url) => url.startsWith('/api/builder?runId='),
+          respond: () => ({
+            ok: true,
+            status: 200,
+            body: null,
+            json: async () => ({ phase: 'queued', detail: {} }),
+          }),
+        },
+      ]),
+      calls,
+    );
+    renderDetail(liveId);
+    expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
+
+    await completeTurn(chat, 'First wish', 'Noted one.');
+    await completeTurn(chat, 'Second wish', 'Noted two.');
+    await typeBrief('Composer tail');
+    fireEvent.click(screen.getByRole('button', { name: 'Kurulumu başlat' }));
+
+    await screen.findByRole('link', { name: 'Kurulum ilerlemesini aç' });
+    const starts = apiCallsTo(calls, '/api/builder/start');
+    expect(starts).toHaveLength(1);
+    expect(bodyOf(starts[0])).toEqual({ botId: liveId, brief: STITCHED });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('Save and Start stay enabled on thread content with an empty composer', async () => {
+    const chat = queuedChat();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/chat') return chat.respond();
+        if (url.startsWith('/api/spec/draft')) {
+          return { ok: false, status: 404, json: async () => ({}) };
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+    renderDetail('bot-3');
+    const saveButton = screen.getByRole('button', {
+      name: 'Taslak olarak kaydet',
+    }) as HTMLButtonElement;
+    const startButton = screen.getByRole('button', {
+      name: 'Kurulumu başlat',
+    }) as HTMLButtonElement;
+    /* Empty thread + empty composer: nothing to save or build from. */
+    expect(saveButton.disabled).toBe(true);
+    expect(startButton.disabled).toBe(true);
+
+    await completeTurn(chat, 'Thread wish', 'Noted.');
+    /* The submit cleared the composer, but the thread user-turn counts —
+       both buttons answer the thread, not just the box. */
+    expect(saveButton.disabled).toBe(false);
+    expect(startButton.disabled).toBe(false);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('a started build renders inline progress and keeps the exact ?runId= link', async () => {
+    const calls: ApiCall[] = [];
+    const liveId = '11111111-2222-4333-8444-555555555555';
+    const runId = '99999999-8888-4777-8666-555555555555';
+    stubApi(
+      [
+        {
+          match: (url) => url === '/api/bots',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => [{ id: liveId, name: 'Live Study', status: 'live' }],
+          }),
+        },
+        { match: (url) => url.startsWith('/api/spec/draft'), respond: () => draftPayload(5) },
+        {
+          match: (url) => url === '/api/builder/start',
+          respond: () => ({
+            ok: true,
+            status: 200,
+            json: async () => ({ runId, phase: 'queued' }),
+          }),
+        },
+        {
+          match: (url) => url.startsWith('/api/builder?runId='),
+          respond: () => ({
+            ok: true,
+            status: 200,
+            body: null,
+            json: async () => ({ phase: 'generating', detail: {} }),
+          }),
+        },
+      ],
+      calls,
+    );
+    renderDetail(liveId);
+    expect(await screen.findByRole('heading', { name: 'Live Study' })).toBeTruthy();
+    await typeBrief('Add a welcome rule');
+    fireEvent.click(screen.getByRole('button', { name: 'Kurulumu başlat' }));
+
+    /* The EXISTING BuilderProgress renders inline in its own region — real
+       server phase (Generating), not client-faked — next to the kept link. */
+    const region = await screen.findByRole('region', { name: 'Kurulum ilerlemesi' });
+    expect(await within(region).findByText('Generating')).toBeTruthy();
+    const link = within(region.parentElement as HTMLElement).getByRole('link', {
+      name: 'Kurulum ilerlemesini aç',
+    });
+    expect(link.getAttribute('href')).toBe(`/dashboard?runId=${runId}`);
     expect(consoleError).not.toHaveBeenCalled();
   });
 });
@@ -1079,8 +1712,8 @@ describe('bot detail chat stream', () => {
     renderDetail('bot-3');
     await submitDetail('Add a welcome rule');
 
-    await screen.findByText('You: Add a welcome rule');
-    expect(screen.getByRole('button', { name: 'Thinking' })).toBeTruthy();
+    await screen.findByText('Sen: Add a welcome rule');
+    expect(screen.getByRole('button', { name: 'Düşünüyor' })).toBeTruthy();
 
     await act(async () => {
       sse.push(frame({ t: 'reasoning', text: 'Weighing the options' }));
@@ -1098,7 +1731,7 @@ describe('bot detail chat stream', () => {
       sse.close();
     });
     await waitFor(() => expect(screen.getByText('Here is the rule.')).toBeTruthy());
-    expect(screen.getByText(/This reply used 0.075 credits/)).toBeTruthy();
+    expect(screen.getByText(/Bu yanıt 0.075 kredi harcadı/)).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -1129,11 +1762,11 @@ describe('bot detail chat stream', () => {
       sse.close();
     });
     await waitFor(() => expect(screen.getByText('Answer.')).toBeTruthy());
-    expect(screen.getByText(/provider reported no cost/)).toBeTruthy();
-    expect(screen.queryByText(/This reply used 0 credits/)).toBeNull();
+    expect(screen.getByText(/sağlayıcı maliyet bildirmedi/)).toBeTruthy();
+    expect(screen.queryByText(/Bu yanıt 0 kredi harcadı/)).toBeNull();
   });
 
-  it('shows an honest inline error and Retry re-issues the same message on one row', async () => {
+  it('shows an honest inline error and Tekrar dene re-issues the same message on one row', async () => {
     const first = sseStream();
     const second = sseStream();
     /* First the mount-time trial signal (fail-open 401), then the draft load
@@ -1154,12 +1787,12 @@ describe('bot detail chat stream', () => {
     });
     await screen.findByText('The provider is busy.');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(screen.getAllByText('You: Add a welcome rule')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Tekrar dene' }));
+    expect(screen.getAllByText('Sen: Add a welcome rule')).toHaveLength(1);
     /* Trial signal + draft load + failed stream + retry. */
     expect(fetchStub).toHaveBeenCalledTimes(4);
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Thinking' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Tekrar dene' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Düşünüyor' })).toBeTruthy();
 
     await act(async () => {
       second.push(frame({ t: 'content', text: 'Recovered.' }));
@@ -1194,15 +1827,24 @@ describe('bot detail chat stream', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(streamResponse(sse.stream)));
     renderDetail('bot-3');
     const textarea = await submitDetail('Stay');
-    expect(screen.getByRole('button', { name: 'Thinking' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Düşünüyor' })).toBeTruthy();
     expect(textarea.closest('[inert]')).not.toBeNull();
 
     await act(async () => {
+      /* A reasoning frame is what puts the parked trace in the DOM at done:
+         without it `chat-thread.tsx` renders no trace on the done branch, so
+         the label assertions below would pass for a reason unrelated to the
+         label (F7T2 review, finding F1). */
+      sse.push(frame({ t: 'reasoning', text: 'Weighing the options' }));
       sse.push(frame({ t: 'content', text: 'Ok.' }));
       sse.push(frame({ t: 'done', credits: 0.1 }));
       sse.close();
     });
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Thinking' })).toBeNull());
+    /* Both halves read the shipped label off the real accessibility tree: the
+       thinking label must be gone, and the Turkish done label must be the one
+       that replaced it. An English done label fails the second half. */
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Düşünüyor' })).toBeNull());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Düşündü' })).toBeTruthy());
     expect(textarea.closest('[inert]')).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });

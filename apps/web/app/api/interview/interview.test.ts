@@ -132,11 +132,17 @@ async function ensureSchema(pool: Pool): Promise<void> {
   await pool.query(FALLBACK_DDL);
   // Self-heal for the cross-workspace shared-DB path (KI-033): the shared test
   // container may already hold `accounts` from an older tree whose migrations
-  // stop before 0010, in which case the CREATE TABLE above is a no-op and the
-  // trial column would be missing — every KI-033 gate assertion would then fail
-  // on `column "trial_ends_at" does not exist`. Best-effort, mirroring
+  // stop before 0008/0010, in which case the CREATE TABLE above is a no-op and
+  // the tier/clock columns would be missing — every KI-033 gate assertion would
+  // then fail on `column "tier" does not exist` (0008) or `column
+  // "trial_ends_at" does not exist` (0010). Best-effort, mirroring
   // apps/web/app/api/bots/[botId]/activity/route.test.ts: loud warn, never fail
   // the hook on repair DDL.
+  try {
+    await pool.query(TIER_COLUMN_DDL);
+  } catch (error) {
+    console.warn(`[interview.test] self-heal accounts.tier failed: ${(error as Error).message}`);
+  }
   try {
     await pool.query(TRIAL_COLUMN_DDL);
   } catch (error) {
@@ -146,6 +152,13 @@ async function ensureSchema(pool: Pool): Promise<void> {
   }
   console.info(`[interview.test] schema ready via ${migrationSource}`);
 }
+
+/* The 0008 migration adds the column; this is the fallback-DDL equivalent for
+   a database where the sibling file could not be applied (0001+0002 create
+   `accounts` with no `tier`, so without this the gate's MINT_ACCOUNT_SQL read
+   `SELECT tier, ...` fails with `column "tier" does not exist`). */
+const TIER_COLUMN_DDL =
+  "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS tier text NOT NULL DEFAULT 'trial'";
 
 /* The 0010 migration adds the column; this is the fallback-DDL equivalent for
    a database where the sibling file could not be applied. */
@@ -304,6 +317,21 @@ describe('interview routes fail honestly when the database is not configured', (
     actAs(owner);
   });
 
+  // Fresh-owner isolation for every minting test (KI-033 one-bot cap): the
+  // production gate refuses a second live bot on the SAME owner
+  // (`mintGate`, `liveBotCount >= 1` → 403 in apps/web/lib/bots.ts:111), so a
+  // shared owner can only ever mint once per file run. Each helper below mints
+  // its own account (running trial clock) and acts as it, so no test inherits
+  // another's live-bot row — order-independent, deterministic, and the cap
+  // itself is never weakened.
+  async function freshOwner(tagPrefix: string): Promise<InterviewSession> {
+    const tag = `${tagPrefix}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const accountId = await makeAccount(`${tag}-owner`);
+    const session: InterviewSession = { accountId, discordId: `${tag}-owner` };
+    actAs(session);
+    return session;
+  }
+
   async function startBot(
     botName: unknown,
   ): Promise<{ status: number; body: Record<string, unknown> }> {
@@ -390,6 +418,7 @@ describe('interview routes fail honestly when the database is not configured', (
   });
 
   it('starts an interview with the first question', async () => {
+    await freshOwner('itv-start');
     const { status, body } = await startBot('Study Hall');
     expect(status).toBe(200);
     expect(typeof body.interviewId).toBe('string');
@@ -401,6 +430,7 @@ describe('interview routes fail honestly when the database is not configured', (
   });
 
   it('returns 404 for foreign, missing, and malformed interview ids (never leaks existence)', async () => {
+    await freshOwner('itv-foreign');
     const { body } = await startBot('Arena');
     const interviewId = body.interviewId as string;
     actAs(intruder);
@@ -427,6 +457,7 @@ describe('interview routes fail honestly when the database is not configured', (
   });
 
   it('rejects unknown questionIds and invalid answers with 422', async () => {
+    await freshOwner('itv-422');
     const { body } = await startBot('Arena');
     const interviewId = body.interviewId as string;
     for (const payload of [
@@ -442,6 +473,7 @@ describe('interview routes fail honestly when the database is not configured', (
   });
 
   it('rejects out-of-order answers with 422 naming the expected question', async () => {
+    await freshOwner('itv-order');
     const { body } = await startBot('Arena');
     const interviewId = body.interviewId as string;
     const skipped = await answerInterview(
@@ -459,6 +491,7 @@ describe('interview routes fail honestly when the database is not configured', (
     'walks the full tree and mints spec_versions v1 with the draft pointer',
     { timeout: 30_000 },
     async () => {
+      const session = await freshOwner('itv-walk');
       const started = await startBot('Study Hall');
       expect(started.status).toBe(200);
       const interviewId = started.body.interviewId as string;
@@ -491,7 +524,7 @@ describe('interview routes fail honestly when the database is not configured', (
           ]);
           expect(versionRow.rowCount).toBe(1);
           expect(versionRow.rows[0].version).toBe(1);
-          expect(versionRow.rows[0].author).toBe(`owner:${owner.discordId}`);
+          expect(versionRow.rows[0].author).toBe(`owner:${session.discordId}`);
           expect(versionRow.rows[0].state).toBe('draft');
           expect(versionRow.rows[0].spec.version).toBe(1);
           expect(versionRow.rows[0].spec.behaviors).toHaveLength(4);

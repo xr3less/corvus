@@ -3,6 +3,7 @@
 // pages and the stream hook share one implementation instead of two copies.
 
 import { isUuid } from '../editor/drafts';
+import { readRefusalMessage } from '../http/refusal';
 
 export interface ThreadRow {
   id: string;
@@ -96,6 +97,28 @@ export function historyBefore(rows: ThreadRow[], assistantId: string) {
   return threadHistory(idx === -1 ? rows : rows.slice(0, Math.max(0, idx - 1)));
 }
 
+/* Build brief = the refined conversation, stitched deterministically (KI-036):
+   every user-turn text in send order, trimmed, non-empty only; the live
+   composer text appended when non-empty; joined with newlines, clamped to the
+   builder route's 1..2000 rule, trimmed. Assistant rows never contribute
+   (model prose is not requirements). NO model call — pure concat of state
+   already on screen. */
+export const BRIEF_MAX_CHARS = 2000;
+
+export function stitchBrief(
+  rows: { role: 'user' | 'assistant'; text: string }[],
+  current?: string,
+  maxChars = BRIEF_MAX_CHARS,
+): string {
+  const texts = rows
+    .filter((row) => row.role === 'user')
+    .map((row) => row.text.trim())
+    .filter((text) => text !== '');
+  const live = current?.trim() ?? '';
+  if (live !== '') texts.push(live);
+  return texts.join('\n').slice(0, maxChars).trim();
+}
+
 /* Compact credit display mirroring the composer's `1.1 credits` spelling — no
    trailing zeros, at most three decimals. */
 export function formatCredits(value: number): string {
@@ -103,14 +126,20 @@ export function formatCredits(value: number): string {
 }
 
 /* HTTP-level failures never reach the SSE shape. A 401 means the session is
-   gone — say so in plain words with the fix, instead of the raw status. */
+   gone — say so in plain words with the fix, instead of the raw status.
+   A KI-033 refusal arrives as { error: <code>, message: <the honest sentence> }
+   (route.ts errorJson writes both), and the chat lane is the surface a
+   trial-expired person hits first — so `message` is preferred and `error` is
+   only the fallback for the older code-only shape. Printing the code alone
+   would paint `trial_expired` where the comment above promises plain words.
+   Same precedence as the dashboard and gallery forks. */
 export async function readHttpError(response: Response): Promise<string> {
   if (response.status === 401) {
     return 'You are logged out — log in again, then press Retry.';
   }
   try {
-    const payload = (await response.json()) as { error?: unknown };
-    if (typeof payload.error === 'string' && payload.error !== '') return payload.error;
+    const payload = (await response.json()) as unknown;
+    return readRefusalMessage(payload) ?? 'The reply stopped unexpectedly. Try again.';
   } catch {
     /* fall through to the generic line */
   }

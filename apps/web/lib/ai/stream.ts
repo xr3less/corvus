@@ -22,9 +22,30 @@
 //   - DeepSeek API docs (streaming + thinking mode): reasoning arrives on
 //     `choices[0].delta.reasoning_content`, streams before `content`, and usage
 //     is only populated when `stream_options.include_usage` is set.
-// The request body intentionally stays minimal per the locked contract; usage is
-// therefore provider-dependent (OpenRouter-style gateways report it by default,
-// OpenAI-style ones omit it unless opted in) and the absent case is handled below.
+//
+// USAGE OPT-IN — truth as of 2026-09-24. Builds before this sent no
+// `stream_options`, so on every OpenAI-style route the stream carried no usage
+// at all: real spend metered as `usage-unavailable` and the ledger stored NULL.
+// `buildStreamBody` now always asks for the usage frame. What each configured
+// route actually does with the ask, from live sources:
+//   - wiro (llm.wiro.ai — the first route on BOTH lanes): wiro.ai/llm documents
+//     "a final usage frame when you ask for one"; support.wiro.ai states the
+//     response reports the charged amount in `usage.cost` when usage data is
+//     available. Asking is what makes the cost appear here.
+//   - OpenAI spec / DeepSeek: opt-in required — `usage` is null on every chunk
+//     except the last, and DeepSeek notes no separate usage-only chunk is
+//     emitted (the statistics ride the final content chunk).
+//   - OpenRouter: already returns usage in its final chunk unconditionally, and
+//     its client docs mark `include_usage` deprecated with no effect — inert
+//     there, not an error.
+//   - z.ai (api.z.ai, last-resort builder route): `stream_options` is absent
+//     from its published OpenAPI schema for `/paas/v4/chat/completions`
+//     (docs.z.ai/api-reference/llm/chat-completion) and has not been probed
+//     live; a 400 there fails over like any other 4xx.
+// Still honestly absent, never invented: a provider that reports token counts
+// without a cost field (extractCost reads cost fields only — no token math), or
+// a stream cut short before its final usage frame, yields no cost and is
+// surfaced as `usage-unavailable` below rather than as a zero-cost run.
 import { extractCost, toCredits } from './cost';
 import { LANES } from './lanes';
 import type { LaneName, ProviderRoute } from './lanes';
@@ -76,6 +97,12 @@ function buildStreamBody(route: ProviderRoute, options: StreamOptions): Record<s
     messages: options.messages,
     temperature: 0,
     stream: true,
+    // Measured spend needs the provider's own usage frame. The OpenAI spec and
+    // DeepSeek return no usage at all while streaming without this flag; wiro
+    // documents a final usage frame "when you ask for one"; OpenRouter and any
+    // other gateway that reports usage unconditionally treat it as a no-op.
+    // See the USAGE OPT-IN note at the top of this file for route-by-route truth.
+    stream_options: { include_usage: true },
   };
   if (options.maxTokens !== undefined) {
     body.max_tokens = options.maxTokens;
@@ -270,6 +297,14 @@ function extractDelta(chunk: unknown): DeltaText | null {
  * carries a numeric `credits`, so absence is surfaced as `credits: 0` plus
  * `note: 'usage-unavailable'`; the route MUST translate that note into a NULL
  * spend row, not a zero-cost run.
+ *
+ * Since this body opts into `stream_options.include_usage` (see buildStreamBody
+ * and the USAGE OPT-IN note at the top), the usage frame is asked for on every
+ * route — but asking is not receiving. This still runs whenever the frame never
+ * arrives: a gateway that ignores the flag, a provider that reports token counts
+ * without a cost field, or a stream that broke before its final frame. In all of
+ * those the cost stays NULL and the note stays honest; nothing is estimated from
+ * tokens.
  */
 function buildDone(usdCost: number | null): StreamEvent {
   if (usdCost === null) {

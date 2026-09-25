@@ -11,7 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className={`${geist.className} ${styles.shell}`}>
       <a href="#main-content" className={styles.skipLink}>
-        Skip to content
+        İçeriğe geç
       </a>
       <Suspense>
         <DashboardRail />

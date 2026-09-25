@@ -10,7 +10,7 @@ describe('ThinkingTrace', () => {
     consoleError.mockClear();
   });
 
-  it('shows the shimmer Thinking header with live elapsed seconds', () => {
+  it('shows the shimmer Düşünüyor header with live elapsed seconds', () => {
     render(
       <ThinkingTrace
         status="thinking"
@@ -20,7 +20,7 @@ describe('ThinkingTrace', () => {
     );
     /* Seconds are aria-hidden (no screen-reader spam), so the role name is
        the bare label and the readout is asserted as text. */
-    expect(screen.getByRole('button', { name: 'Thinking' }).getAttribute('aria-expanded')).toBe(
+    expect(screen.getByRole('button', { name: 'Düşünüyor' }).getAttribute('aria-expanded')).toBe(
       'true',
     );
     expect(screen.getByText(/· \d+s/)).toBeTruthy();
@@ -30,16 +30,16 @@ describe('ThinkingTrace', () => {
 
   it('shows no placeholder text before the first streamed line', () => {
     render(<ThinkingTrace status="thinking" reasoning="" startedAt={Date.now()} />);
-    expect(screen.getByRole('button', { name: 'Thinking' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Düşünüyor' })).toBeTruthy();
     expect(screen.queryByText('Starting…')).toBeNull();
   });
 
-  it('parks itself collapsed as Thought with the measured duration', () => {
+  it('parks itself collapsed as Düşündü with the measured duration', () => {
     const startedAt = Date.now() - 12_400;
     const { rerender } = render(
       <ThinkingTrace status="thinking" reasoning="Weighing" startedAt={startedAt} />,
     );
-    expect(screen.getByRole('button', { name: 'Thinking' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Düşünüyor' })).toBeTruthy();
     rerender(
       <ThinkingTrace
         status="done"
@@ -48,9 +48,9 @@ describe('ThinkingTrace', () => {
         finishedAt={startedAt + 12_400}
       />,
     );
-    const head = screen.getByRole('button', { name: 'Thought' });
+    const head = screen.getByRole('button', { name: 'Düşündü' });
     expect(head.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('· took 12s')).toBeTruthy();
+    expect(screen.getByText('· 12s sürdü')).toBeTruthy();
     /* Trace stays mounted for re-reading. */
     expect(screen.getByText('Weighing')).toBeTruthy();
   });
@@ -65,9 +65,9 @@ describe('ThinkingTrace', () => {
         finishedAt={startedAt + 5_000}
       />,
     );
-    const head = screen.getByRole('button', { name: 'Thought' });
+    const head = screen.getByRole('button', { name: 'Düşündü' });
     expect(head.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('· took 5s')).toBeTruthy();
+    expect(screen.getByText('· 5s sürdü')).toBeTruthy();
     fireEvent.click(head);
     expect(head.getAttribute('aria-expanded')).toBe('true');
     fireEvent.click(head);

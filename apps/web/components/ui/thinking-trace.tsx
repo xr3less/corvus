@@ -76,12 +76,12 @@ export function ThinkingTrace({ status, reasoning = '', startedAt, finishedAt }:
         </span>
         <span role="status" className={styles.headText}>
           <span className={status === 'thinking' ? styles.shimmer : undefined}>
-            {status === 'thinking' ? 'Thinking' : 'Thought'}
+            {status === 'thinking' ? 'Düşünüyor' : 'Düşündü'}
           </span>{' '}
           {/* Seconds are visual-only: re-announcing every tick would spam
              screen readers, which already heard the label once. */}
           <span aria-hidden="true" className={styles.elapsed}>
-            {status === 'thinking' ? `· ${elapsed}` : `· took ${elapsed}`}
+            {status === 'thinking' ? `· ${elapsed}` : `· ${elapsed} sürdü`}
           </span>
         </span>
         <ChevronDown
@@ -95,7 +95,7 @@ export function ThinkingTrace({ status, reasoning = '', startedAt, finishedAt }:
           <div className={styles.rail} aria-hidden="true" />
           <div className={styles.lines}>
             {/* No placeholder while empty: until the first streamed line
-               arrives the header (Thinking · Ns) is the whole signal. */}
+               arrives the header (Düşünüyor · Ns) is the whole signal. */}
             {lines.map((line, index) => (
               <p key={`reasoning-${index}`} className={styles.line}>
                 {line}

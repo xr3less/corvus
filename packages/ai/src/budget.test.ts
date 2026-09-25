@@ -5,7 +5,7 @@
 // credit over, warn at 80%), the `getSpent` read is injected and never hits a
 // DB, and every invalid input fails loudly instead of degrading into a silent
 // allow.
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   BUDGET_WARN_RATIO,
   MONTHLY_GRANTS,
@@ -13,9 +13,15 @@ import {
   MONTHLY_GRANT_SCALE,
   MONTHLY_GRANT_STUDIO,
   MONTHLY_GRANT_TRIAL,
+  REFILL_CREDITS_SQL,
+  REFILL_REASON,
+  REFILL_WINDOW_DAYS,
+  __resetRefillPool,
+  __setRefillPool,
   briefHash,
   checkBudget,
   isPlanTier,
+  refillAllowance,
   startSpan,
 } from './budget.js';
 import type { CheckBudgetInput } from './budget.js';
@@ -31,6 +37,24 @@ function budgetInput(overrides: Partial<CheckBudgetInput> = {}): CheckBudgetInpu
 
 function spentOf(credits: number): () => Promise<number> {
   return () => Promise.resolve(credits);
+}
+
+afterEach(() => {
+  __resetRefillPool();
+});
+
+function fakeRefillPool(handler: (text: string, params: unknown[]) => { rows: unknown[] }): {
+  query: (text: string, params: unknown[]) => Promise<{ rows: unknown[] }>;
+  calls: { text: string; params: unknown[] }[];
+} {
+  const calls: { text: string; params: unknown[] }[] = [];
+  return {
+    calls,
+    query: async (text: string, params: unknown[]) => {
+      calls.push({ text, params });
+      return handler(text, params);
+    },
+  };
 }
 
 describe('monthly grants', () => {
@@ -238,6 +262,255 @@ describe('checkBudget invalid input fails loudly', () => {
     await expect(checkBudget(budgetInput({ warnRatio: -0.1 }))).rejects.toThrow(
       'warnRatio must be a finite non-negative number',
     );
+  });
+});
+
+describe('refillAllowance — 90-day refill window', () => {
+  it('reads as zero with no pool wired (absence-tolerant)', async () => {
+    __resetRefillPool();
+    await expect(refillAllowance('acct-1')).resolves.toBe(0);
+  });
+
+  it('sums refill rows within the window and queries the ledger idiom', async () => {
+    const pool = fakeRefillPool(() => ({ rows: [{ refills: 1000 }] }));
+    __setRefillPool(pool);
+    await expect(refillAllowance('acct-1')).resolves.toBe(1000);
+    expect(pool.calls).toHaveLength(1);
+    expect(pool.calls[0].text).toContain('FROM credit_ledger');
+    expect(pool.calls[0].text).toContain('reason = $2');
+    expect(pool.calls[0].text).toContain('90 days');
+    expect(pool.calls[0].params).toEqual(['acct-1', REFILL_REASON]);
+    expect(REFILL_REASON).toBe('refill');
+    expect(REFILL_WINDOW_DAYS).toBe(90);
+  });
+
+  it('reads numeric-string sums (pg numeric) and ignores non-positive reads', async () => {
+    __setRefillPool(fakeRefillPool(() => ({ rows: [{ refills: '2000' }] })));
+    await expect(refillAllowance('acct-1')).resolves.toBe(2000);
+    __setRefillPool(fakeRefillPool(() => ({ rows: [{ refills: 0 }] })));
+    await expect(refillAllowance('acct-1')).resolves.toBe(0);
+    __setRefillPool(fakeRefillPool(() => ({ rows: [{ refills: null }] })));
+    await expect(refillAllowance('acct-1')).resolves.toBe(0);
+  });
+
+  it('reads as zero when the ledger is unreachable, never throwing', async () => {
+    __setRefillPool({
+      query: async () => {
+        throw new Error('relation "credit_ledger" does not exist');
+      },
+    });
+    await expect(refillAllowance('acct-1')).resolves.toBe(0);
+  });
+
+  it('rejects a blank accountId loudly', async () => {
+    await expect(refillAllowance('   ')).rejects.toThrow(
+      'refillAllowance: accountId must be a non-empty string',
+    );
+  });
+
+  it('checkBudget adds refills to the tier allowance', async () => {
+    __setRefillPool(fakeRefillPool(() => ({ rows: [{ refills: 1000 }] })));
+    const decision = await checkBudget(
+      budgetInput({ tier: 'pro', estimatedCredits: 0, getSpent: spentOf(2000) }),
+    );
+    expect(decision).toMatchObject({ ok: true, allowance: MONTHLY_GRANT_PRO + 1000, spent: 2000 });
+  });
+
+  it('checkBudget blocks at the widened allowance boundary', async () => {
+    __setRefillPool(fakeRefillPool(() => ({ rows: [{ refills: 1000 }] })));
+    const allowed = await checkBudget(
+      budgetInput({ tier: 'pro', estimatedCredits: 0, getSpent: spentOf(3000) }),
+    );
+    expect(allowed).toMatchObject({ ok: true, allowance: 3000 });
+    const blocked = await checkBudget(
+      budgetInput({ tier: 'pro', estimatedCredits: 1, getSpent: spentOf(3000) }),
+    );
+    expect(blocked).toMatchObject({ ok: false, reason: 'budget_exceeded', allowance: 3000 });
+  });
+
+  it('checkBudget widens nothing when refills are unreadable (expiry behaves as zero)', async () => {
+    __setRefillPool({
+      query: async () => {
+        throw new Error('relation "credit_ledger" does not exist');
+      },
+    });
+    const decision = await checkBudget(
+      budgetInput({ tier: 'pro', estimatedCredits: 0, getSpent: spentOf(0) }),
+    );
+    expect(decision).toMatchObject({ ok: true, allowance: MONTHLY_GRANT_PRO });
+  });
+
+  it('an explicit allowance override skips the tier lookup but still adds refills', async () => {
+    __setRefillPool(fakeRefillPool(() => ({ rows: [{ refills: 500 }] })));
+    const decision = await checkBudget(
+      budgetInput({ tier: 'studio', allowance: 50, estimatedCredits: 0, getSpent: spentOf(0) }),
+    );
+    expect(decision).toMatchObject({ ok: true, allowance: 550 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// $5 = 1,000 credits, valid 90 days — a revenue boundary, not just an edge.
+//
+// The window lives in SQL (`created_at >= now() - interval '90 days'`), so an
+// inclusive/exclusive slip is invisible to every other test in this file: the
+// others feed the SUM straight in and never exercise the predicate. These tests
+// model that predicate and pin both the arithmetic and the SQL text, so a
+// one-day drift cannot silently move revenue.
+//
+// Semantics asserted (PostgreSQL 18, §9.9 Table 9.32): `timestamp - interval`
+// yields a timestamp, and `interval '90 days'` carries no month component, so
+// it is exactly 90 x 24h — no calendar or DST truncation. The comparison is a
+// half-open LOWER bound: `>= now() - interval '90 days'` INCLUDES the grant
+// landing exactly on the boundary instant.
+// Source: https://www.postgresql.org/docs/current/functions-datetime.html
+// ---------------------------------------------------------------------------
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+// A fixed "now" keeps the arithmetic deterministic. The DB evaluates its own
+// `now()`, but only the DISTANCE from it expires a grant, so a window defect
+// shifts every reading identically whenever this runs.
+const REFILL_NOW_MS = Date.parse('2026-09-23T12:00:00.000Z');
+
+/** The DB's `now() - interval '<REFILL_WINDOW_DAYS> days'` cutoff, in test arithmetic. */
+function refillWindowCutoffMs(nowMs: number = REFILL_NOW_MS): number {
+  return nowMs - REFILL_WINDOW_DAYS * ONE_DAY_MS;
+}
+
+/** One ledger row in the fixture, aged back from REFILL_NOW_MS. */
+interface RefillGrant {
+  readonly refId: string;
+  readonly credits: number;
+  readonly ageDays: number;
+}
+
+/**
+ * Fake pool that evaluates the shipped predicate — no more, no less: sum the
+ * rows at or inside the window cutoff, then apply `refillAllowance`'s own read
+ * rule (only a positive finite number widens the allowance). A window that
+ * drifted exclusive would lose exactly the row sitting ON the cutoff, which is
+ * the regression these tests exist to catch.
+ */
+function refillPoolFromGrants(grants: readonly RefillGrant[]): ReturnType<typeof fakeRefillPool> {
+  const cutoff = refillWindowCutoffMs();
+  const active = grants.filter((grant) => REFILL_NOW_MS - grant.ageDays * ONE_DAY_MS >= cutoff);
+  const sum = active.reduce((total, grant) => total + grant.credits, 0);
+  return fakeRefillPool(() => ({ rows: [{ refills: sum }] }));
+}
+
+describe('refill window boundary — $5 / 1,000 credits / 90 days', () => {
+  it('pins the terms promise: $5 buys 1,000 credits valid 90 days', () => {
+    // terms/page.tsx:99 promises "$5 refill pack of 1,000 credits, valid for
+    // 90 days"; the ledger row is written with that amount, and the window is
+    // the constant below. A change to any one of the three is a pricing change.
+    expect(REFILL_REASON).toBe('refill');
+    expect(REFILL_WINDOW_DAYS).toBe(90);
+  });
+
+  it('derives the SQL window from the same 90 days the constant names (drift guard)', () => {
+    // The window is a literal inside the SQL, NOT an interpolation of
+    // REFILL_WINDOW_DAYS — so the two can drift apart. This is the guard that
+    // makes an edit to either one red until both agree.
+    expect(REFILL_CREDITS_SQL).toContain(`interval '${REFILL_WINDOW_DAYS} days'`);
+    expect(REFILL_CREDITS_SQL).toContain('90 days');
+  });
+
+  it('pins the predicate as half-open: >= cutoff, in the ledger and on the reason', () => {
+    // Assert BOTH the operator and its operand: `>=` (inclusive at the
+    // boundary) is the whole point, and a regex is the only way to catch
+    // `>` smuggling in behind the same wording. The length is asserted so the
+    // three narrower checks above cannot pass vacuously against an empty or
+    // truncated statement; 147 is the statement's full literal length. It comes
+    // last on purpose — a flipped operator must fail on the regex (saying what
+    // actually broke), not on a one-character length diff.
+    expect(REFILL_CREDITS_SQL).toContain('created_at >=');
+    expect(REFILL_CREDITS_SQL).not.toContain('created_at > ');
+    expect(REFILL_CREDITS_SQL).toHaveLength(147);
+    expect(REFILL_CREDITS_SQL).toMatch(
+      /FROM credit_ledger WHERE account_id = \$1 AND reason = \$2 AND created_at >= now\(\) - interval '90 days'$/,
+    );
+  });
+
+  it('COUNTS a grant 89 days old (one day inside the window)', async () => {
+    __setRefillPool(refillPoolFromGrants([{ refId: 'purchase-a', credits: 1000, ageDays: 89 }]));
+    await expect(refillAllowance('acct-1')).resolves.toBe(1000);
+  });
+
+  it('EXCLUDES a grant 91 days old (one day past the window)', async () => {
+    __setRefillPool(refillPoolFromGrants([{ refId: 'purchase-a', credits: 1000, ageDays: 91 }]));
+    await expect(refillAllowance('acct-1')).resolves.toBe(0);
+  });
+
+  it('COUNTS a grant exactly 90 days old — the boundary is inclusive (documented)', async () => {
+    // Documents the code as built rather than a wish: the SQL is `>=`, so the
+    // grant landing exactly on the cutoff instant is still active. Half-open
+    // [now - 90d, now] is the promise the terms copy makes ("valid for 90
+    // days") and the reading that favours the paying customer. If this ever
+    // fails, the operator flipped to `>` — revenue moved, decide deliberately.
+    __setRefillPool(refillPoolFromGrants([{ refId: 'purchase-a', credits: 1000, ageDays: 90 }]));
+    await expect(refillAllowance('acct-1')).resolves.toBe(1000);
+    // The boundary is where the two sides disagree, so prove they DO disagree.
+    expect(REFILL_NOW_MS - 90 * ONE_DAY_MS).toBe(refillWindowCutoffMs());
+  });
+
+  it('treats a 1-day window slip as a full 1,000-credit revenue event', async () => {
+    const grant = { refId: 'purchase-a', credits: 1000, ageDays: 90 };
+    // Same account, same tier, same spend, same estimate — the ONLY difference
+    // between these two runs is where the window edge falls. Both calls are
+    // built from one shared input so the claim is structural, not a comment.
+    const spent = spentOf(MONTHLY_GRANT_PRO);
+    const nearBoundary = (): CheckBudgetInput =>
+      budgetInput({ tier: 'pro', estimatedCredits: 1, getSpent: spent });
+
+    __setRefillPool(refillPoolFromGrants([{ ...grant, ageDays: 89 }]));
+    const counted = await checkBudget(nearBoundary());
+    expect(counted).toMatchObject({
+      ok: true,
+      spent: MONTHLY_GRANT_PRO,
+      allowance: MONTHLY_GRANT_PRO + 1000,
+    });
+
+    __setRefillPool(refillPoolFromGrants([{ ...grant, ageDays: 91 }]));
+    const expired = await checkBudget(nearBoundary());
+    expect(expired).toMatchObject({
+      ok: false,
+      reason: 'budget_exceeded',
+      spent: MONTHLY_GRANT_PRO,
+      allowance: MONTHLY_GRANT_PRO,
+    });
+
+    // The gap between the two readings is the refill's full face value.
+    expect(counted.allowance - expired.allowance).toBe(1000);
+  });
+
+  it('counts only refill rows that are both inside the window and the account', async () => {
+    // Two purchases, one expired: the SUM is the surviving pack's face value.
+    __setRefillPool(
+      refillPoolFromGrants([
+        { refId: 'purchase-old', credits: 1000, ageDays: 120 },
+        { refId: 'purchase-new', credits: 1000, ageDays: 30 },
+      ]),
+    );
+    await expect(refillAllowance('acct-1')).resolves.toBe(1000);
+    // And both-active stacks (a renewal before the first expires).
+    __setRefillPool(
+      refillPoolFromGrants([
+        { refId: 'purchase-new', credits: 1000, ageDays: 30 },
+        { refId: 'purchase-older', credits: 1000, ageDays: 89 },
+      ]),
+    );
+    await expect(refillAllowance('acct-1')).resolves.toBe(2000);
+  });
+
+  it('checks the ledger in the account it was asked about, with the refill reason', async () => {
+    const pool = refillPoolFromGrants([{ refId: 'purchase-a', credits: 1000, ageDays: 89 }]);
+    __setRefillPool(pool);
+    await refillAllowance('acct-42');
+    expect(pool.calls).toHaveLength(1);
+    // A window that expired everything must never widen a DIFFERENT account's
+    // allowance either: the scope travels as a bound parameter, never baked in.
+    expect(pool.calls[0].params).toEqual(['acct-42', REFILL_REASON]);
   });
 });
 

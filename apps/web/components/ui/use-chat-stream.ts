@@ -20,6 +20,16 @@ export interface ChatHistoryTurn {
   content: string;
 }
 
+/* M-6 defence in depth. The composer refuses an attachment-carrying submit
+   first, but this hook is the second site of the same class: POST /api/chat
+   validates { botId, message, history } and nothing else, and the persona
+   lane's first route (wiro glm/5-2) is text-only by the provider's own spec.
+   A caller that hands this hook files therefore gets the turn refused in
+   words — never a recorded count that does not travel and never a silently
+   destroyed image-only submit. */
+export const ATTACHMENTS_UNSUPPORTED =
+  'Image sending is not connected yet, so this turn was not sent. Remove the images and try again.';
+
 export function useChatStream(botId: string | null | undefined) {
   const [messages, setMessages] = useState<ThreadRow[]>([]);
   /* True while a stream is open; the composer locks (inert) and a second
@@ -120,7 +130,31 @@ export function useChatStream(botId: string | null | undefined) {
   function submit(value: string, attachments: File[]) {
     if (streamingRef.current) return;
     const text = value.trim();
-    if (text === '') return;
+    if (text === '' && attachments.length === 0) return;
+    /* A turn carrying files cannot be transmitted (see
+       ATTACHMENTS_UNSUPPORTED). Refuse it as an errored assistant row rather
+       than posting a body that silently drops them, and rather than returning
+       early — a silent no-op is exactly the destroyed-submit defect this
+       guards. Nothing was sent, and the row says so. */
+    if (attachments.length > 0) {
+      const userId = `msg-${messageSeq.current++}`;
+      const assistantId = `msg-${messageSeq.current++}`;
+      setMessages((prev) => [
+        ...prev,
+        { id: userId, role: 'user', text, attachmentCount: attachments.length },
+        {
+          id: assistantId,
+          role: 'assistant',
+          text: '',
+          attachmentCount: 0,
+          status: 'error',
+          error: ATTACHMENTS_UNSUPPORTED,
+          startedAt: Date.now(),
+          finishedAt: Date.now(),
+        },
+      ]);
+      return;
+    }
     const userId = `msg-${messageSeq.current++}`;
     const assistantId = `msg-${messageSeq.current++}`;
     const history = threadHistory(messages);
@@ -130,7 +164,7 @@ export function useChatStream(botId: string | null | undefined) {
         id: userId,
         role: 'user',
         text,
-        attachmentCount: attachments.length,
+        attachmentCount: 0,
       },
       {
         id: assistantId,

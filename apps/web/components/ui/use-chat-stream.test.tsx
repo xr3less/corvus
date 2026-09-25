@@ -4,7 +4,7 @@
    SSE fetch. Provider behavior stays in the stream/route suites. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { useChatStream } from './use-chat-stream';
+import { ATTACHMENTS_UNSUPPORTED, useChatStream } from './use-chat-stream';
 
 let consoleError: ReturnType<typeof vi.spyOn>;
 
@@ -137,13 +137,13 @@ describe('useChatStream', () => {
     });
     expect(result.current.messages).toHaveLength(0);
     act(() => {
-      result.current.submit('Hi', [new File(['a'], 'a.txt'), new File(['b'], 'b.txt')]);
+      result.current.submit('Hi', []);
     });
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0]).toMatchObject({
       role: 'user',
       text: 'Hi',
-      attachmentCount: 2,
+      attachmentCount: 0,
     });
     act(() => {
       result.current.reset();
@@ -151,5 +151,75 @@ describe('useChatStream', () => {
     expect(result.current.messages).toHaveLength(0);
     expect(result.current.streaming).toBe(false);
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* M-6: POST /api/chat validates { botId, message, history } and nothing
+     else, so a turn carrying files cannot travel. The hook is the second site
+     of that class after the composer — it must refuse in words rather than
+     record a count that never leaves the browser. */
+  describe('attachments (M-6)', () => {
+    it('an image-only submit is refused in words, posts nothing, and is never silent', () => {
+      const fetchStub = vi.fn();
+      vi.stubGlobal('fetch', fetchStub);
+      const { result } = renderHook(() => useChatStream(null));
+
+      act(() => {
+        result.current.submit('', [new File(['a'], 'a.png', { type: 'image/png' })]);
+      });
+
+      /* The old behaviour returned early and left the screen untouched: the
+         submit vanished. Now a row pair exists and the assistant row says
+         exactly why nothing was sent. */
+      expect(result.current.messages).toHaveLength(2);
+      expect(result.current.messages[0]).toMatchObject({ role: 'user', text: '' });
+      expect(result.current.messages[1]).toMatchObject({
+        role: 'assistant',
+        status: 'error',
+        error: ATTACHMENTS_UNSUPPORTED,
+      });
+      expect(fetchStub).not.toHaveBeenCalled();
+      expect(result.current.streaming).toBe(false);
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it('a text + attachment submit is refused whole: the text does not travel alone', () => {
+      const fetchStub = vi.fn();
+      vi.stubGlobal('fetch', fetchStub);
+      const { result } = renderHook(() => useChatStream(null));
+
+      act(() => {
+        result.current.submit('describe this', [new File(['a'], 'a.png', { type: 'image/png' })]);
+      });
+
+      expect(fetchStub).not.toHaveBeenCalled();
+      expect(result.current.messages[0]).toMatchObject({
+        role: 'user',
+        text: 'describe this',
+        attachmentCount: 1,
+      });
+      expect(result.current.messages[1]).toMatchObject({
+        status: 'error',
+        error: ATTACHMENTS_UNSUPPORTED,
+      });
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it('a turn with no attachments is unaffected by the guard', async () => {
+      const sse = sseStream();
+      const fetchStub = vi.fn().mockResolvedValue(streamResponse(sse.stream));
+      vi.stubGlobal('fetch', fetchStub);
+      const { result } = renderHook(() => useChatStream(null));
+
+      act(() => {
+        result.current.submit('plain', []);
+      });
+      expect(result.current.messages[1]).toMatchObject({ status: 'thinking' });
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        sse.push(frame({ t: 'done', credits: 0.05 }));
+        sse.close();
+      });
+      await waitFor(() => expect(result.current.streaming).toBe(false));
+    });
   });
 });

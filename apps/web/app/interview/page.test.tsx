@@ -196,4 +196,105 @@ describe('interview page', () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it('shows the honest trial sentence on start 403, never the raw refusal code', async () => {
+    const fetchStub = vi.fn(async () =>
+      Response.json(
+        { error: 'trial_bot_limit', message: 'Free 3-day trial — 1 bot, 100 AI credits.' },
+        { status: 403 },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchStub);
+    try {
+      render(<InterviewPage />);
+      fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'Study Hall' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Start interview' }));
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain('Free 3-day trial — 1 bot, 100 AI credits.');
+      expect(alert.textContent).not.toContain('trial_bot_limit');
+      expect(alert.textContent).toContain('Could not start interview:');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('prefers the message on an expired-trial 403 when only the message carries it', async () => {
+    const fetchStub = vi.fn(async () =>
+      Response.json(
+        {
+          error: 'trial_expired',
+          message: 'Your 3-day trial ended — your bots are paused. Nothing is deleted.',
+        },
+        { status: 403 },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchStub);
+    try {
+      render(<InterviewPage />);
+      fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'Study Hall' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Start interview' }));
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain(
+        'Your 3-day trial ended — your bots are paused. Nothing is deleted.',
+      );
+      expect(alert.textContent).not.toContain('trial_expired');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('falls back to the raw error code when a failure carries no message', async () => {
+    const fetchStub = vi.fn(async (url: unknown) => {
+      if (String(url).includes('/api/interview/start')) {
+        return Response.json({ error: 'unknown questionId' }, { status: 422 });
+      }
+      throw new Error(`unexpected fetch: ${String(url)}`);
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    try {
+      render(<InterviewPage />);
+      fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'Study Hall' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Start interview' }));
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain('Could not start interview: unknown questionId');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('keeps the code-only answer-route error unchanged on the question path', async () => {
+    const fetchStub = vi.fn(async (url: unknown) => {
+      if (String(url).includes('/api/interview/start')) {
+        return Response.json(startPayload('purpose', 'What is this bot for?'));
+      }
+      if (String(url).includes('/api/interview/answer')) {
+        return Response.json({ error: 'question out of order' }, { status: 422 });
+      }
+      throw new Error(`unexpected fetch: ${String(url)}`);
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    try {
+      render(<InterviewPage />);
+      await startInterview();
+      await answerCurrent('A study bot');
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain('Could not record answer: question out of order');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('keeps the pre-existing generic fallback when a failure body has neither field', async () => {
+    const fetchStub = vi.fn(async () => Response.json({}, { status: 500 }));
+    vi.stubGlobal('fetch', fetchStub);
+    try {
+      render(<InterviewPage />);
+      fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'Study Hall' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Start interview' }));
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain('Could not start interview: error 500');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

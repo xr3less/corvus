@@ -14,6 +14,88 @@ const SMOOTH_HEIGHT_TRANSITION =
   'max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.15s ease-out';
 
 // ----------------------------------------------------------------------
+// Attachment limits (M-6)
+// ----------------------------------------------------------------------
+/* The chat API carries text only: POST /api/chat validates { botId, message,
+   history } and its persona lane's first route (wiro glm/5-2) is text-only by
+   the provider's own spec, so no image channel exists today. An attachment
+   therefore cannot be transmitted, and the composer must never destroy one
+   silently — every rejected file says why, and a submit carrying attachments
+   is refused in words with the draft kept on screen. These caps bound what may
+   even be staged, so one oversized pick cannot turn into a large blob. */
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+
+/* Refusal for a submit that carries attachments. Says what did NOT happen,
+   what was NOT lost, and the one action that unblocks the send. */
+export const ATTACHMENT_SEND_UNSUPPORTED =
+  'Image sending is not connected yet, so nothing was sent. Your message and images are still here — remove the images to send without them.';
+
+function describeBytes(bytes: number): string {
+  const mb = bytes / (1024 * 1024);
+  return `${mb >= 10 ? Math.round(mb) : Math.round(mb * 10) / 10} MB`;
+}
+
+/* What a file pick may stage, and the sentence explaining what it may not.
+   Pure and exported so the caps are asserted directly, without a simulated
+   pick: type and size are checked BEFORE any blob URL is minted, so an
+   oversized or non-image pick can never become a staged blob. */
+export interface AttachmentSelection {
+  accepted: File[];
+  notice: { text: string; assertive: boolean } | null;
+}
+
+export function selectAttachments(
+  chosen: File[],
+  stagedCount: number,
+  maxAttachments: number,
+  maxBytes: number = MAX_ATTACHMENT_BYTES,
+): AttachmentSelection {
+  const images = chosen.filter((file) => file.type.startsWith('image/'));
+  const notImage = chosen.length - images.length;
+  const oversized = images.filter((file) => file.size > maxBytes);
+  const withinCaps = images.filter((file) => file.size <= maxBytes);
+  const room = Math.max(0, maxAttachments - stagedCount);
+  const accepted = withinCaps.slice(0, room);
+  const overRoom = withinCaps.length - accepted.length;
+
+  const reasons: string[] = [];
+  if (notImage > 0) {
+    reasons.push(`${notImage} ${notImage === 1 ? 'file that is' : 'files that are'} not an image`);
+  }
+  if (oversized.length > 0) {
+    reasons.push(
+      `${oversized.length} ${oversized.length === 1 ? 'image' : 'images'} over the ${describeBytes(maxBytes)} limit`,
+    );
+  }
+  if (overRoom > 0) {
+    reasons.push(
+      `${overRoom} ${overRoom === 1 ? 'image' : 'images'} past the ${maxAttachments}-image limit`,
+    );
+  }
+
+  if (accepted.length === 0) {
+    /* Nothing staged: the pick itself is the whole answer, and it dropped
+       everything — so it announces immediately rather than politely. */
+    return {
+      accepted,
+      notice: { text: `Nothing was added: ${reasons.join('; ')}.`, assertive: true },
+    };
+  }
+  return {
+    accepted,
+    notice: {
+      text:
+        reasons.length > 0
+          ? `Added ${accepted.length}. Not added: ${reasons.join('; ')}. ${ATTACHMENT_SEND_UNSUPPORTED}`
+          : ATTACHMENT_SEND_UNSUPPORTED,
+      /* A pick that dropped something answers a direct user action, so it
+         announces immediately; the plain standing fact does not interrupt. */
+      assertive: reasons.length > 0,
+    },
+  };
+}
+
+// ----------------------------------------------------------------------
 // Types
 // ----------------------------------------------------------------------
 interface Attachment {
@@ -314,6 +396,15 @@ export interface PromptInputProps {
    * as a stable chat box instead of a morphing pill.
    */
   forceExpanded?: boolean;
+  /**
+   * Send gate (composer-type-but-not-send): while true the textarea stays
+   * fully editable but no send path fires — the send button is a real
+   * disabled control and submit/Enter return early WITHOUT clearing, so text
+   * typed mid-stream survives. The hook's own streaming ref-guard stays the
+   * backstop; this prop is the visible gating. Defaults false so every other
+   * consumer (e.g. the detail page) is byte-identical.
+   */
+  sendDisabled?: boolean;
 }
 
 export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
@@ -327,6 +418,7 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
       onChange,
       maxAttachments = 6,
       forceExpanded = false,
+      sendDisabled = false,
     },
     ref,
   ) => {
@@ -341,6 +433,14 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
     const [localValue, setLocalValue] = useState(defaultValue);
 
     const [attachments, setAttachments] = useState<Attachment[]>([]);
+    /* Why the staged set cannot go out, in words. Two moments need it: the
+       pick that broke a cap (assertive — the person just acted), and the
+       standing "sending is not connected yet" fact that appears the moment
+       anything is staged (polite). Null means nothing to say. */
+    const [attachmentNotice, setAttachmentNotice] = useState<{
+      text: string;
+      assertive: boolean;
+    } | null>(null);
     const [activeAttachment, setActiveAttachment] = useState<{
       attachment: Attachment;
       rect: DOMRect;
@@ -550,6 +650,13 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
       }
     }, [value, expanded, hasAttachments]);
 
+    /* Nothing staged means there is no attachment state left to explain, so
+       the standing line leaves with the last thumbnail. Derived here rather
+       than inside the remove handler, which must stay a pure state update. */
+    useEffect(() => {
+      if (!hasAttachments) setAttachmentNotice(null);
+    }, [hasAttachments]);
+
     useEffect(() => {
       if (expanded && !isRecording) {
         const timer = setTimeout(() => {
@@ -598,14 +705,25 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
     };
 
     const handleSubmit = () => {
+      /* Send gate: while disabled (mid-stream) neither send path may fire
+         nor clear — the draft is preserved, not dropped. This single choke
+         point covers the send button and Enter-to-send alike. */
+      if (sendDisabled) return;
       if (value.trim() === '' && !hasAttachments) return;
+      /* M-6: the chat API carries text only, so a submit with attachments
+         would drop every file on the floor (and an image-only submit would
+         vanish entirely, with nothing sent and nothing said). Refuse the
+         whole submit in words and keep the draft and the thumbnails on
+         screen, so nothing the person staged is ever destroyed. */
+      if (hasAttachments) {
+        setAttachmentNotice({ text: ATTACHMENT_SEND_UNSUPPORTED, assertive: true });
+        return;
+      }
       setIsSmoothResize(false);
       onSubmit?.(value, {
-        attachments: attachments.map((a) => a.file),
+        attachments: [],
       });
       handleValueChange('');
-      attachments.forEach((a) => URL.revokeObjectURL(a.url));
-      setAttachments([]);
       setExpanded(false);
     };
 
@@ -614,13 +732,16 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
       fileInputRef.current?.click();
     };
 
-    const handleFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
+    const handleFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const chosen = Array.from(e.target.files ?? []);
       e.target.value = '';
 
-      if (files.length === 0) return;
-      const room = Math.max(0, maxAttachments - attachments.length);
-      const accepted = files.slice(0, room);
+      if (chosen.length === 0) return;
+
+      /* Every dropped pick is accounted for in words: a file picker still
+         lets a person choose a 40 MB screenshot or a 7th image, and a silent
+         drop is the same defect this composer is being fixed for. */
+      const { accepted, notice } = selectAttachments(chosen, attachments.length, maxAttachments);
 
       if (!expanded) {
         setIsSmoothResize(false);
@@ -636,6 +757,8 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
         img.onerror = () => addAttachment(file, url, 800, 600);
         img.src = url;
       }
+
+      setAttachmentNotice(notice);
     };
 
     const addAttachment = (file: File, url: string, width: number, height: number) => {
@@ -735,6 +858,19 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
               ))}
             </div>
           </div>
+
+          {/* The attachment state, in words: why a pick was not added, and the
+              standing fact that images cannot be sent yet. role=alert is the
+              assertive mode for a direct answer to a pick; the standing line
+              uses role=status so it never interrupts. */}
+          {attachmentNotice ? (
+            <p
+              role={attachmentNotice.assertive ? 'alert' : 'status'}
+              className="px-1 pb-1 text-xs text-muted-foreground"
+            >
+              {attachmentNotice.text}
+            </p>
+          ) : null}
 
           <div
             onMouseDown={(e) => {
@@ -850,7 +986,13 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={openFileChooser}
                 disabled={attachments.length >= maxAttachments}
-                aria-label="Attach image"
+                /* The label states the affordance's real state (D-118 / F-7
+                   rule: a control must not promise what it cannot do). Files
+                   can be staged and previewed, but the chat API carries text
+                   only, so the label names that instead of implying an
+                   upload that does not exist. */
+                aria-label="Attach image — sending is not connected yet"
+                title="Sending images is not connected yet — you can still stage and preview them"
                 className="ml-auto flex size-7 items-center justify-center rounded-full text-foreground/50 transition-all duration-200 hover:bg-accent/60 hover:text-foreground outline-none cursor-default disabled:opacity-40 disabled:pointer-events-none"
               >
                 <PlusIcon />
@@ -884,13 +1026,17 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
               aria-label={
                 showArrow ? 'Send prompt' : showStop ? 'Stop recording' : 'Use voice input'
               }
-              aria-disabled={micUnavailable || undefined}
+              aria-disabled={micUnavailable || sendDisabled || undefined}
               title={micUnavailable ? 'Voice input is not available in this browser' : undefined}
-              disabled={micUnavailable}
+              disabled={micUnavailable || sendDisabled}
               style={{ borderRadius: 9999 }}
               className={cn(
                 'absolute right-2 bottom-2 z-[10] flex h-8 w-8 items-center justify-center bg-primary text-primary-foreground transition-all duration-300 hover:opacity-90 outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-default',
-                micUnavailable && 'opacity-50 hover:opacity-50',
+                (micUnavailable || sendDisabled) && 'opacity-50 hover:opacity-50',
+                /* The gate is a visible state on the control itself: reduced
+                   opacity plus a not-allowed cursor (twMerge keeps this over
+                   the base cursor-default). */
+                sendDisabled && 'cursor-not-allowed',
               )}
             >
               <span className="relative flex h-full w-full items-center justify-center">

@@ -133,6 +133,22 @@
   transform: scale(0.98);
 }
 
+/* One class dresses both live and honestly disabled controls — the
+   Coming-soon interview button in the header, and buttons that are
+   disabled only while a request is in flight. A disabled control must
+   not look pressable, so it is dimmed, its hover response is pinned
+   back to the resting colours, and the cursor says so. `:hover` still
+   matches on a disabled button, which is why it is neutralised here
+   rather than by narrowing the rule above. */
+.ghostAction:disabled,
+.ghostAction:disabled:hover {
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.15);
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .primaryAction {
   display: inline-flex;
   align-items: center;
@@ -164,6 +180,20 @@
   transform: scale(0.98);
 }
 
+/* Same honesty rule as .ghostAction:disabled above — a disabled filled
+   button must not look pressable. Dimming via opacity is the signal, so
+   bg/border stay at the resting values (#fafafa) and the hover lift is
+   pinned back. `:hover` still matches on a disabled button, hence the
+   `:disabled:hover` arm (order-independent, enabled path untouched). */
+.primaryAction:disabled,
+.primaryAction:disabled:hover {
+  background: #fafafa;
+  border-color: #fafafa;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .textAction {
   padding: 8px 4px;
   border: none;
@@ -181,6 +211,16 @@
 
 .textAction:hover {
   color: #fafafa;
+}
+
+/* Same honesty rule for the underline text button — dimmed, hover
+   colour pinned to the resting #a1a1aa (`:hover` matches disabled
+   buttons), cursor says so. Enabled path untouched. */
+.textAction:disabled,
+.textAction:disabled:hover {
+  color: #a1a1aa;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .detailTabs {

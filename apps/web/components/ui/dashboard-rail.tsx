@@ -37,19 +37,23 @@ export function DashboardRail() {
       if (!res.ok) throw new Error(`Logout failed: ${res.status}`);
       if (typeof window !== 'undefined') window.location.assign('/');
     } catch {
-      setLogoutError('Could not log out. Please try again.');
+      setLogoutError('Çıkış yapılamadı. Lütfen tekrar dene.');
     } finally {
       setLoggingOut(false);
     }
   }
 
+  /* Owner-language rail labels (Turkish). Copy-only: hrefs, icons and the
+     pathname-only active rule above are unchanged. The `Primary` nav landmark
+     stays English — the other nav on the product (`app/pryzm/page.tsx`) shares
+     that landmark name, and a11y landmark names are not user copy. */
   const links: RailLink[] = [
-    { label: 'Home', href: '/dashboard', icon: Home, active: isHomeActive },
-    { label: 'Bots', href: '/dashboard/bots', icon: Bot, active: isBotsActive },
-    { label: 'Templates', href: '/gallery', icon: LayoutTemplate, active: isTemplatesActive },
-    { label: 'Activity', href: '/dashboard#week', icon: Activity, active: false },
-    { label: 'Pre-flight', href: '/dashboard#preflight', icon: ShieldCheck, active: false },
-    { label: 'Settings', href: '/dashboard#workspace', icon: Settings, active: false },
+    { label: 'Ana sayfa', href: '/dashboard', icon: Home, active: isHomeActive },
+    { label: 'Botlar', href: '/dashboard/bots', icon: Bot, active: isBotsActive },
+    { label: 'Şablonlar', href: '/gallery', icon: LayoutTemplate, active: isTemplatesActive },
+    { label: 'Etkinlik', href: '/dashboard#week', icon: Activity, active: false },
+    { label: 'Ön kontrol', href: '/dashboard#preflight', icon: ShieldCheck, active: false },
+    { label: 'Ayarlar', href: '/dashboard#workspace', icon: Settings, active: false },
   ];
 
   return (
@@ -58,7 +62,7 @@ export function DashboardRail() {
         <span aria-hidden="true" className={styles.avatar}>
           M
         </span>
-        <span className={styles.workspaceName}>My server</span>
+        <span className={styles.workspaceName}>Sunucum</span>
       </div>
       <ul className={styles.navList}>
         {links.map((item) => (
@@ -81,10 +85,10 @@ export function DashboardRail() {
           type="button"
           disabled
           aria-disabled="true"
-          title="Coming soon"
+          title="Yakında"
           className={styles.upgrade}
         >
-          Upgrade · Coming soon
+          Yükselt · Yakında
         </button>
         <button
           type="button"
@@ -92,7 +96,7 @@ export function DashboardRail() {
           disabled={loggingOut}
           className={styles.upgrade}
         >
-          {loggingOut ? 'Logging out…' : 'Log out'}
+          {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış yap'}
         </button>
         {logoutError ? <p role="alert">{logoutError}</p> : null}
       </div>

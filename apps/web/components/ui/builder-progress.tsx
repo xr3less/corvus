@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { readRefusalMessage } from '@/lib/http/refusal';
 import styles from './builder-progress.module.css';
 
 export const BUILDER_STEPS = ['queued', 'generating', 'syncing', 'live'] as const;
@@ -46,8 +47,12 @@ function isBuilderPhase(value: unknown): value is BuilderPhase {
   return typeof value === 'string' && (ALL_PHASES as readonly string[]).includes(value);
 }
 
-// The route's error text, used verbatim (never reworded, never hidden).
+// The route's error text, resolved through the shared refusal reader first so
+// a code-only body shows a sentence instead of a raw token. Values the reader
+// does not resolve (prose bodies) fall back to the raw `error` verbatim.
 function readApiError(body: unknown): string | null {
+  const resolved = readRefusalMessage(body);
+  if (resolved !== null) return resolved;
   if (!isRecord(body)) return null;
   const error = body['error'];
   return typeof error === 'string' && error.length > 0 ? error : null;

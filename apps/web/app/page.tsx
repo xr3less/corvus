@@ -5,9 +5,9 @@ import styles from './landing.module.css';
 import { LandingEffects, VelarisCanvas } from './landing-islands';
 
 export const metadata: Metadata = {
-  title: 'Corvus - Build a Discord Bot With Plain Words',
+  title: 'Corvus - Discord botunu sade sözlerle kur',
   description:
-    'The no-code bot builder for Discord communities: describe your bot in plain English and test it before it goes live. free preview, no card required.',
+    'Discord toplulukları için kod yazmadan bot kurma aracı: botunu sade bir dille anlat, yayına almadan önce dene. Ücretsiz ön izleme, kart gerekmez.',
 };
 
 // next/font/google (latin, display-swap). If the Google font fetch fails,
@@ -29,33 +29,33 @@ const DISCORD_PATH =
   'M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z';
 
 const NAV_LINKS = [
-  { href: '#bento', label: 'Features' },
-  { href: '#bento', label: 'Architecture' },
-  { href: '#templates', label: 'Showcase' },
-  { href: '#pricing', label: 'Pricing' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '#bento', label: 'Özellikler' },
+  { href: '#how-it-works', label: 'Nasıl çalışır' },
+  { href: '#templates', label: 'Vitrin' },
+  { href: '#pricing', label: 'Fiyatlar' },
+  { href: '#faq', label: 'SSS' },
 ];
 
 const FAQS = [
   {
-    q: 'Do I ever need to share my bot token or credentials?',
-    a: 'You sign in with Discord — you never paste a token. When you connect a bot, its token is encrypted before it is saved, and only the part of our system that runs your bot can unlock it.',
+    q: 'Bot jetonumu veya hesap bilgilerimi paylaşmam gerekiyor mu?',
+    a: 'Discord ile giriş yaparsın — jeton yapıştırman hiç gerekmez. Bir bot bağladığında jetonu kaydedilmeden önce şifrelenir ve onu yalnızca botunu çalıştıran kısım açabilir.',
   },
   {
-    q: 'What happens to my guild data and XP records if my trial expires?',
-    a: 'When your trial ends, your bots pause and stay as-is \u2014 nothing is deleted.',
+    q: 'Deneme s\u00fcrem biterse sunucu verilerime ve XP kay\u0131tlar\u0131ma ne olur?',
+    a: 'Deneme s\u00fcren bitti\u011finde botlar\u0131n duraklar ve oldu\u011fu gibi kal\u0131r \u2014 hi\u00e7bir \u015fey silinmez.',
   },
   {
-    q: 'How does Corvus differ from legacy bots like MEE6 or Dyno?',
-    a: 'Legacy bots charge you per server for fixed features you cannot change without code. With Corvus, you describe what you want in plain words. Your bot fits your community, and one subscription covers multiple servers, all managed in one place.',
+    q: 'Corvus, MEE6 veya Dyno gibi eski botlardan nasıl ayrılır?',
+    a: 'Eski botlar sabit özellikler için seni sunucu başına ücretlendirir; kod yazmadan bunları değiştiremezsin. Corvus’ta ise istediğini sade sözlerle anlatırsın. Botun topluluğuna uyar ve tek abonelik birden fazla sunucuyu kapsar; hepsi tek yerden yönetilir.',
   },
   {
-    q: 'How do AI credits work for dynamic interactions and moderation?',
-    a: 'Everyday jobs (giving roles, running commands, counting XP, enforcing rules) are free and never touch your credits. Credits go only to AI work: building from your descriptions and smart replies (about 1.1 credits per build). The trial includes 100 credits for 3 days; the 2,000 credits in Pro last most communities for months.',
+    q: 'Hareketli etkileşimler ve moderasyon için AI kredileri nasıl işliyor?',
+    a: 'Günlük işler (rol verme, komut çalıştırma, XP sayma, kuralları uygulama) ücretsizdir ve kredilerine hiç dokunmaz. Krediler yalnızca AI işlerine gider: anlattıklarından bot kurma ve akıllı yanıtlar (kurulum başına yaklaşık 1.1 kredi). Deneme 3 gün için 100 kredi içerir; Pro’daki 2.000 kredi çoğu topluluğa aylarca yeter.',
   },
   {
-    q: 'I already have other bots installed. Will role permissions conflict?',
-    a: 'No. Before your bot goes live, Corvus will check your server\u2019s roles and permissions and tell you in plain words where the bot should sit, so it never fights your other bots.',
+    q: 'Ba\u015fka botlar\u0131m zaten kurulu. Rol izinleri \u00e7ak\u0131\u015f\u0131r m\u0131?',
+    a: 'Hay\u0131r. Botun yay\u0131na al\u0131nmadan \u00f6nce Corvus sunucundaki rolleri ve izinleri kontrol eder ve botun nereye konumlanmas\u0131 gerekti\u011fini sade s\u00f6zlerle s\u00f6yler; b\u00f6ylece di\u011fer botlar\u0131nla hi\u00e7 \u00e7ak\u0131\u015fmaz.',
   },
 ];
 
@@ -83,7 +83,7 @@ export default function HomePage() {
   return (
     <div className={`${jakarta.className} ${mono.variable} ${styles.page}`}>
       <a href="#top" className={styles.skip}>
-        Skip to content
+        İçeriğe geç
       </a>
 
       <header id="siteNav" className={styles.nav}>
@@ -127,9 +127,9 @@ export default function HomePage() {
           <div className={styles.blurShade} />
         </div>
 
-        <nav className={styles.navInner} aria-label="Main Navigation">
+        <nav className={styles.navInner} aria-label="Ana menü">
           <div className={styles.brandCluster}>
-            <a href="#top" className={styles.brand} aria-label="Corvus Home">
+            <a href="#top" className={styles.brand} aria-label="Corvus ana sayfa">
               <BrandMark />
               <span className={styles.brandName}>CORVUS</span>
             </a>
@@ -144,18 +144,18 @@ export default function HomePage() {
 
           <div className={styles.navCtas}>
             <a href="/demo" className={`${styles.btnDark} ${styles.demoBtn}`}>
-              Interactive Demo
+              Etkileşimli demo
             </a>
             <a href="/api/auth/login" className={`${styles.btnPrimary} ${styles.signBtn}`}>
               <svg className={styles.signGlyph} viewBox="0 0 24 24" fill="currentColor">
                 <path d={DISCORD_PATH} />
               </svg>
-              Sign in with Discord
+              Discord ile giriş yap
             </a>
             <button
               id="menuBtn"
               className={`${styles.btnDark} ${styles.menuBtn}`}
-              aria-label="Toggle Navigation"
+              aria-label="Menüyü aç veya kapat"
               aria-expanded="false"
               type="button"
             >
@@ -172,10 +172,10 @@ export default function HomePage() {
           ))}
           <div className={styles.drawerCtas}>
             <a href="/demo" className={`${styles.btnDark} ${styles.drawerBtn}`}>
-              Interactive Demo
+              Etkileşimli demo
             </a>
             <a href="/api/auth/login" className={`${styles.btnPrimary} ${styles.drawerBtn}`}>
-              Sign in with Discord
+              Discord ile giriş yap
             </a>
           </div>
         </div>
@@ -196,33 +196,33 @@ export default function HomePage() {
           <div className={styles.heroContainer}>
             <div className={`${styles.heroCopy} ${styles.reveal}`}>
               <div className={styles.badge}>
-                <span>No code | No token paste | free preview</span>
+                <span>Kod yok | Jeton yapıştırmak yok | Ücretsiz ön izleme</span>
               </div>
 
               <h1 className={`${styles.display} ${styles.h1}`}>
-                Build Custom AI Discord Bots in Minutes, Not Weeks
+                Özel AI Discord botlarını haftalar değil, dakikalar içinde kur
               </h1>
 
               <p className={styles.heroSub}>
-                Stop paying for 4-5 rigid bots on every server. Describe the bot your community
-                needs, in plain English - no code, no token paste.
+                Her sunucu için 4-5 ayrı bota para ödemeyi bırak. Topluluğunun ihtiyacı olan botu
+                sade bir dille anlat - kod yok, jeton yapıştırmak yok.
               </p>
 
               <div className={styles.ctaRow}>
                 <div>
                   <a href="/dashboard" className={styles.ctaTrial}>
-                    <span>Start building free</span>
+                    <span>Ücretsiz kurmaya başla</span>
                     <span className={styles.ctaTrialCircle} aria-hidden="true">
                       <ArrowRight size={16} strokeWidth={2.5} />
                     </span>
                   </a>
                   <p className={styles.priceNote}>
-                    Free 3-day trial — 1 bot, 100 AI credits, no card required.
+                    Ücretsiz 3 günlük deneme — 1 bot, 100 AI kredisi, kart gerekmez.
                   </p>
                 </div>
                 <a href="/demo" className={styles.ctaDemo}>
                   <Play size={16} className={styles.playGlyph} aria-hidden="true" />
-                  <span>Interactive Demo</span>
+                  <span>Etkileşimli demo</span>
                 </a>
               </div>
             </div>
@@ -247,7 +247,7 @@ export default function HomePage() {
                   <div className={styles.frameBarRight}>
                     <span className={styles.framePill}>
                       <ShieldCheck size={12} strokeWidth={2.5} aria-hidden="true" />
-                      No token paste needed
+                      Jeton yapıştırmak gerekmez
                     </span>
                   </div>
                 </div>
@@ -255,7 +255,7 @@ export default function HomePage() {
                 <div className={styles.frameImgWrap}>
                   <img
                     src="/landing/dashboard-hero.jpg"
-                    alt="Corvus AI Studio Dashboard - Real-time Bot Configuration Console"
+                    alt="Corvus AI Studio paneli - bot ayarlarının canlı olarak yapıldığı konsol"
                     className={styles.frameImg}
                     loading="eager"
                   />
@@ -268,40 +268,40 @@ export default function HomePage() {
         <section id="bento" className={styles.bento}>
           <div className={styles.wrapWide}>
             <div className={`${styles.bentoHead} ${styles.reveal}`}>
-              <h2 className={`${styles.display} ${styles.h2center}`}>Three things we promise.</h2>
-              <p className={styles.lede}>Written down because you shouldn&rsquo;t have to ask.</p>
+              <h2 className={`${styles.display} ${styles.h2center}`}>Söz verdiğimiz üç şey.</h2>
+              <p className={styles.lede}>Yazdık ki sormak zorunda kalmayasın.</p>
             </div>
 
             <div className={styles.blockStack}>
               <div className={styles.blockGrid}>
                 <div className={styles.blockText}>
                   <h3 className={`${styles.display} ${styles.blockTitle}`}>
-                    Your server. Your bot. No surprises.
+                    Senin sunucun. Senin botun. Sürpriz yok.
                   </h3>
                   <p className={styles.blockPara}>
-                    You sign in with Discord — you never paste a token. When you connect a bot, its
-                    token is encrypted before it is saved, and only the part of our system that runs
-                    your bot can unlock it.
+                    Discord ile giriş yaparsın — jeton yapıştırman hiç gerekmez. Bir bot
+                    bağladığında jetonu kaydedilmeden önce şifrelenir ve onu yalnızca botunu
+                    çalıştıran kısım açabilir.
                   </p>
                   <ul className={styles.checkList}>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Sign in with Discord, no password to remember
+                      Discord ile giriş yap, ezberleyecek şifre yok
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Your data and bot come with you if you leave
+                      Ayrılırsan verilerin ve botun seninle gelir
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      No admin access to your server, ever
+                      Sunucunda hiçbir zaman yönetici erişimi olmaz
                     </li>
                   </ul>
                 </div>
                 <div className={styles.panelCol}>
                   <div className={styles.panel}>
                     <div className={styles.panelPad}>
-                      <div className={styles.panelLabel}>Permission preview</div>
+                      <div className={styles.panelLabel}>İzin önizlemesi</div>
                       <ul className={styles.permList}>
                         <li className={styles.permItem}>
                           <Check
@@ -309,7 +309,7 @@ export default function HomePage() {
                             className={`${styles.mono} ${styles.permOk}`}
                             aria-hidden="true"
                           />
-                          Send Messages
+                          Mesaj Gönder
                         </li>
                         <li className={styles.permItem}>
                           <Check
@@ -317,7 +317,7 @@ export default function HomePage() {
                             className={`${styles.mono} ${styles.permOk}`}
                             aria-hidden="true"
                           />
-                          Kick Members
+                          Üyeleri At
                         </li>
                         <li className={styles.permItem}>
                           <Check
@@ -325,7 +325,7 @@ export default function HomePage() {
                             className={`${styles.mono} ${styles.permOk}`}
                             aria-hidden="true"
                           />
-                          Manage Messages
+                          Mesajları Yönet
                         </li>
                         <li className={styles.permItem}>
                           <Check
@@ -333,7 +333,7 @@ export default function HomePage() {
                             className={`${styles.mono} ${styles.permOk}`}
                             aria-hidden="true"
                           />
-                          View Audit Log
+                          Denetim Kaydını Görüntüle
                         </li>
                         <li className={`${styles.permItem} ${styles.struck}`}>
                           <X
@@ -341,7 +341,7 @@ export default function HomePage() {
                             className={`${styles.mono} ${styles.permNo}`}
                             aria-hidden="true"
                           />
-                          Administrator
+                          Yönetici
                         </li>
                       </ul>
                     </div>
@@ -354,17 +354,26 @@ export default function HomePage() {
                   <div className={styles.panel}>
                     <div className={styles.panelPad}>
                       <div className={styles.panelLabel}>
-                        Overnight update, member view (planned)
+                        Gece güncellemesi, üye görünümü (planlı)
                       </div>
                       <ul className={styles.timeList}>
                         <li className={styles.timeItem}>
                           <span className={styles.timeDot} aria-hidden="true" />
                           <div>
                             <div className={styles.timeTitle}>
-                              Updates will install in the background (planned)
+                              Güncellemeler arka planda kurulacak (planlı)
                             </div>
                             <div className={styles.timeSub}>
-                              your bot will stay online the whole time (planned)
+                              botun bu sırada çevrimiçi kalacak (planlı)
+                            </div>
+                          </div>
+                        </li>
+                        <li className={styles.timeItem}>
+                          <span className={styles.timeDot} aria-hidden="true" />
+                          <div>
+                            <div className={styles.timeTitle}>Her XP kaydı saklanacak (planlı)</div>
+                            <div className={styles.timeSub}>
+                              roller, uyarılar ve bakiyeler olduğu gibi kalacak (planlı)
                             </div>
                           </div>
                         </li>
@@ -372,21 +381,10 @@ export default function HomePage() {
                           <span className={styles.timeDot} aria-hidden="true" />
                           <div>
                             <div className={styles.timeTitle}>
-                              Every XP record will be kept (planned)
+                              Kimse bir şey fark etmeyecek (planlı)
                             </div>
                             <div className={styles.timeSub}>
-                              roles, warnings and balances will stay untouched (planned)
-                            </div>
-                          </div>
-                        </li>
-                        <li className={styles.timeItem}>
-                          <span className={styles.timeDot} aria-hidden="true" />
-                          <div>
-                            <div className={styles.timeTitle}>
-                              Nobody will notice a thing (planned)
-                            </div>
-                            <div className={styles.timeSub}>
-                              zero downtime for your members (planned)
+                              üyelerin için kesinti olmayacak (planlı)
                             </div>
                           </div>
                         </li>
@@ -396,24 +394,28 @@ export default function HomePage() {
                 </div>
                 <div className={`${styles.blockText} ${styles.textSecond}`}>
                   <h3 className={`${styles.display} ${styles.blockTitle}`}>
-                    Always on. Always remembered.
+                    Hep açık. Hep hatırlar. (planlı)
                   </h3>
+                  <p className={styles.timeSub}>
+                    Bu çalışırlık ve veri saklama sözlerinin hiçbiri henüz yayında değil (planlı).
+                  </p>
                   <p className={styles.blockPara}>
-                    Your community&rsquo;s XP, roles, and history will stick around. Restarts and
-                    updates will happen without anyone noticing (planned).
+                    Topluluğunun XP&rsquo;si, rolleri ve geçmişi yerinde kalacak. Yeniden
+                    başlatmalar ve güncellemeler kimse fark etmeden olacak (planlı).
                   </p>
                   <ul className={styles.checkList}>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Your community&rsquo;s XP and roles will survive every restart (planned)
+                      Topluluğunun XP&rsquo;si ve rolleri her yeniden başlatmadan sonra yaşayacak
+                      (planlı)
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Updates will happen in the background, no downtime (planned)
+                      Güncellemeler arka planda olacak, kesinti olmayacak (planlı)
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Planned: 12 months of data kept, even after you stop paying
+                      Planlı: ödeme yapmayı bıraksan bile 12 aylık veri saklanır
                     </li>
                   </ul>
                 </div>
@@ -422,60 +424,61 @@ export default function HomePage() {
               <div className={styles.blockGrid}>
                 <div className={styles.blockText}>
                   <h3 className={`${styles.display} ${styles.blockTitle}`}>
-                    Describe it. We build it.
+                    Anlat. Gerisini biz kurarız.
                   </h3>
                   <p className={styles.blockPara}>
-                    Tell us what your bot should do. In plain English. We&rsquo;ll make it, test it
-                    on a practice server, and help you put it on your server when going live is
-                    wired.
+                    Botunun ne yapması gerektiğini söyle. Sade sözlerle. Biz yaparız, bir deneme
+                    sunucusunda test ederiz ve canlıya alma bağlandığında kendi sunucuna koymana
+                    yardım ederiz.
                   </p>
                   <ul className={styles.checkList}>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Plain English setup, no code
+                      Sade dille kurulum, kod yok
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Test on a practice server before going live
+                      Canlıya almadan önce deneme sunucusunda test et
                     </li>
                     <li className={styles.checkItem}>
                       <span className={styles.checkDot} aria-hidden="true" />
-                      Change anything anytime, no developer needed
+                      Her şeyi istediğin zaman değiştir, geliştirici gerekmez
                     </li>
                   </ul>
                 </div>
                 <div className={styles.panelCol}>
                   <div className={styles.panel}>
                     <div className={styles.panelPad}>
-                      <div className={styles.panelLabel}>Your bot, in plain English</div>
+                      <div className={styles.panelLabel}>Botun, sade sözlerle</div>
                       <div className={styles.convo}>
                         <div className={styles.convoRow}>
-                          <span className={styles.convoWho}>You</span>
+                          <span className={styles.convoWho}>Sen</span>
                           <span className={styles.convoTextDim}>
-                            A welcome message in #general when someone joins.
+                            Biri katıldığında #general kanalına karşılama mesajı at.
                           </span>
                         </div>
                         <div className={styles.convoRow}>
                           <span className={`${styles.convoWho} ${styles.convoWhoAi}`}>Corvus</span>
                           <span className={styles.convoTextBright}>
-                            Got it. Welcoming new members in #general with their username.
+                            Anlaşıldı. Yeni üyeleri #general kanalında kullanıcı adlarıyla
+                            karşılıyoruz.
                           </span>
                         </div>
                         <div className={styles.convoRow}>
-                          <span className={styles.convoWho}>You</span>
+                          <span className={styles.convoWho}>Sen</span>
                           <span className={styles.convoTextDim}>
-                            Also give them the @Member role automatically.
+                            Ayrıca @Member rolünü otomatik versin.
                           </span>
                         </div>
                         <div className={styles.convoRow}>
                           <span className={`${styles.convoWho} ${styles.convoWhoAi}`}>Corvus</span>
                           <span className={styles.convoTextBright}>
-                            Done. Your bot is ready to test.
+                            Tamam. Botun test etmeye hazır.
                           </span>
                         </div>
                       </div>
                       <a href="#templates" className={styles.convoLink}>
-                        Browse templates
+                        Şablonlara göz at
                       </a>
                     </div>
                   </div>
@@ -488,15 +491,13 @@ export default function HomePage() {
         <section id="templates" className={styles.templates}>
           <div className={`${styles.templatesHead} ${styles.reveal}`}>
             <div>
-              <h2 className={`${styles.display} ${styles.templatesTitle}`}>
-                Start from a template
-              </h2>
+              <h2 className={`${styles.display} ${styles.templatesTitle}`}>Bir şablonla başla</h2>
               <p className={styles.templatesLede}>
-                Pick one, make it yours with plain-English tweaks, and test it before it goes live.
+                Birini seç, sade dille kendine uyarla ve yayına almadan önce test et.
               </p>
             </div>
             <a href="#pricing" className={`${styles.btnGhost} ${styles.ghostCta}`}>
-              <span>Templates preview — start free while in preview</span>
+              <span>Şablon önizlemesi — önizleme sürerken ücretsiz başla</span>
               <span className={styles.arrowGlyph} aria-hidden="true">
                 →
               </span>
@@ -526,35 +527,35 @@ export default function HomePage() {
                       <use href="#discordGlyph" />
                     </svg>
                     <div className={styles.tilePill}>
-                      <span>Template</span>
+                      <span>Şablon</span>
                     </div>
-                    <div className={`${styles.tileTag} ${styles.tileTagEmerald}`}>AUTOMOD</div>
+                    <div className={`${styles.tileTag} ${styles.tileTagEmerald}`}>OTOMOD</div>
                   </div>
                 </div>
 
                 <div className={styles.tBody}>
                   <div className={styles.tMeta}>
-                    <span>General & Gaming Guilds</span>
+                    <span>Genel ve Oyun Sunucuları</span>
                   </div>
                   <div className={styles.tTitleRow}>
-                    <h3 className={styles.tTitle}>Community Guardian</h3>
+                    <h3 className={styles.tTitle}>Mod Shield</h3>
                     <span className={styles.botBadge}>BOT</span>
                   </div>
                   <p className={styles.tDesc}>
-                    Blocks spam, filters toxic messages, stops raids, and keeps a log of what
-                    happened.
+                    Spam&rsquo;i engeller, zararlı mesajları süzer, baskınları durdurur ve neler
+                    olduğunu kaydeder.
                   </p>
                   <div className={styles.tagRow}>
-                    <span className={styles.tag}>#anti-spam</span>
-                    <span className={styles.tag}>#auto-mute</span>
-                    <span className={styles.tag}>#raid-shield</span>
+                    <span className={styles.tag}>#spam-engeli</span>
+                    <span className={styles.tag}>#oto-sustur</span>
+                    <span className={styles.tag}>#baskın-kalkanı</span>
                   </div>
                 </div>
               </div>
 
               <div className={styles.tFoot}>
                 <a href="/gallery" className={styles.tBtn}>
-                  <span>Use this template</span>
+                  <span>Bu şablonu kullan</span>
                 </a>
               </div>
             </article>
@@ -575,35 +576,35 @@ export default function HomePage() {
                       <use href="#discordGlyph" />
                     </svg>
                     <div className={styles.tilePill}>
-                      <span>Template</span>
+                      <span>Şablon</span>
                     </div>
-                    <div className={`${styles.tileTag} ${styles.tileTagSky}`}>SUPPORT</div>
+                    <div className={`${styles.tileTag} ${styles.tileTagSky}`}>DESTEK</div>
                   </div>
                 </div>
 
                 <div className={styles.tBody}>
                   <div className={styles.tMeta}>
-                    <span>SaaS & Commerce</span>
+                    <span>SaaS ve Ticaret</span>
                   </div>
                   <div className={styles.tTitleRow}>
-                    <h3 className={styles.tTitle}>AI Support Desk</h3>
+                    <h3 className={styles.tTitle}>Ticket Desk</h3>
                     <span className={styles.botBadge}>BOT</span>
                   </div>
                   <p className={styles.tDesc}>
-                    Answers common questions itself, opens private help threads for your staff, and
-                    saves transcripts.
+                    Sık sorulan soruları kendisi yanıtlar, ekibin için özel yardım başlıkları açar
+                    ve görüşme kayıtlarını saklar.
                   </p>
                   <div className={styles.tagRow}>
-                    <span className={styles.tag}>#ai-deflection</span>
-                    <span className={styles.tag}>#transcripts</span>
-                    <span className={styles.tag}>#private-threads</span>
+                    <span className={styles.tag}>#ai-yanıt</span>
+                    <span className={styles.tag}>#kayıtlar</span>
+                    <span className={styles.tag}>#özel-başlıklar</span>
                   </div>
                 </div>
               </div>
 
               <div className={styles.tFoot}>
                 <a href="/gallery" className={styles.tBtn}>
-                  <span>Use this template</span>
+                  <span>Bu şablonu kullan</span>
                 </a>
               </div>
             </article>
@@ -624,34 +625,35 @@ export default function HomePage() {
                       <use href="#discordGlyph" />
                     </svg>
                     <div className={styles.tilePill}>
-                      <span>Template</span>
+                      <span>Şablon</span>
                     </div>
-                    <div className={`${styles.tileTag} ${styles.tileTagRose}`}>ONBOARDING</div>
+                    <div className={`${styles.tileTag} ${styles.tileTagRose}`}>KARŞILAMA</div>
                   </div>
                 </div>
 
                 <div className={styles.tBody}>
                   <div className={styles.tMeta}>
-                    <span>Community & Social Clubs</span>
+                    <span>Topluluk ve Sosyal Kulüpler</span>
                   </div>
                   <div className={styles.tTitleRow}>
-                    <h3 className={styles.tTitle}>Welcome & Role Picker</h3>
+                    <h3 className={styles.tTitle}>Welcome Wagon</h3>
                     <span className={styles.botBadge}>BOT</span>
                   </div>
                   <p className={styles.tDesc}>
-                    Welcome images, button role menus, and a rules-accept step for new members.
+                    Karşılama görselleri, düğmeli rol menüleri ve yeni üyeler için kuralları kabul
+                    etme adımı.
                   </p>
                   <div className={styles.tagRow}>
-                    <span className={styles.tag}>#button-roles</span>
-                    <span className={styles.tag}>#rules-gate</span>
-                    <span className={styles.tag}>#welcome-canvas</span>
+                    <span className={styles.tag}>#düğmeli-roller</span>
+                    <span className={styles.tag}>#kural-kapısı</span>
+                    <span className={styles.tag}>#karşılama-görseli</span>
                   </div>
                 </div>
               </div>
 
               <div className={styles.tFoot}>
                 <a href="/gallery" className={styles.tBtn}>
-                  <span>Use this template</span>
+                  <span>Bu şablonu kullan</span>
                 </a>
               </div>
             </article>
@@ -665,20 +667,20 @@ export default function HomePage() {
                 }}
               >
                 <div className={styles.ctaTileInner}>
-                  <span className={styles.morePill}>More →</span>
+                  <span className={styles.morePill}>Daha fazla →</span>
                   <h3 className={`${styles.display} ${styles.ctaTileTitle}`}>
-                    See all 8 templates
+                    8 şablonun hepsini gör
                   </h3>
                 </div>
               </div>
               <div className={`${styles.tBody} ${styles.ctaTileBody}`}>
                 <p className={styles.tDesc}>
-                  From welcome bots to support desks - 8 templates to start from. Open the gallery.
+                  Karşılama botlarından destek masalarına - başlamak için 8 şablon. Galeriyi aç.
                 </p>
               </div>
               <div className={styles.tFoot}>
                 <a href="/gallery" className={styles.tBtn}>
-                  <span>Open gallery</span>
+                  <span>Galeriyi aç</span>
                 </a>
               </div>
             </article>
@@ -688,11 +690,11 @@ export default function HomePage() {
         <section id="pricing" className={styles.pricing}>
           <div className={`${styles.pricingHead} ${styles.reveal}`}>
             <h2 className={`${styles.display} ${styles.pricingTitle}`}>
-              Transparent pricing, no per-server fees
+              Şeffaf fiyatlandırma, sunucu başına ücret yok
             </h2>
             <p className={styles.pricingLede}>
-              One bot replaces the 4-5 bots you pay for on every server. Prices and limits are
-              planned — no checkout yet, nothing is enforced.
+              Tek bot, her sunucuda para ödediğin 4-5 botun yerini alır. Fiyatlar ve limitler planlı
+              — henüz ödeme alma yok, hiçbir şey uygulanmıyor.
             </p>
           </div>
 
@@ -701,89 +703,87 @@ export default function HomePage() {
               <div>
                 <div className={styles.priceHeadRow}>
                   <h3 className={styles.priceName}>Starter</h3>
-                  <span className={styles.priceFlag}>No Card Required</span>
+                  <span className={styles.priceFlag}>Kart Gerekmez</span>
                 </div>
                 <div className={styles.priceRow}>
                   <span className={`${styles.display} ${styles.priceValue}`}>$0</span>
-                  <span className={styles.pricePer}>/ free preview</span>
+                  <span className={styles.pricePer}>/ ücretsiz ön izleme</span>
                 </div>
                 <p className={styles.priceDesc}>
-                  Prices and limits are planned — the trial (1 bot, 100 AI credits) is enforced.
+                  Fiyatlar ve limitler planlı — deneme (1 bot, 100 AI kredisi) uygulanıyor.
                 </p>
                 <ul className={styles.priceList}>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 1 active production Discord bot
+                    Planlı: 1 aktif canlı Discord botu
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 1 connected Discord guild
+                    Planlı: 1 bağlı Discord sunucusu
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 100 AI credits - builds plus smart replies
+                    Planlı: 100 AI kredisi - kurulumlar ve akıllı yanıtlar
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: full access to all 8 starter templates
+                    Planlı: 8 başlangıç şablonunun tümüne tam erişim
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Community Discord support
+                    Topluluk Discord desteği
                   </li>
                 </ul>
               </div>
               <div>
                 <a href="/dashboard" className={`${styles.btnGhost} ${styles.priceCta}`}>
-                  Start building free
+                  Ücretsiz kurmaya başla
                 </a>
                 <p className={styles.priceNote}>
-                  Free 3-day trial — 1 bot, 100 AI credits, no card required.
+                  Ücretsiz 3 günlük deneme — 1 bot, 100 AI kredisi, kart gerekmez.
                 </p>
               </div>
             </div>
 
             <div className={`${styles.priceCardPopular} ${styles.reveal}`}>
-              <span className={styles.popularBadge}>Most Popular</span>
+              <span className={styles.popularBadge}>En Çok Tercih Edilen</span>
               <div>
                 <div className={styles.priceHeadRow}>
                   <h3 className={styles.priceName}>Corvus Pro</h3>
-                  <span className={`${styles.priceFlag} ${styles.priceFlagGreen}`}>
-                    Recommended
-                  </span>
+                  <span className={`${styles.priceFlag} ${styles.priceFlagGreen}`}>Önerilen</span>
                 </div>
                 <div className={styles.priceRow}>
                   <span className={`${styles.display} ${styles.priceValue}`}>$10</span>
-                  <span className={styles.pricePer}>/ month (planned)</span>
+                  <span className={styles.pricePer}>/ ay (planlı)</span>
                 </div>
                 <p className={styles.priceDesc}>
-                  Full capabilities for growing communities, gaming hubs, and multi-channel servers.
-                  Prices and limits are planned — nothing is enforced.
+                  Büyüyen topluluklar, oyun merkezleri ve çok kanallı sunucular için tüm yetenekler.
+                  Fiyatlar ve limitler planlı — hiçbir şey uygulanmıyor.
                 </p>
                 <ul className={`${styles.priceList} ${styles.priceListBright}`}>
                   <li className={`${styles.priceLi} ${styles.priceLiStrong}`}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 2 active production Discord bots
+                    Planlı: 2 aktif canlı Discord botu
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: up to 5 connected Discord guilds
+                    Planlı: en fazla 5 bağlı Discord sunucusu
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 2,000 AI credits (~1,800 builds)
+                    Planlı: 2.000 AI kredisi (~1.800 kurulum)
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: XP, roles and settings survive every restart
+                    Planlı: XP, roller ve ayarlar her yeniden başlatmadan sonra yaşar
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: stays online while you build - editing never takes it down
+                    Planlı: sen kurarken çevrimiçi kalır - düzenleme botu düşürmez
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Priority developer email & Discord support
+                    Öncelikli geliştirici e-posta ve Discord desteği
                   </li>
                 </ul>
               </div>
@@ -794,7 +794,7 @@ export default function HomePage() {
                   style={{ font: 'inherit', cursor: 'not-allowed' }}
                   className={`${styles.btnPrimary} ${styles.priceCtaPrimary}`}
                 >
-                  Pro — coming soon
+                  Pro — çok yakında
                 </button>
               </div>
             </div>
@@ -803,40 +803,40 @@ export default function HomePage() {
               <div>
                 <div className={styles.priceHeadRow}>
                   <h3 className={styles.priceName}>Corvus Studio</h3>
-                  <span className={styles.priceFlag}>Networks & Agencies</span>
+                  <span className={styles.priceFlag}>Ağlar ve Ajanslar</span>
                 </div>
                 <div className={styles.priceRow}>
                   <span className={`${styles.display} ${styles.priceValue}`}>$29</span>
-                  <span className={styles.pricePer}>/ month (planned)</span>
+                  <span className={styles.pricePer}>/ ay (planlı)</span>
                 </div>
                 <p className={styles.priceDesc}>
-                  For networks and agencies running many communities at once. Prices and limits are
-                  planned — nothing is enforced.
+                  Aynı anda çok sayıda topluluk yöneten ağlar ve ajanslar için. Fiyatlar ve limitler
+                  planlı — hiçbir şey uygulanmıyor.
                 </p>
                 <ul className={styles.priceList}>
                   <li className={`${styles.priceLi} ${styles.priceLiStrong}`}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 8 active production Discord bots
+                    Planlı: 8 aktif canlı Discord botu
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: up to 100 connected Discord guilds
+                    Planlı: en fazla 100 bağlı Discord sunucusu
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Planned: 6,000 AI credits per month
+                    Planlı: ayda 6.000 AI kredisi
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Test everything on a practice server first
+                    Önce her şeyi bir deneme sunucusunda test et
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Pre-flight checks before every publish
+                    Her yayından önce ön kontroller
                   </li>
                   <li className={styles.priceLi}>
                     <Check size={12} className={styles.priceCheck} aria-hidden="true" />
-                    Priority support when you need a human
+                    Bir insana ihtiyacın olduğunda öncelikli destek
                   </li>
                 </ul>
               </div>
@@ -846,7 +846,7 @@ export default function HomePage() {
                 style={{ font: 'inherit', cursor: 'not-allowed' }}
                 className={`${styles.btnGhost} ${styles.priceCta}`}
               >
-                Studio — coming soon
+                Studio — çok yakında
               </button>
             </div>
           </div>
@@ -854,9 +854,9 @@ export default function HomePage() {
 
         <section id="faq" className={styles.faq}>
           <div className={`${styles.faqHead} ${styles.reveal}`}>
-            <h2 className={`${styles.display} ${styles.faqTitle}`}>Frequently Asked Questions</h2>
+            <h2 className={`${styles.display} ${styles.faqTitle}`}>Sıkça Sorulan Sorular</h2>
             <p className={styles.faqLede}>
-              Everything you need to know about architecture, token security, and pricing.
+              Mimari, jeton güvenliği ve fiyatlandırma hakkında bilmen gereken her şey.
             </p>
           </div>
 
@@ -898,63 +898,67 @@ export default function HomePage() {
         <div className={styles.footerInner}>
           <div className={styles.footerTop}>
             <div className={styles.footerBrandCol}>
-              <a href="#top" className={styles.brand} aria-label="Corvus Home">
+              <a href="#top" className={styles.brand} aria-label="Corvus ana sayfa">
                 <BrandMark />
                 <span className={styles.footerBrandName}>CORVUS</span>
               </a>
               <p className={styles.footerTag}>
-                Build a Discord bot with plain words. No code. No token paste — we store your
-                bot&apos;s token encrypted.
+                Discord botunu sade sözlerle kur. Kod yok. Jeton yapıştırmak yok — botunun jetonunu
+                şifreli olarak saklarız.
               </p>
             </div>
 
             <div className={styles.footerCols}>
-              <nav aria-label="Product" className={styles.footerCol}>
-                <p className={styles.footerHeading}>Product</p>
+              <nav aria-label="Ürün" className={styles.footerCol}>
+                <p className={styles.footerHeading}>Ürün</p>
                 <a className={styles.footerLink} href="#how-it-works">
-                  How It Works
+                  Nasıl çalışır
                 </a>
                 <a className={styles.footerLink} href="#bento">
-                  Features
+                  Özellikler
                 </a>
                 <a className={styles.footerLink} href="#templates">
-                  Templates
+                  Şablonlar
                 </a>
                 <a className={styles.footerLink} href="#pricing">
-                  Pricing
+                  Fiyatlar
                 </a>
               </nav>
-              <nav aria-label="Resources" className={styles.footerCol}>
-                <p className={styles.footerHeading}>Learn</p>
+              <nav aria-label="Kaynaklar" className={styles.footerCol}>
+                <p className={styles.footerHeading}>Öğren</p>
                 <a className={styles.footerLink} href="#faq">
-                  FAQ
+                  SSS
                 </a>
                 <a className={styles.footerLink} href="#bento">
-                  Features
+                  Özellikler
                 </a>
                 <a className={styles.footerLink} href="#how-it-works">
-                  How it works
+                  Nasıl çalışır
                 </a>
               </nav>
-              <nav aria-label="Company" className={styles.footerCol}>
-                <p className={styles.footerHeading}>Company</p>
+              <nav aria-label="Şirket" className={styles.footerCol}>
+                <p className={styles.footerHeading}>Şirket</p>
                 <a className={styles.footerLink} href="/privacy">
-                  Privacy Policy
+                  Gizlilik Politikası
                 </a>
                 <a className={styles.footerLink} href="/terms">
-                  Terms of Service
+                  Kullanım Şartları
                 </a>
                 <a className={styles.footerLink} href="#top">
-                  Home
+                  Ana sayfa
                 </a>
-                <span className={styles.footerLink}>Community Discord</span>
-                <span className={styles.footerLink}>X (Twitter)</span>
+                {/* Inert until real community accounts exist: rendered with the
+                    non-interactive footerTag style, NOT footerLink, so no hover
+                    affordance implies a link that does not exist (page.test.tsx
+                    locks these as spans). */}
+                <span className={styles.footerTag}>Topluluk Discord</span>
+                <span className={styles.footerTag}>X (Twitter)</span>
               </nav>
             </div>
           </div>
 
           <div className={styles.footerBase}>
-            <p className={styles.copyright}>© 2026 Corvus. All rights reserved.</p>
+            <p className={styles.copyright}>© 2026 Corvus. Tüm hakları saklıdır.</p>
             <div className={styles.footerDotRow}>
               <span className={styles.footerDot} aria-hidden="true" />
             </div>

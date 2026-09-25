@@ -18,6 +18,7 @@ import { DatabaseNotConfiguredError, getPool, requireDatabaseUrl } from '../../.
 import { defaultSessionReader, type SessionReader } from '../../../../lib/interview/session-bind';
 import {
   CAPABILITY_MAP,
+  DEFAULT_CAPABILITIES,
   VALID_CAPABILITIES,
   capabilityBitfield,
   isCapability,
@@ -91,6 +92,145 @@ interface StartInput {
   capabilities?: unknown;
 }
 
+// --- Spec-derived capabilities + manifest command count (wave E6) ---
+//
+// DUPLICATION NOTE (orchestrator will unify): the kind→capability helper is
+// canonically owned by the invite route (sibling agent's job). This file keeps
+// a minimal local copy so preflight/start never imports route internals.
+// Likewise the manifest count mirrors
+// buildRegistry(FEATURE_MODULES).commands.size from the gateway — the web
+// package must not import gateway internals (no discord.js here; same reason
+// the publish route duplicates the translator contract inline), so the count
+// is mirrored as data with its derivation. If a gateway module gains or loses
+// a slash command, update REGISTRY_COMMAND_NAMES to match.
+
+// Normalized spec behavior kind -> invite capability. Covers the canonical
+// runtime names plus the translator's alias vocabulary (translator.ts
+// KIND_ALIASES), so derivation matches what publish actually lands as rows.
+// Kinds with no permission footprint (giveaway aside — see below, connector,
+// status) and still-unknown kinds map to null: skipped, never thrown.
+export function capabilityForKind(raw: unknown): Capability | null {
+  if (typeof raw !== 'string') return null;
+  switch (raw.trim().toLowerCase()) {
+    case 'welcome':
+    case 'greeting':
+    case 'onboarding':
+    case 'farewell':
+    case 'direct-message':
+    case 'direct_message':
+    case 'dm':
+      return 'welcome';
+    case 'moderation':
+    case 'filter':
+    case 'warn':
+    case 'warning':
+    case 'mute':
+    case 'warn-mute':
+    case 'warn_mute':
+    case 'timeout':
+    case 'verification':
+      return 'moderation';
+    case 'logging':
+    case 'appeal':
+    case 'message-log':
+    case 'message_log':
+    case 'messagelog':
+    case 'member-log':
+    case 'member_log':
+    case 'channel-log':
+    case 'channel_log':
+    case 'digest':
+      // Translator folds the log aliases into moderation ROWS, but for
+      // *permissions* they need the logging capability (ViewAuditLog, ...).
+      // 'appeal' reads as moderation in the translator yet is the log-every-
+      // action behavior, so it derives logging here: mod-shield's
+      // {filter, timeout, appeal, verification} set then unions to exactly the
+      // seed's {moderation, logging} capabilities.
+      return 'logging';
+    case 'tickets':
+    case 'ticket':
+    case 'panel':
+    case 'routing':
+    case 'transcript':
+    case 'sla':
+      return 'tickets';
+    case 'leveling':
+    case 'xp':
+    case 'rank-up':
+    case 'rank_up':
+    case 'rankup':
+    case 'level-up':
+    case 'leaderboard':
+    case 'rewards':
+    case 'earn':
+    case 'balance':
+    case 'shop':
+    case 'gamble':
+    case 'economy':
+      // 'economy' is a template category, not a behavior kind, but coin-cellar
+      // proves economy behaviors are xp-family: map it defensively.
+      return 'leveling';
+    case 'reaction-roles':
+    case 'reaction-role':
+    case 'reaction_role':
+    case 'picker':
+    case 'removal':
+    case 'groups':
+    case 'limits':
+      return 'reaction-roles';
+    case 'giveaway':
+    case 'giveaways':
+    case 'entry':
+    case 'reroll':
+    case 'requirements':
+      // No giveaway capability exists; the giveaway-grove seed proves these
+      // bots need exactly the welcome permission set, so derive that.
+      return 'welcome';
+    default:
+      return null;
+  }
+}
+
+// Derive the capability set from a draft-spec envelope
+// ({ version: 1, behaviors: [{ kind, ... }] }). Never throws: malformed
+// envelopes, non-object entries, and unmappable kinds yield fewer (possibly
+// zero) capabilities, never an exception. Order is VALID_CAPABILITIES order,
+// not spec order, so payloads are deterministic.
+export function capabilitiesFromSpec(spec: unknown): Capability[] {
+  if (typeof spec !== 'object' || spec === null || Array.isArray(spec)) return [];
+  const behaviors = (spec as Record<string, unknown>)['behaviors'];
+  if (!Array.isArray(behaviors)) return [];
+  const found = new Set<Capability>();
+  for (const entry of behaviors) {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue;
+    const cap = capabilityForKind((entry as Record<string, unknown>)['kind']);
+    if (cap !== null) found.add(cap);
+  }
+  return VALID_CAPABILITIES.filter((cap) => found.has(cap));
+}
+
+// Slash-command names composing the gateway registry manifest
+// (apps/gateway/src/runtime/feature-modules.ts FEATURE_MODULES via
+// buildRegistry in registry.ts): moderation [warn, timeout], xp
+// [rank, balance, leaderboard], giveaway [giveaway], connector [status
+// = CONNECTOR_STATUS_COMMAND], tickets [ticket = TICKET_COMMAND_NAME],
+// reaction-roles [role = ROLE_COMMAND_NAME]; welcome exposes events only.
+const REGISTRY_COMMAND_NAMES: readonly string[] = [
+  'warn',
+  'timeout',
+  'rank',
+  'balance',
+  'leaderboard',
+  'giveaway',
+  'status',
+  'ticket',
+  'role',
+];
+
+// The real manifest count the scanner compares the guild's live command count
+// against (replaces the required.length wrong-number defect).
+export const EXPECTED_COMMANDS = REGISTRY_COMMAND_NAMES.length;
+
 export async function POST(req: Request): Promise<NextResponse> {
   let session = null;
   try {
@@ -140,23 +280,52 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid guild id' }, { status: 422 });
   }
 
-  const caps: Capability[] = [];
-  if (Array.isArray(raw.capabilities)) {
-    for (const entry of raw.capabilities) {
-      if (typeof entry !== 'string' || !isCapability(entry)) {
-        return NextResponse.json(
-          { error: 'unknown capability', valid: [...VALID_CAPABILITIES] },
-          { status: 422 },
-        );
-      }
-      caps.push(entry);
+  // Capabilities resolution: explicit caller list wins (validated, current
+  // behavior preserved); when the caller omits it, derive from the bot's
+  // draft spec — the least-privilege set for what the bot actually does.
+  let caps: Capability[];
+  if (raw.capabilities === undefined) {
+    let latest: unknown;
+    try {
+      const specRow = await getPool().query<{ spec: unknown }>(
+        // Ownership is already proven above; this read only needs the spec.
+        // No account_id predicate: the caller already proved (botId,
+        // account_id) ownership, so re-filtering here adds nothing.
+        'SELECT spec FROM spec_versions WHERE bot_id = $1 ORDER BY version DESC LIMIT 1',
+        [botId],
+      );
+      latest = specRow.rows[0]?.spec;
+    } catch {
+      // A spec-read failure must not break scanning: fall through with
+      // latest undefined so the default below applies.
+      latest = undefined;
     }
-  }
-  if (caps.length === 0) {
-    return NextResponse.json(
-      { error: 'unknown capability', valid: [...VALID_CAPABILITIES] },
-      { status: 422 },
-    );
+    caps = capabilitiesFromSpec(latest);
+    if (caps.length === 0) {
+      // No draft yet, empty behaviors, or nothing mappable: the honest
+      // default (same set the invite route uses when no capabilities given).
+      caps = [...DEFAULT_CAPABILITIES];
+    }
+  } else {
+    const parsed: Capability[] = [];
+    if (Array.isArray(raw.capabilities)) {
+      for (const entry of raw.capabilities) {
+        if (typeof entry !== 'string' || !isCapability(entry)) {
+          return NextResponse.json(
+            { error: 'unknown capability', valid: [...VALID_CAPABILITIES] },
+            { status: 422 },
+          );
+        }
+        parsed.push(entry);
+      }
+    }
+    if (parsed.length === 0) {
+      return NextResponse.json(
+        { error: 'unknown capability', valid: [...VALID_CAPABILITIES] },
+        { status: 422 },
+      );
+    }
+    caps = parsed;
   }
 
   // Caller-supplied capabilities are mapped here through the REAL mapper —
@@ -195,7 +364,10 @@ export async function POST(req: Request): Promise<NextResponse> {
         required,
         bitfield,
         intents: PREFLIGHT_INTENTS,
-        expectedCommands: required.length,
+        // Real manifest size (buildRegistry(FEATURE_MODULES).commands.size),
+        // not required.length — the scanner compares this against the guild's
+        // live command count.
+        expectedCommands: EXPECTED_COMMANDS,
       },
       {
         singletonKey: `${botId}:${guildId}`,

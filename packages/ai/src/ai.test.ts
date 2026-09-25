@@ -123,10 +123,10 @@ describe('lane table (locked order)', () => {
     ]);
   });
 
-  it('orders persona grok first, then glm, then the openrouter fallback', () => {
+  it('orders persona glm first, then grok, then the openrouter fallback', () => {
     expect(LANES.persona.map((route) => route.label)).toEqual([
-      'wiro-grok-4-1-fast',
       'wiro-glm-5-2',
+      'wiro-grok-4-1-fast',
       'openrouter-glm-5.3-flash',
     ]);
   });
@@ -181,7 +181,7 @@ describe('chat routing', () => {
     expect(body.messages).toEqual([{ role: 'user', content: 'hi' }]);
   });
 
-  it('takes the persona lane first route with reasoning effort', async () => {
+  it('takes the persona lane first route with no reasoning effort', async () => {
     setFakeKeys();
     const { fetchFn, requests } = makeStubFetch([{ status: 200, body: okBody('yo') }]);
     const result = await chat({
@@ -190,11 +190,30 @@ describe('chat routing', () => {
       maxTokens: 6000,
       fetchFn,
     });
-    expect(result.model).toBe('xai/grok-4-1-fast');
+    expect(result.model).toBe('glm/5-2');
     expect(result.providerCostUsd).toBeNull();
+    /* Founder order 2026-09-21: persona defaults to GLM 5.2, which 400s on
+       reasoning_effort:'low' (probed live 2026-09-15), so the flag is omitted
+       — same handling as the builder glm route. */
+    expect(readJsonBody(requests[0].init).reasoning_effort).toBeUndefined();
+  });
+
+  it('keeps the D-114 reasoning flag on the persona grok fallback', async () => {
+    setFakeKeys();
+    const { fetchFn, requests } = makeStubFetch([
+      { status: 500, body: { error: 'glm down' } },
+      { status: 200, body: okBody('yo from grok') },
+    ]);
+    const result = await chat({
+      lane: 'persona',
+      messages: [{ role: 'user', content: 'yo' }],
+      maxTokens: 6000,
+      fetchFn,
+    });
+    expect(result.model).toBe('xai/grok-4-1-fast');
     /* D-114: the trace needs streamed reasoning, which grok only emits with
        the flag (probed live 2026-09-13). */
-    expect(readJsonBody(requests[0].init)).toMatchObject({ reasoning_effort: 'low' });
+    expect(readJsonBody(requests[1].init)).toMatchObject({ reasoning_effort: 'low' });
   });
 
   it('falls through 5xx to the next lane', async () => {

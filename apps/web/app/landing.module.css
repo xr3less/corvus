@@ -514,6 +514,7 @@
 @media (min-width: 640px) {
   .ctaRow {
     flex-direction: row;
+    align-items: flex-start;
   }
 }
 

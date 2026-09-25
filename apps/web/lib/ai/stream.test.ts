@@ -166,9 +166,13 @@ describe('chatStream', () => {
     expect(body.messages).toEqual(messages);
   });
 
-  it('requests reasoning on the persona lane so the trace has content', async () => {
+  it('requests reasoning on the persona grok fallback so the trace has content', async () => {
     setFakeKeys();
     const { fetchFn, requests } = makeStubFetch([
+      // Locked order: persona[0] is wiro glm/5-2 (no reasoning flag), grok is
+      // the fallback. Fail the glm route over so this test exercises the grok
+      // reasoning flag explicitly.
+      new Response('{}', { status: 500 }),
       responseFromEvents([
         delta({ role: 'assistant' }),
         delta({ reasoning: 'checking ' }),
@@ -182,7 +186,11 @@ describe('chatStream', () => {
       { t: 'content', text: 'hi' },
       { t: 'done', credits: 0, note: 'usage-unavailable' },
     ]);
-    const body = JSON.parse(String(requests[0].init?.body)) as Record<string, unknown>;
+    expect(requests).toHaveLength(2);
+    const firstBody = JSON.parse(String(requests[0].init?.body)) as Record<string, unknown>;
+    expect(firstBody).toMatchObject({ model: 'glm/5-2' });
+    expect(firstBody.reasoning_effort).toBeUndefined();
+    const body = JSON.parse(String(requests[1].init?.body)) as Record<string, unknown>;
     expect(body).toMatchObject({ model: 'xai/grok-4-1-fast', reasoning_effort: 'low' });
   });
 

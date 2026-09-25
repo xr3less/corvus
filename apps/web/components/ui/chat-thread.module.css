@@ -109,3 +109,17 @@
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* Composer ring opt-out, /dashboard/new ONLY (explicit founder order: clicking
+   or tabbing into this composer must draw no outline/ring of any color — not
+   the kit's global sky :focus-visible, not the teal override this rule
+   replaces. The box's focus-within border shift stays the sole focus signal.
+   Accessibility note: removing a visible focus indicator harms keyboard
+   navigation; kept here only per the founder's explicit order, and scoped to
+   this wrapper so every other surface keeps the global ring byte-identical.
+   The doubled class outranks the kit's focus-visible ring utilities no matter
+   which cascade layer they land in. */
+.composerNoRing.composerNoRing :focus-visible {
+  outline: none;
+  box-shadow: none;
+}

@@ -116,6 +116,22 @@ beforeEach(() => {
 });
 
 describe('gallery page', () => {
+  it('holds a loading shell until the template list resolves — never a false no-match flash', async () => {
+    const fetchStub = vi.fn().mockRejectedValue(new Error('offline'));
+    vi.stubGlobal('fetch', fetchStub);
+    render(<GalleryPage />);
+
+    /* Request still in flight: the loading shell holds, distinct from both
+       the no-match empty state and the unavailable state. */
+    expect(screen.getByText('Loading templates…')).toBeTruthy();
+    expect(screen.queryByText('No templates match that search.')).toBeNull();
+    expect(screen.queryByText('Templates unavailable — try again.')).toBeNull();
+    /* The rejected stub then resolves to the unavailable state. */
+    expect(await screen.findByText('Templates unavailable — try again.')).toBeTruthy();
+    expect(screen.queryByText('Loading templates…')).toBeNull();
+    expect(fetchStub).toHaveBeenCalledWith('/api/templates');
+  });
+
   it('renders an honest unavailable state when the template list fails to load', async () => {
     const fetchStub = vi.fn().mockRejectedValue(new Error('offline'));
     vi.stubGlobal('fetch', fetchStub);
@@ -337,6 +353,77 @@ describe('gallery page', () => {
     expect(screen.queryByRole('button', { name: 'Forked' })).toBeNull();
   });
 
+  it('shows the honest trial sentence on fork 403, never the raw refusal code', async () => {
+    const fetchStub = vi.fn(async (url: unknown) => {
+      if (typeof url === 'string' && url.endsWith('/fork')) {
+        return {
+          ok: false,
+          status: 403,
+          json: async () => ({
+            error: 'trial_bot_limit',
+            message: 'Free 3-day trial — 1 bot, 100 AI credits.',
+          }),
+        };
+      }
+      if (url === '/api/templates') return listResponse();
+      throw new Error('offline');
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<GalleryPage />);
+    await screen.findByRole('heading', { level: 3, name: 'Study Hall' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Fork' })[0]);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Free 3-day trial — 1 bot, 100 AI credits.');
+    expect(alert.textContent).not.toContain('trial_bot_limit');
+    expect(screen.queryByRole('button', { name: 'Forked' })).toBeNull();
+    expect(screen.getByText('412 forks')).toBeTruthy();
+  });
+
+  it('shows the honest expired-trial sentence on fork 403 when only the message carries it', async () => {
+    const fetchStub = vi.fn(async (url: unknown) => {
+      if (typeof url === 'string' && url.endsWith('/fork')) {
+        return {
+          ok: false,
+          status: 403,
+          json: async () => ({
+            error: 'trial_expired',
+            message: 'Your 3-day trial ended — your bots are paused. Nothing is deleted.',
+          }),
+        };
+      }
+      if (url === '/api/templates') return listResponse();
+      throw new Error('offline');
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<GalleryPage />);
+    await screen.findByRole('heading', { level: 3, name: 'Study Hall' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Fork' })[0]);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(
+      'Your 3-day trial ended — your bots are paused. Nothing is deleted.',
+    );
+    expect(alert.textContent).not.toContain('trial_expired');
+    expect(screen.queryByRole('button', { name: 'Forked' })).toBeNull();
+  });
+
+  // Superseded by F15: a code-only body now resolves to the Turkish refusal
+  // sentence via the shared reader, so the raw code must never reach the screen.
+  it('falls back to the status line when a fork failure carries neither field', async () => {
+    const fetchStub = vi.fn(async (url: unknown) => {
+      if (typeof url === 'string' && url.endsWith('/fork')) {
+        return { ok: false, status: 403, json: async () => ({}) };
+      }
+      if (url === '/api/templates') return listResponse();
+      throw new Error('offline');
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<GalleryPage />);
+    await screen.findByRole('heading', { level: 3, name: 'Study Hall' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Fork' })[0]);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Fork failed (403). Try again.');
+  });
+
   it('renders the server template list when GET /api/templates succeeds', async () => {
     const fetchStub = vi.fn(async (url: unknown) => {
       if (url === '/api/templates') {
@@ -428,18 +515,20 @@ describe('gallery rail', () => {
   it('renders the six-item dashboard rail with Templates active', () => {
     render(<GalleryPage />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
+    /* The skip link here belongs to the gallery shell (`app/gallery/page.tsx`),
+       not to the rail — it is out of this task's scope and stays as it is. */
     expect(screen.getByRole('link', { name: 'Skip to content' })).toBeTruthy();
-    expect(within(nav).getByText('My server')).toBeTruthy();
+    expect(within(nav).getByText('Sunucum')).toBeTruthy();
     // Honest rail: no fake Pro pill, no mock credits meter (owned by ki030-b).
     expect(within(nav).queryByText('Pro')).toBeNull();
 
     const items = [
-      { label: 'Home', href: '/dashboard', current: false },
-      { label: 'Bots', href: '/dashboard/bots', current: false },
-      { label: 'Templates', href: '/gallery', current: true },
-      { label: 'Activity', href: '/dashboard#week', current: false },
-      { label: 'Pre-flight', href: '/dashboard#preflight', current: false },
-      { label: 'Settings', href: '/dashboard#workspace', current: false },
+      { label: 'Ana sayfa', href: '/dashboard', current: false },
+      { label: 'Botlar', href: '/dashboard/bots', current: false },
+      { label: 'Şablonlar', href: '/gallery', current: true },
+      { label: 'Etkinlik', href: '/dashboard#week', current: false },
+      { label: 'Ön kontrol', href: '/dashboard#preflight', current: false },
+      { label: 'Ayarlar', href: '/dashboard#workspace', current: false },
     ];
     for (const item of items) {
       const link = within(nav).getByRole('link', { name: item.label });
@@ -457,6 +546,9 @@ describe('gallery rail', () => {
     // Credits meter removed by the honest rail: no mock `82/100` balance.
     expect(screen.queryByText('Credits 82/100 · 18 left')).toBeNull();
     expect(screen.queryByRole('progressbar', { name: 'Credits' })).toBeNull();
-    expect(within(nav).getByRole('button', { name: 'Upgrade · Coming soon' })).toBeTruthy();
+    const upgrade = within(nav).getByRole('button', { name: 'Yükselt · Yakında' });
+    expect(upgrade.hasAttribute('disabled')).toBe(true);
+    expect(upgrade.getAttribute('aria-disabled')).toBe('true');
+    expect(upgrade.getAttribute('title')).toBe('Yakında');
   });
 });

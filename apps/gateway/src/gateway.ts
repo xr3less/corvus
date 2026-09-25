@@ -165,6 +165,13 @@ export interface Gateway {
    */
   startAll(botIds: string[], load: (id: string) => Promise<BotConfig>): Promise<StartAllResult>;
   botIds(): string[];
+  /**
+   * Attaches the Wave E4 sleep/wake sweeper interval driver. The gateway owns
+   * only the handle lifecycle: attaching replaces (and stops) any previous
+   * handle, and shutdown() stops the current one. Sleep/wake decisions live
+   * in ./runtime/sweeper.ts — never here.
+   */
+  attachSweeper(handle: { stop(): void }): void;
 }
 
 interface BotEntry {
@@ -229,6 +236,14 @@ export function createGateway(options: GatewayOptions): Gateway {
   const destroyed = new Set<string>();
   const lifecycleListeners = new Set<LifecycleListener>();
   let shutDown = false;
+  // Wave E4: sleep/wake sweeper handle. The gateway only starts/stops it —
+  // decisions and SQL live in ./runtime/sweeper.ts.
+  let sweeper: { stop(): void } | null = null;
+
+  function attachSweeper(handle: { stop(): void }): void {
+    sweeper?.stop();
+    sweeper = handle;
+  }
 
   function emitLifecycle(botId: string, event: LifecycleEventName): void {
     // Snapshot the listeners so an unsubscribe during dispatch cannot skip a
@@ -481,6 +496,9 @@ export function createGateway(options: GatewayOptions): Gateway {
       return;
     }
     shutDown = true;
+    // Stop the sweeper interval first so no tick races teardown.
+    sweeper?.stop();
+    sweeper = null;
     let flushError: unknown;
     try {
       // Durability first: every write must be durable before any disconnect.
@@ -581,5 +599,6 @@ export function createGateway(options: GatewayOptions): Gateway {
     onLifecycle,
     startAll,
     botIds,
+    attachSweeper,
   };
 }

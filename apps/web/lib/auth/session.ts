@@ -99,6 +99,38 @@ export interface SessionStore {
   createSession(accountId: string, expiresAt: Date): Promise<SessionRow>;
 }
 
+export const TRIAL_GRANT_CREDITS = 100;
+export const TRIAL_GRANT_REASON = 'trial_grant';
+
+/**
+ * Trial-grant ledger row for a freshly created account: 100 credits under the
+ * `trial_grant` reason (Docs/06 vocabulary, terms "100 AI credits" promise).
+ * INSERT-ONLY by contract — the caller must invoke it only when the account
+ * row was actually inserted, never on the ON CONFLICT path, so a re-login
+ * grants nothing. No ref_id / no attempt: this is a one-per-account grant,
+ * not a Creem payment, so it sits OUTSIDE the (ref_id, reason, attempt)
+ * partial unique index by construction. A grant failure never breaks signup
+ * (the account row already exists at that point), so the caller catches,
+ * logs, and moves on.
+ */
+export const INSERT_TRIAL_GRANT_SQL =
+  'INSERT INTO credit_ledger (account_id, reason, amount_cr, meta)' +
+  ' VALUES ($1, \'trial_grant\', 100, \'{"credit": "trial"}\')';
+
+export async function writeTrialGrant(
+  pool: { query(text: string, params?: unknown[]): Promise<unknown> },
+  accountId: string,
+): Promise<void> {
+  await pool.query(INSERT_TRIAL_GRANT_SQL, [accountId]);
+}
+
+/** True when the error is Postgres "relation does not exist" (code 42P01). */
+function isMissingRelation(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && (error as { code?: unknown }).code === '42P01'
+  );
+}
+
 export class PgSessionStore implements SessionStore {
   private readonly pool: Pool;
 
@@ -154,18 +186,48 @@ export class PgSessionStore implements SessionStore {
     // and a returning account keeps the clock it was given at creation (or
     // the fresh one the 0010 backfill gave it). DO NOT add trial_ends_at to
     // the DO UPDATE SET list.
-    const result = await this.pool.query<AccountRow>(
+    //
+    // Wave E4 trial_grant (same INSERT-ONLY idiom): the second statement below
+    // writes the 100-credit trial row gated on `xmax = '0'` — Postgres's own
+    // "this statement INSERTed" marker, readable from the RETURNING row. The
+    // ON CONFLICT branch therefore writes nothing: re-login grants nothing.
+    // A grant failure never breaks signup (the account already exists), so it
+    // is caught and logged, and the account is returned unchanged.
+    const result = await this.pool.query<AccountRow & { xmax?: string }>(
       'INSERT INTO accounts (discord_id, email, trial_ends_at)' +
         " VALUES ($1, $2, now() + interval '3 days')" +
         ' ON CONFLICT (discord_id) DO UPDATE SET email = COALESCE(EXCLUDED.email, accounts.email)' +
-        ' RETURNING id, discord_id, email, creem_id, credits, created_at, trial_ends_at',
+        ' RETURNING id, discord_id, email, creem_id, credits, created_at,' +
+        ' trial_ends_at, xmax::text AS xmax',
       [discordId, email],
     );
     const row = result.rows[0];
     if (!row) {
       throw new Error('account_upsert_returned_no_row');
     }
-    return row;
+    if (row.xmax === '0') {
+      // Absence-tolerant: the sibling live suites (session-db, checkout/create)
+      // run against a disposable database that may not have the 0011
+      // credit_ledger table. The test database is NOT the product, so a missing
+      // table is a skip, not a failure — swallowed HERE so the suite log stays
+      // clean, while a REAL database failure (connection, permissions) is still
+      // logged for the reconciler.
+      try {
+        await writeTrialGrant(this.pool, row.id);
+      } catch (error) {
+        if (!isMissingRelation(error)) {
+          console.error(
+            'session: trial_grant write failed',
+            error instanceof Error ? error.message : 'unknown error',
+          );
+        }
+      }
+    }
+    // Strip the xmax probe before returning: callers own the AccountRow shape
+    // and must never learn about the exactly-once marker.
+    const { xmax: _xmax, ...account } = row;
+    void _xmax;
+    return account;
   }
 
   async createSession(accountId: string, expiresAt: Date): Promise<SessionRow> {

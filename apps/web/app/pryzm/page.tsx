@@ -227,7 +227,7 @@ const PRICING_PLANS: PricingPlan[] = [
     name: 'Trial',
     price: '$0',
     per: 'for 3 days',
-    blurb: 'Full Pro, free for 3 days.',
+    blurb: 'Pro features for 3 days — 1 bot, 100 credits.',
     cta: 'Start free',
     ctaId: 'pricing-trial-cta',
     popular: false,
@@ -920,7 +920,7 @@ export default function PryzmPage() {
             <p className={styles.eyebrow}>Pricing</p>
             <h2 className={`${styles.display} ${styles.sectionTitle}`}>Simple, honest pricing</h2>
             <p className={styles.pricingLead}>
-              Start with 3 days of full Pro free — no card required.
+              Start with 3 days of Pro features — 1 bot and 100 credits, no card required.
             </p>
           </div>
           <div className={`${styles.priceGrid} ${styles.priceGridThree}`}>

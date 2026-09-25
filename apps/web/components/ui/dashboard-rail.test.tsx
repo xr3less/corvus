@@ -52,17 +52,17 @@ describe('DashboardRail', () => {
   it('renders the workspace header and six links with the locked hrefs in order', () => {
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(within(nav).getByText('My server')).toBeTruthy();
+    expect(within(nav).getByText('Sunucum')).toBeTruthy();
     /* KI-030: no fake Pro pill — no visitor is shown a paid tier. */
     expect(within(nav).queryByText('Pro')).toBeNull();
 
     const expected: [string, string][] = [
-      ['Home', '/dashboard'],
-      ['Bots', '/dashboard/bots'],
-      ['Templates', '/gallery'],
-      ['Activity', '/dashboard#week'],
-      ['Pre-flight', '/dashboard#preflight'],
-      ['Settings', '/dashboard#workspace'],
+      ['Ana sayfa', '/dashboard'],
+      ['Botlar', '/dashboard/bots'],
+      ['Şablonlar', '/gallery'],
+      ['Etkinlik', '/dashboard#week'],
+      ['Ön kontrol', '/dashboard#preflight'],
+      ['Ayarlar', '/dashboard#workspace'],
     ];
     const list = railList();
     const links = within(list).getAllByRole('link');
@@ -76,6 +76,41 @@ describe('DashboardRail', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
+  it('renders no English rail copy — the shell speaks the owner language', () => {
+    render(<DashboardRail />);
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    /* Each of these was a live rail string before the Turkish pass; the sweep
+       fails if one comes back. Label-only: hrefs and the landmark name are
+       language-neutral and stay as they are. */
+    const ENGLISH_RESIDUE = [
+      'My server',
+      'Home',
+      'Bots',
+      'Templates',
+      'Activity',
+      'Pre-flight',
+      'Settings',
+      'Upgrade · Coming soon',
+      'Coming soon',
+      'Log out',
+      /* In-flight branch (dashboard-rail.tsx:99 idle/in-flight pair at HEAD was
+         'Logging out…' / 'Log out'). The sweep below only observes the idle
+         branch, so this entry guards the idle text while the dedicated
+         in-flight test pins the pending label. */
+      'Logging out…',
+    ];
+    const text = (nav.textContent ?? '').toLowerCase();
+    for (const residue of ENGLISH_RESIDUE) {
+      expect(text, `rail still shows English: ${residue}`).not.toContain(residue.toLowerCase());
+    }
+    /* The disabled Upgrade is still the honest one it was: never translated
+       into a live promise. */
+    const upgrade = within(nav).getByRole('button', { name: /yükselt/i });
+    expect(upgrade.hasAttribute('disabled')).toBe(true);
+    expect(upgrade.getAttribute('aria-disabled')).toBe('true');
+    expect(upgrade.getAttribute('title')).toBe('Yakında');
+  });
+
   it('renders the rail in its own Geist typeface regardless of ancestors', () => {
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
@@ -85,8 +120,10 @@ describe('DashboardRail', () => {
 
   it('marks Home current on /dashboard by pathname alone', () => {
     render(<DashboardRail />);
-    expect(screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBe('page');
-    expect(screen.getByRole('link', { name: 'Bots' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Ana sayfa' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(screen.getByRole('link', { name: 'Botlar' }).getAttribute('aria-current')).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
@@ -95,12 +132,12 @@ describe('DashboardRail', () => {
       mockPathname = path;
       const { unmount } = render(<DashboardRail />);
       expect(
-        screen.getByRole('link', { name: 'Bots' }).getAttribute('aria-current'),
-        `Bots should be current on ${path}`,
+        screen.getByRole('link', { name: 'Botlar' }).getAttribute('aria-current'),
+        `Botlar should be current on ${path}`,
       ).toBe('page');
       expect(
-        screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current'),
-        `Home should not be current on ${path}`,
+        screen.getByRole('link', { name: 'Ana sayfa' }).getAttribute('aria-current'),
+        `Ana sayfa should not be current on ${path}`,
       ).toBeNull();
       unmount();
     }
@@ -110,10 +147,10 @@ describe('DashboardRail', () => {
   it('marks Templates current on /gallery and never marks the anchor items', () => {
     mockPathname = '/gallery';
     render(<DashboardRail />);
-    expect(screen.getByRole('link', { name: 'Templates' }).getAttribute('aria-current')).toBe(
+    expect(screen.getByRole('link', { name: 'Şablonlar' }).getAttribute('aria-current')).toBe(
       'page',
     );
-    for (const label of ['Home', 'Bots', 'Activity', 'Pre-flight', 'Settings']) {
+    for (const label of ['Ana sayfa', 'Botlar', 'Etkinlik', 'Ön kontrol', 'Ayarlar']) {
       expect(
         screen.getByRole('link', { name: label }).getAttribute('aria-current'),
         `${label} should not be current on /gallery`,
@@ -128,23 +165,37 @@ describe('DashboardRail', () => {
     /* KI-030: CREDITS_USED/CREDITS_TOTAL must never render as a real balance. */
     expect(screen.queryByRole('progressbar', { name: 'Credits' })).toBeNull();
     expect(screen.queryByText(/credits/i)).toBeNull();
-    expect(within(nav).getByRole('button', { name: 'Upgrade · Coming soon' })).toBeTruthy();
+    expect(within(nav).getByRole('button', { name: 'Yükselt · Yakında' })).toBeTruthy();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('repro: rail Upgrade is honestly disabled with Coming soon', () => {
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    const upgrade = within(nav).getByRole('button', { name: /upgrade/i });
+    const upgrade = within(nav).getByRole('button', { name: /yükselt/i });
     expect(upgrade.hasAttribute('disabled')).toBe(true);
     expect(upgrade.getAttribute('aria-disabled')).toBe('true');
-    expect((upgrade.textContent ?? '').toLowerCase()).toContain('coming soon');
+    expect(upgrade.textContent ?? '').toContain('Yakında');
+  });
+
+  it('pins the in-flight logout label in Turkish while the request is pending', async () => {
+    /* The sweep above only observes the idle branch (loggingOut === false), so
+       the in-flight branch of dashboard-rail.tsx:99 needs its own assertion:
+       hold the logout POST open and read the pending label's exact bytes. */
+    vi.mocked(fetch).mockImplementationOnce(() => new Promise<Response>(() => {}));
+    render(<DashboardRail />);
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    fireEvent.click(within(nav).getByRole('button', { name: /çıkış yap/i }));
+    await waitFor(() => {
+      expect(within(nav).getByRole('button', { name: 'Çıkış yapılıyor…' })).toBeTruthy();
+    });
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('repro: rail Log out posts to the logout route and navigates home', async () => {
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    const logout = within(nav).getByRole('button', { name: /log\s?out/i });
+    const logout = within(nav).getByRole('button', { name: /çıkış yap/i });
     fireEvent.click(logout);
     await waitFor(() => {
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
@@ -161,11 +212,12 @@ describe('DashboardRail', () => {
     vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 500 } as Response);
     render(<DashboardRail />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    const logout = within(nav).getByRole('button', { name: /log\s?out/i });
+    const logout = within(nav).getByRole('button', { name: /çıkış yap/i });
     fireEvent.click(logout);
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeTruthy();
     });
+    expect(screen.getByRole('alert').textContent).toBe('Çıkış yapılamadı. Lütfen tekrar dene.');
     expect(mockAssign).not.toHaveBeenCalled();
   });
 });

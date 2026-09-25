@@ -8,8 +8,7 @@ out/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
-# Quarantined verbatim reference (D-058): byte-identical harvest, never reformatted.
-public/clone-pryzm/
+# Quarantined verbatim reference (D-058): retired 2026-09-20 — dir deleted (KI-011/D-126), pattern removed.
 # Knowingly-red taste/old files, EXCLUDED by decision (KI-019, amended 2026-09-18 / D-130).
 # Do not reformat: --write would also lowercase design-token hex in globals.css
 # (#FAFAFA -> #fafafa), which is unwanted churn. Enumerated explicitly, not globbed.

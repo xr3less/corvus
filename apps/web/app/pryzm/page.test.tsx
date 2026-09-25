@@ -243,8 +243,9 @@ describe('pryzm route (1:1 next port of the static clone)', () => {
     const sectionEl = section as HTMLElement;
     expect(sectionEl.getAttribute('id')).toBe('pricing');
     expect(sectionEl.textContent).toContain('Simple, honest pricing');
-    expect(sectionEl.textContent).toContain('Start with 3 days of full Pro free');
+    expect(sectionEl.textContent).toContain('Start with 3 days of Pro features');
     expect(sectionEl.textContent).toContain('no card required');
+    expect(sectionEl.textContent).not.toContain('full Pro');
     const trial = sectionEl.querySelector('[data-od-id="pricing-trial"]');
     const pro = sectionEl.querySelector('[data-od-id="pricing-pro"]');
     const studio = sectionEl.querySelector('[data-od-id="pricing-studio"]');
@@ -253,6 +254,7 @@ describe('pryzm route (1:1 next port of the static clone)', () => {
     expect(studio).not.toBeNull();
     expect(trial?.textContent).toContain('Trial');
     expect(trial?.textContent).toContain('$0');
+    expect(trial?.textContent).toContain('Pro features for 3 days');
     expect(trial?.textContent).toContain('1 bot for 1 server');
     expect(trial?.textContent).toContain('100 credits to spend on builds');
     expect(trial?.textContent).toContain('Every Pro feature unlocked');

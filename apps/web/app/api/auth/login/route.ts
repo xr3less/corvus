@@ -13,6 +13,9 @@ export async function GET(): Promise<NextResponse> {
     const state = await new PgOAuthStateStore(getPool()).mint();
     return NextResponse.redirect(buildAuthorizeUrl(state, config));
   } catch {
-    return NextResponse.redirect(new URL('/?error=login_unavailable', appBase()));
+    /* Sent to the dedicated failure surface rather than the homepage: nothing
+       on `/` reads `?error`, so the reason used to vanish. `/auth/error` has a
+       sentence for `login_unavailable` and a retry link back to this route. */
+    return NextResponse.redirect(new URL('/auth/error?error=login_unavailable', appBase()));
   }
 }

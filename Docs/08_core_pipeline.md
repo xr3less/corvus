@@ -2,19 +2,19 @@
 
 ## Status: DRAFT (filled 2026-09-07, locked D-006/D-007)
 
-> **DRIFT (2026-09-19, KI-031):** §1 glance is the worst lie in the docs — it still describes Discord.js codegen + a sandbox gate. Runtime is spec-as-data (D-012): builder writes fenced JSON, `parseSpec` stores it, sandbox is not built, gateway does **not** interpret `prod_spec` yet. Stage 2 body is closer to truth than the glance. Do not implement from §1. Detail: `Teknik_Borc/KI-031_docs-stale.md`.
-
 > The heart of the product: the main workflow that turns a user's input into the output they value, step by step. (Rename this doc to match the product if helpful, but keep the `08` number.) Document each stage so a reader without code access understands exactly how the product works end to end.
 
 ---
 
 ## 1. The pipeline at a glance (plain language)
 
-> LOCKED direction (D-005, D-006, 2026-09-07): the user describes the bot in plain English; Corvus turns it into a versioned behavior spec, generates Discord.js code with GLM 5.3 Flash, checks it in a sandbox, lets the user simulate + test in a test server, then publishes to the live server — and the user manages everything from the Corvus dashboard afterward. Full economics + V1 scope: `Marketing/corvus-model-and-pricing-2026-09-07.md`.
+> LOCKED direction (D-006, D-007, 2026-09-07; execution model D-012, live model D-026, 2026-09-08): the user describes the bot in plain English; Corvus drafts it into a versioned behavior-spec JSON, validates it with `parseSpec`, stores each version immutably, lets the user simulate the draft (keyword-overlap prototype, `simulateDraft` — word overlap, not execution, `packages/spec/src/simulate.ts:1-19`; no Discord calls, no state writes, `apps/web/app/api/simulate/route.ts:1-8`) + scan it with pre-flight, then publishes by repointing the bot's `prod_spec_id` — and the user manages everything from the Corvus dashboard afterward. No executable Discord.js is generated; the sandbox lint/auto-fix gate is OPEN (not built). Full economics + V1 scope: `Docs/Marketing/corvus-model-and-pricing-2026-09-07.md`.
 
 ```
-user words -> [ behavior spec (versioned draft) ] -> [ AI codegen (GLM 5.2 on wiro; Flash after balance) ] -> [ sandbox gate (lint + auto-fix, broken never ships) ] -> [ simulate + test guild ] -> [ pre-flight scan (Red blocks publish) ] -> [ publish ] -> live Discord bot (+ dashboard manage: edit, logs, analytics, rollback)
+user words -> [ behavior spec (versioned draft, parseSpec-validated JSON) ] -> [ AI spec-draft (wiro glm/5-2; Flash off-wiro after balance) ] -> [ simulate draft + pre-flight scan (Red blocks publish) ] -> [ publish pointer (prod_spec_id repoint + audit row) ] -> stored prod spec (+ dashboard manage: edit, logs, pre-flight, rollback)
 ```
+
+How the boxes map to code: `parseSpec` (`packages/spec/src/index.ts:18`) accepts only `{ version: 1, behaviors: [...] }` and throws on anything else; the builder worker (`apps/gateway/src/db/builder-runs.ts:10-14`) runs one metered builder-lane call, parses the model's fenced JSON block, and syncs a new `spec_versions` row + moves `bots.draft_spec_id` in one transaction (`apps/gateway/src/db/builder-runs.ts:204-211`); publish (`apps/web/app/api/spec/publish/route.ts:195-208`) only repoints `bots.prod_spec_id` and appends an `audit_events` row. `prod_spec_id` / `draft_spec_id` are opaque pointers with no FK (`apps/gateway/src/db/schema.ts:25-26`) — the gateway stores the pointer and does not interpret the spec at runtime (V1 executes no untrusted code, spec is data — `Docs/DECISIONS.md:315`; "nothing here executes bots", `packages/spec/src/simulate.ts:19`). Builder lane order is locked in `packages/ai/src/lanes.ts:46-59` (wiro `glm/5-2` first, D-026 at `Docs/DECISIONS.md:606-621`); GLM 5.3 Flash (`z-ai/glm-5.3-flash`) sits behind it as an off-wiro fallback (`packages/ai/src/lanes.ts:76-89`), never the primary.
 
 ---
 
@@ -30,19 +30,19 @@ One subsection per stage: input, output, mechanism, failure handling.
 - **Failure modes:** vague answer -> follow-up question + fixed-price quote before building; no silent live writes.
 - **Cost:** ~1.1 credits/run via router (provider-reported totals reconcile the meter; $0 while wiro balance lasts).
 
-### Stage 2 — Build (codegen + persistent state + self-healing runtime)
+### Stage 2 — Build (spec-draft + persistent state + self-healing runtime)
 
 - **Input:** approved behavior-spec draft.
-- **Output:** tested bot revision + migrated user data, running under supervision.
+- **Output:** new parseSpec-validated spec revision stored as an immutable `spec_versions` row with the bot's draft pointer moved (publish is a separate pointer move); the bot's persistent user data untouched, running under supervision.
 - **How:** builder lane (wiro `glm/5-2` per D-026; Flash off-wiro after balance) drafts versioned behavior-spec patches (fenced JSON, parseSpec-validated; brief-to-draft worker with ai_spend metering, D-128); sandbox lint/auto-fix gate OPEN (not built); per-bot PERSISTENT database (XP, warnings, economy balances, configs) that survives restarts, updates, and redeploys — data loss on restart is a launch-blocking defect class (founder directive D-007, proven by Wave C kill/storm tests); supervised runtime catches errors silently, retries/fixes in background, restarts without downtime — the user never sees a technical stack trace and never pays for platform-failure retries.
 - **Failure modes:** empty provider response -> free retry (not billed); billable response, even unparseable -> spend recorded + run failed honestly (D-128); runtime error -> silent catch + fix + resume, plain-language notice only if user action needed; restart -> state reloaded from persistent DB, zero XP/record loss.
 - **Cost:** covered by allowance model; platform failures cost the user $0.
 
 ### Stage 3 — Preview (live demo window + simulator, pre-install)
 
-- **Input:** staged bot revision.
-- **Output:** buyer confidence BEFORE install.
-- **How:** (a) public fake-Discord window on our site: visitor messages a scripted demo brain with honest preview labeling and watches replies in real time (conversion driver, D-007; AI persona + live discord.js hosting arrive later, V1-5 ships the prototype); (b) private draft simulator + test-guild trial for owners.
+- **Input:** staged spec revision (a draft `spec_versions` row behind `bots.draft_spec_id`).
+- **Output:** stored prod pointer + buyer confidence BEFORE install.
+- **How:** (a) public fake-Discord window on our site: visitor messages a scripted demo brain with honest preview labeling and watches replies in real time (conversion driver, D-007; AI persona + live discord.js hosting arrive later, V1-5 ships the prototype); (b) private draft simulator (word-overlap prototype, no execution — `packages/spec/src/simulate.ts:1-19`) + owner publish/rollback via the dashboard (`apps/web/app/api/spec/publish/route.ts:1-14`, `apps/web/app/api/spec/rollback/route.ts:1-15`; Red pre-flight rows block publish, rollback always works).
 - **Failure modes:** demo sandbox isolated from prod; abusive demo use rate-limited; demo resets hourly.
 
 ---

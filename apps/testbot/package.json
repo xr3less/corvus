@@ -1,0 +1,31 @@
+{
+  "name": "@corvus/testbot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone trial Discord bot (engine proof) — runs in the empty trial guild only; the gateway is untouched.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --check --ignore-unknown ."
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}

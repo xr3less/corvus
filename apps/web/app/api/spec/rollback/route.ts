@@ -6,8 +6,20 @@
 // lower than the current production version, and it has been moved by this
 // pair of routes before — proven by an audit_events row (action publish or
 // rollback) carrying the same version, with spec_versions.state as a
-// fallback. spec_versions rows are never mutated; rollback only repoints the
-// prod pointer and appends an audit_events row.
+// fallback. spec_versions rows are never mutated; rollback repoints the prod
+// pointer, rebuilds bot_runtime_config, and appends an audit_events row — all
+// three in one transaction.
+//
+// Runtime-row sync: a rollback must leave the database in the state a publish
+// of the target version would have left it. Repointing prod_spec_id alone is
+// not enough — the gateway attaches its feature modules solely from
+// bot_runtime_config (apps/gateway/src/runtime/boot-modules.ts:21-23
+// BOOT_CONFIG_SQL), so a pointer-only rollback would keep the live bot
+// executing the NEWER spec's welcome/moderation/xp/giveaway/connector
+// behavior while the dashboard reported the older version as production. The
+// translator is publish's own (imported below, never copied); only the
+// DELETE+INSERT that persists its output is mirrored, because publish's
+// syncRuntimeRows is module-private. Parity source: publish/route.ts:338-353.
 //
 // Rollback is never Red-blocked: recovery must always work, so a Red scan does
 // not refuse the move (04_design_language.md:71 — "rollback is safe"). The last
@@ -20,6 +32,19 @@ import { getPool, mapDbError, __setPool } from '../../../../lib/db/pool';
 import { defaultSessionReader } from '../../../../lib/interview/session-bind';
 import { isUuid } from '../../../../lib/editor/drafts';
 import { latestPreflightEnvelope } from '../../../../lib/spec/preflight';
+// The translator is REUSED, never copied: a second inline copy of the kind
+// vocabulary and alias table is exactly the drift that would let a rollback
+// write rows a publish would not. This route -> route import is deliberate
+// (lib/spec/preflight.ts was extracted for the Red-block *decision*, which
+// genuinely differs between the two routes; the row mapping does not) and it
+// creates no cycle — publish imports nothing from rollback. Flag: extract
+// translate + syncRuntimeRows into lib/spec/runtime-rows.ts (the way preflight
+// was extracted) and have both routes import from there.
+import {
+  defaultTranslateProdSpec,
+  type PublishTranslator,
+  type RuntimeRow,
+} from '../publish/route';
 
 export interface EditorSession {
   accountId: string;
@@ -46,6 +71,43 @@ export function __setSessionReader(reader: SessionReader): void {
 
 export function __resetSessionReader(): void {
   sessionReader = closedReader;
+}
+
+// Same injection seam publish exposes, bound to the SAME translator, so a test
+// can force the translation failure path and prove the whole transaction —
+// pointer, audit row, runtime rows — unwinds.
+let translator: PublishTranslator = defaultTranslateProdSpec;
+
+export function __setTranslator(fn: PublishTranslator): void {
+  translator = fn;
+}
+
+export function __resetTranslator(): void {
+  translator = defaultTranslateProdSpec;
+}
+
+// Full-sync write, mirroring publish's syncRuntimeRows (publish/route.ts:338-353)
+// statement for statement, inside the caller's transaction. DELETE first so
+// kinds the target version no longer carries cannot linger as stale rows — the
+// gateway would otherwise keep attaching a module the rolled-back spec never
+// described. The translator above is the single source of the kind/alias
+// contract, so only this DELETE+INSERT is duplicated; it stays byte-identical
+// to publish's on purpose, and the parity test in rollback.test.ts fails if the
+// two ever drift.
+async function syncRuntimeRows(
+  client: PoolClient,
+  botId: string,
+  rows: RuntimeRow[],
+): Promise<number> {
+  await client.query('DELETE FROM bot_runtime_config WHERE bot_id = $1', [botId]);
+  for (const row of rows) {
+    await client.query(
+      `INSERT INTO bot_runtime_config (bot_id, guild_id, kind, params, spec_version)
+       VALUES ($1, NULL, $2, $3::jsonb, $4)`,
+      [botId, row.kind, JSON.stringify(row.params), row.specVersion],
+    );
+  }
+  return rows.length;
 }
 
 function error(status: number, message: string, extra?: Record<string, unknown>): Response {
@@ -125,7 +187,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   let current: { version: number };
-  let target: { id: string; version: number; state: string | null };
+  let target: { id: string; version: number; state: string | null; spec: unknown };
   try {
     const currentRow = await pool.query<{ version: number }>(
       'SELECT version FROM spec_versions WHERE id = $1 AND bot_id = $2',
@@ -136,10 +198,15 @@ export async function POST(req: Request): Promise<Response> {
     }
     current = currentRow.rows[0];
 
-    const targetRow = await pool.query<{ id: string; version: number; state: string | null }>(
-      'SELECT id, version, state FROM spec_versions WHERE bot_id = $1 AND version = $2',
-      [botId, version],
-    );
+    const targetRow = await pool.query<{
+      id: string;
+      version: number;
+      state: string | null;
+      spec: unknown;
+    }>('SELECT id, version, state, spec FROM spec_versions WHERE bot_id = $1 AND version = $2', [
+      botId,
+      version,
+    ]);
     if (targetRow.rowCount !== 1) {
       return error(404, 'not found');
     }
@@ -222,6 +289,12 @@ export async function POST(req: Request): Promise<Response> {
        VALUES ($1, $2, $3, 'rollback', $4::jsonb)`,
       [session.accountId, botId, `owner:${session.discordId}`, detail],
     );
+    // Runtime-row sync, inside the same transaction and from the same spec row
+    // the pointer now names: a translation or row-sync failure throws into the
+    // catch below, unwinding the pointer move and the audit row — never a
+    // repointed pointer with the previous version's runtime rows still live.
+    const rows = translator(target.spec, botId, target.version);
+    await syncRuntimeRows(client, botId, rows);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK').catch(() => undefined);

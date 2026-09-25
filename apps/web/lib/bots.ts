@@ -28,10 +28,15 @@ export interface MockBot {
   servers?: number;
 }
 
+/* Owner-language labels (Turkish), matching the words the dashboard pages and
+   the sidebar rail already use: Canlı / Deneme / Çevrimdışı. Currently no page
+   imports this export (both bot surfaces keep a local copy), but it is a
+   user-facing constant in a user-facing file — one language, or the next
+   consumer imports an English pill by accident. */
 export const STATUS_LABEL: Record<BotStatus, string> = {
-  online: 'Live',
-  trial: 'Trial',
-  offline: 'Offline',
+  online: 'Canlı',
+  trial: 'Deneme',
+  offline: 'Çevrimdışı',
 };
 
 /* Offline needs the owner first, then trial, then live — stable within a group. */
@@ -47,14 +52,37 @@ export const MOCK_BOTS: MockBot[] = [
   { id: 'bot-3', name: 'Night Market mods', status: 'offline', members: 2013, servers: 2 },
 ];
 
-export const TRIAL_DEAL = 'Free 3-day trial — 1 bot, 100 AI credits.';
+/* Turkish wave (F5). The numbers are the enforced truth, not a promise:
+   3 days is the clock migration 0010 stamps (`interval '3 days'`), 1 is the
+   live-bot cap mintGate() below refuses on, and 100 is TRIAL_GRANT_CREDITS
+   (lib/auth/session.ts). Wording stays short and plain — one sentence, no
+   adjective doing a number's job. */
+export const TRIAL_DEAL = 'Ücretsiz 3 günlük deneme — 1 bot, 100 AI kredisi.';
 
-/* Shared KI-033 copy locks. Both strings are byte-level law from the SPEC;
-   they appear in API bodies and on screen, so they live here once rather than
-   being retyped (and drifting) per surface. */
+/* Shared KI-033 copy locks, now in Turkish. These appear in API bodies and on
+   screen, so they live here once rather than being retyped (and drifting) per
+   surface.
+
+   The two sentences below are byte-identical to the Turkish refusal table in
+   lib/http/refusal.ts (F15) for the same two codes. That is deliberate and
+   load-bearing: when a client shows the body's `message` it must read the same
+   words as when it falls back to the table for the bare code. One situation,
+   one text.
+
+   KNOWN DRIFT (reported, out of this task's scope): the English expired
+   sentence is still hard-coded in three route files that do NOT import this
+   module — app/api/builder/start/route.ts:42, app/api/chat/route.ts:88 and
+   app/api/builder/verdict/route.ts:89. Until those read this constant, the mint
+   path speaks Turkish and the build/chat path speaks English for the same
+   event. */
 export const TRIAL_EXPIRED_MESSAGE =
-  'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
-export const TRIAL_BOT_LIMIT_MESSAGE = 'Free 3-day trial — 1 bot, 100 AI credits.';
+  '3 günlük deneme süren bitti — botların duraklatıldı. Hiçbir şey silinmedi.';
+/* Defined ONCE from TRIAL_DEAL rather than retyped — the English pair was
+   byte-identical too, and this is the same situation seen from the mint path:
+   the refusal names the deal the person already has, and claims nothing more.
+   There is no delete-bot route and no checkout to send them to, so a "here is
+   the fix" clause would be a promise the product cannot keep. */
+export const TRIAL_BOT_LIMIT_MESSAGE = TRIAL_DEAL;
 
 /* --- Mint cap (KI-033) ---------------------------------------------------- */
 
@@ -157,28 +185,42 @@ export interface ActivityItem {
   time: string;
 }
 
-/* One builder run costs about this much; a simulation bills nothing. */
+/* One builder run costs about this much; a simulation bills nothing. The number
+   is deliberately UNCHANGED by the Turkish wave (pricing is not copy): the
+   detail page's composer note and the live activity feed both print 1.1, so a
+   different figure here would be a third, drifting number. */
 export const CREDITS_PER_CHANGE = 1.1;
 
+/* Example rows for the mock bots (compat-only, KI-030: no page renders these as
+   the account's activity). Turkish like the rest of the wave because the credit
+   suffix below is Turkish — an English verb welded to `· 1.1 kredi` would read
+   as two half-sentences. */
 export function activityFor(bot: MockBot): ActivityItem[] {
   const rows: { id: string; text: string; billed: boolean; time: string }[] = [
-    { id: `${bot.id}-a1`, text: `Published ${bot.name} v12`, billed: true, time: '2h ago' },
-    { id: `${bot.id}-a2`, text: 'Simulated welcome flow', billed: false, time: '5h ago' },
-    { id: `${bot.id}-a3`, text: `Rolled back ${bot.name} to v11`, billed: true, time: 'yesterday' },
-    { id: `${bot.id}-a4`, text: `Published ${bot.name} v11`, billed: true, time: '3d ago' },
+    { id: `${bot.id}-a1`, text: `${bot.name} v12 yayınlandı`, billed: true, time: '2 saat önce' },
+    { id: `${bot.id}-a2`, text: 'Karşılama akışı denendi', billed: false, time: '5 saat önce' },
+    { id: `${bot.id}-a3`, text: `${bot.name} v11'e geri alındı`, billed: true, time: 'dün' },
+    { id: `${bot.id}-a4`, text: `${bot.name} v11 yayınlandı`, billed: true, time: '3 gün önce' },
   ];
   return rows.map((row) => ({
     id: row.id,
     text: row.text,
-    suffix: row.billed ? ` · ${CREDITS_PER_CHANGE} credits` : ' · no charge',
+    /* Past tense, like the verbs above: a billed row names the figure it spent,
+       a simulation says plainly that it spent nothing. */
+    suffix: row.billed ? ` · ${CREDITS_PER_CHANGE} kredi` : ' · kredi harcamadı',
     time: row.time,
   }));
 }
 
+/* Example pre-flight rows (compat-only, like activityFor: the detail page's
+   panel renders live API rows, not these). Turkish for the same reason the
+   credit suffix is — an English row inside a Turkish panel is English residue
+   the moment any surface ever falls back to it. 'Jeton' is the word the landing
+   page already uses for a bot token. */
 export const PREFLIGHT_ROWS: { id: string; tone: 'pass' | 'warn'; text: string }[] = [
-  { id: 'pf-1', tone: 'pass', text: 'Token and permissions look right' },
-  { id: 'pf-2', tone: 'pass', text: 'Rate limits within caps' },
-  { id: 'pf-3', tone: 'warn', text: 'Welcome reply targets a hidden channel' },
+  { id: 'pf-1', tone: 'pass', text: 'Jetondaki izinler doğru görünüyor' },
+  { id: 'pf-2', tone: 'pass', text: 'İstek sınırları normal' },
+  { id: 'pf-3', tone: 'warn', text: 'Karşılama yanıtı gizli bir kanalı hedefliyor' },
 ];
 
 /* Kept exported for compat only (KI-030): no page renders these as a real
@@ -192,35 +234,49 @@ export function formatCount(value: number, singular: string, plural: string): st
 
 /* Example draft specs, one per mock bot, shaped for the real explain() builder
    (behaviors array of { kind, title?, detail?, channel?, count? }). These are
-   mock inputs only — the sentences on screen are produced live by explain(). */
+   mock inputs only — the sentences on screen are produced live by explain().
+
+   Live-surface status of the two text fields (checked, not assumed): explain()
+   reads `title` ONLY as a fallback label when `kind` is empty or unknown, and
+   every kind below is one explain() knows, so these strings never reach the
+   screen; they are translated for file-language coherence, not because they
+   render. `kind` and `channel` are deliberately NOT translated: `kind` is the
+   semantic signal explain() switches on, and `channel` names a real Discord
+   channel, so both are identifiers rather than copy (`explain.ts` prints the
+   channel verbatim into its sentence). */
 const MOCK_SPECS: Record<string, { version: 1; behaviors: Record<string, unknown>[] }> = {
   'bot-1': {
     version: 1,
     behaviors: [
       {
         kind: 'welcome',
-        title: 'Welcome new members',
-        detail: 'Say hi when someone joins',
+        title: 'Yeni üyeleri karşıla',
+        detail: 'Birisi katılınca merhaba de',
         channel: 'welcome',
       },
-      { kind: 'xp', title: 'XP for chatting', detail: 'Award points per message', count: 15 },
-      { kind: 'warn', title: 'Warn then mute', detail: 'Escalate repeat rule-breakers', times: 3 },
+      { kind: 'xp', title: 'Sohbete XP', detail: 'Her mesaj için puan ver', count: 15 },
+      {
+        kind: 'warn',
+        title: 'Önce uyar, sonra sustur',
+        detail: 'Tekrarlayan kural ihlalini kademelendir',
+        times: 3,
+      },
     ],
   },
   'bot-2': {
     version: 1,
-    behaviors: [{ kind: 'greeting', title: 'Greeting', detail: 'Say hi to new members' }],
+    behaviors: [{ kind: 'greeting', title: 'Karşılama', detail: 'Yeni üyelere merhaba de' }],
   },
   'bot-3': {
     version: 1,
     behaviors: [
       {
         kind: 'reaction-role',
-        title: 'Role menu',
-        detail: 'Members pick their roles',
+        title: 'Rol menüsü',
+        detail: 'Üyeler rollerini kendi seçer',
         channel: 'pick',
       },
-      { kind: 'auto-mod', title: 'Auto moderation', detail: 'Catch spam and links' },
+      { kind: 'auto-mod', title: 'Otomatik moderasyon', detail: 'Spam ve linkleri yakala' },
     ],
   },
 };

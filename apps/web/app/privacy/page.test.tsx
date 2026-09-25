@@ -99,12 +99,12 @@ describe('privacy policy page', () => {
 });
 
 describe('landing footer legal links', () => {
-  it('points Privacy Policy and Terms of Service at the real routes', () => {
+  it('points Gizlilik Politikası and Kullanım Şartları at the real routes', () => {
     render(<HomePage />);
-    expect(screen.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: 'Gizlilik Politikası' }).getAttribute('href')).toBe(
       '/privacy',
     );
-    expect(screen.getByRole('link', { name: 'Terms of Service' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: 'Kullanım Şartları' }).getAttribute('href')).toBe(
       '/terms',
     );
   });

@@ -2628,7 +2628,22 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 
 ### D-128 — Builder calls the real model: @corvus/ai shared lanes, metered brief-to-draft
 
-> **DRIFT (2026-09-19, KI-031):** this heading was empty; the 2026-09-15 body was spliced under D-129 (after the 2026-09-16 motor-hardening write-up). The D-128 body is the dated `2026-09-15` block currently sitting under D-129. Do not treat D-129 as the builder-real-model decision. Detail: `Teknik_Borc/KI-031_docs-stale.md`.
+- **Date:** 2026-09-15
+- **Decided by:** orchestrator (two-way engineering; founder ordered the real call, the method is technical)
+- **Door type:** two-way (reversible — additive package + worker logic, shims keep every consumer path stable)
+- **Type:** engineering
+
+**Context.** D-126 left the builder worker advancing phases with an explicit stub. Wiring the model raised the load-bearing question first: the lane table lived in the web app, and a second copy in the gateway would rot within weeks (the exact two-definitions drift L-005 exists to prevent). Reading the consumers settled the shape: only four lane files plus their tests, all portable (fetch-only, env keys read at call time).
+
+**Decision.** New @corvus/ai workspace (lanes/router/cost/builder-prompt moved verbatim + .js-suffix port, index re-export; web keeps one-line shims, zero consumer diffs; gateway + web depend on it; root ci builds it after spec). Worker generate: brief → builder lane (GLM 5-2 with grok fallback) → fenced JSON extract → parseSpec → artifact; sync: bots lookup + version INSERT + draft pointer + ai_spend INSERT in one transaction (rollback on any failure). Spend bills every provider response including parse failures (the money moved); RouterError bills nothing. Missing bot writes nothing. Two live findings closed in-wave: the prompt asked for "patch only" while the worker parses fenced spec (prompt fixed, one-liners intact, live loop PASS with a valid 2-behavior spec at $0.0035), and wiro glm/5-2 400s on reasoning_effort (probed: unsupported_capability → flag dropped on the builder glm route only, persona/grok untouched per D-114). Independent reviewer PASS; merged ai 34 + gateway 162 + web 451 green.
+
+**Why.** One lane definition means the next price/model change edits one table, not two. The probe-first fixes (prompt shape, 400 cause) cost $0.004 instead of a blind rewrite round.
+
+**Cost & risk.** Cost: 1 build + 1 fix + 1 micro-fix + 1 review, ~$0.004 live spend. Risk: sync write path proven on fake pool only (no PG here — CI service proves it live); concurrent runs race on MAX(version)+1 (loser fails sync_failed, no partial write); draft pointer is last-writer-wins (single-owner V1, noted).
+
+**Superseded by:** none
+
+> **Note (2026-09-20, KI-031 closeout):** this body sat under D-129 from 2026-09-15 until today; moved back under its own heading. D-129 below is unchanged.
 
 ### D-129 — Motor-hardening wave: audit + fix + seam-close (founder-ordered)
 
@@ -2644,21 +2659,6 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Why.** Every fixed defect was a silent-wrong shape (fake success, fake free, fake blank) — the class that green gates cannot see. Benchmark steals were reimplemented as ideas (licenses respected; GPL code never copied).
 
 **Cost & risk.** Cost: 11 agent rounds, $0 live spend (all hermetic; no PG/Discord reachable). Risk: new SQL (spent-sum, phase CASE) + ready-wait + budget gate are fake-pool proven only — first live PG run + first fleet-token run must confirm before strangers (carries KI-015/KI-017).
-
-- **Date:** 2026-09-15
-- **Decided by:** orchestrator (two-way engineering; founder ordered the real call, the method is technical)
-- **Door type:** two-way (reversible — additive package + worker logic, shims keep every consumer path stable)
-- **Type:** engineering
-
-**Context.** D-126 left the builder worker advancing phases with an explicit stub. Wiring the model raised the load-bearing question first: the lane table lived in the web app, and a second copy in the gateway would rot within weeks (the exact two-definitions drift L-005 exists to prevent). Reading the consumers settled the shape: only four lane files plus their tests, all portable (fetch-only, env keys read at call time).
-
-**Decision.** New @corvus/ai workspace (lanes/router/cost/builder-prompt moved verbatim + .js-suffix port, index re-export; web keeps one-line shims, zero consumer diffs; gateway + web depend on it; root ci builds it after spec). Worker generate: brief → builder lane (GLM 5-2 with grok fallback) → fenced JSON extract → parseSpec → artifact; sync: bots lookup + version INSERT + draft pointer + ai_spend INSERT in one transaction (rollback on any failure). Spend bills every provider response including parse failures (the money moved); RouterError bills nothing. Missing bot writes nothing. Two live findings closed in-wave: the prompt asked for "patch only" while the worker parses fenced spec (prompt fixed, one-liners intact, live loop PASS with a valid 2-behavior spec at $0.0035), and wiro glm/5-2 400s on reasoning_effort (probed: unsupported_capability → flag dropped on the builder glm route only, persona/grok untouched per D-114). Independent reviewer PASS; merged ai 34 + gateway 162 + web 451 green.
-
-**Why.** One lane definition means the next price/model change edits one table, not two. The probe-first fixes (prompt shape, 400 cause) cost $0.004 instead of a blind rewrite round.
-
-**Cost & risk.** Cost: 1 build + 1 fix + 1 micro-fix + 1 review, ~$0.004 live spend. Risk: sync write path proven on fake pool only (no PG here — CI service proves it live); concurrent runs race on MAX(version)+1 (loser fails sync_failed, no partial write); draft pointer is last-writer-wins (single-owner V1, noted).
-
-**Superseded by:** none
 
 ### D-130 — Seam-close wave: KI-020 ceiling + KI-021 consolidation + KI-014 wiring + live-probe (founder-delegated)
 
@@ -2973,5 +2973,99 @@ Independent reviewer: **PASS** (100% compliant, 0 TypeScript errors, 40/40 tests
 **Why.** Business terms: the site no longer sells a trial it cannot keep — the 3-day/1-bot/100-credit promise is now the actual behavior, and an expired trial meets a plain "paused, nothing deleted" message instead of a silent open door. Nothing was deleted, nobody was charged, no paywall was built that has no checkout behind it.
 
 **Cost & risk.** Cost: $0 (code only, no infra). Risk: an expired user who wants to pay has no checkout yet — that is the KI-035/billing decision, not a bug. Next: KI-031 bodies → founder Discord redirect click.
+
+**Superseded by:** none
+
+### D-146 — Persona answers as Corvus on GLM 5.2 (partially supersedes D-026)
+
+- **Date:** 2026-09-21
+- **Decided by:** founder (identity complaint: persona introduced itself as another provider)
+- **Door type:** two-way (reversible — lane order + prompt text, no product surface change)
+- **Type:** engineering
+
+**Context.** The site persona chat had no system prompt at all (route sent raw user messages) on the grok-first persona lane, so the model answered with its provider identity. Two agents added `packages/ai/src/persona-prompt.ts` (short Corvus identity, never-claim list, secrecy deflection, D-016-clean: zero platform/tenant context), prepended it in `POST /api/chat`, reordered persona to wiro `glm/5-2` first (no reasoning_effort, same probe handling as builder), and corrected the worst-case cost constant 0.5 → 4.4. Builder lane + builder prompt untouched — bench 10/10 + content 4/4 still stand.
+
+**Result.** Live-verified 2026-09-21 on local dev (dev-login session, founder-supplied WIRO key): identity question answered as Corvus in Turkish, reasoning streamed (D-114 trace intact), usage-unavailable → NULL spend row. 101 ai + 29 chat tests green.
+
+**Follow-up same night.** Live transcript showed the v1 prompt fixed identity but not behavior: persona asked language choice (Python vs JS), instructed token-take + self-invite via Developer Portal, offered to write code, used emojis. Prompt v2 adds the operating model (how-it-works + NEVER list + non-coder voice, ≤20 lines, all verbatim-tested, 109 ai tests green). Re-verified live with the same moderation brief: no language/token/invite/code, defaults proposed, draft + simulation offered. Builder untouched throughout.
+
+**Why.** A bot that introduces itself as another company product is a trust-killer on first contact; the fix is one static prompt + lane order, higher per-turn cost vs grok inside the same credit allowance.
+
+**Cost & risk.** Cost: ~$0.00 this call (provider reported no usage). Risk: persona turns cost more — watched via the same ai_spend meter; revert is one lane reorder.
+
+**Superseded by:** none
+
+### D-147 — /dashboard/new composer: no ring, type-while-streaming (founder-ordered)
+
+- **Date:** 2026-09-21
+- **Decided by:** founder (blue focus frame rejected on sight; wants typing open while the reply streams)
+- **Door type:** two-way (reversible — CSS + composer prop, one page only)
+- **Type:** engineering
+
+**Context.** Two complaints on the creation composer: a blue focus frame on click, and a fully locked box while waiting. The lock logic itself was proven correct (6 jsdom scenarios, lock clears on every terminal path) — the frame was the global sky ring. Fix: ring removed entirely on this composer (border-shift stays the only focus signal, recorded as an explicit founder override of 04 §7 in code); `inert`/dim lock replaced with send-only gating (type + chips work mid-stream, send button + Enter blocked, text preserved). Detail page untouched (prop-gated). Full web suite green (685 pass, 0 fail).
+
+**Why.** The founder could not tell the lock from the focus ring — both read as "broken". Typing while waiting keeps the flow; the disabled send button carries the state honestly.
+
+**Cost & risk.** Cost: $0. Risk: keyboard-only users lose the ring on this one surface (founder accepted); stale tabs need hard refresh (Ctrl+Shift+R) to see it.
+
+**Superseded by:** none
+
+### D-148 — Verdict-500 root cause + combo fix (founder-approved option (a), 2026-09-24)
+
+- **Date:** 2026-09-24
+- **Decided by:** orchestrator (engineering — founder: `Tamam onay veriyorum`, combo wave: 500-shape + language plumbing in ONE wave)
+- **Door type:** two-way (reversible — route-local `deriveLanguage` + closing user-turns, no API change)
+- **Type:** engineering
+
+**Context.** Talk-to-build asked "konuşarak bot yapabilir miyim" and answer was NO: every verdict died ~100ms with bare `could not judge reply`. Root cause adjudicated 0428 (`Agent Reports/2026-09-24-0428_recon-verdict500_REVIEW_verdict-500.md`): judge call posts system-only message array → provider contract never system/assistant-only → 400/1214 → bare catch discards → 500. Language-independent. Combo build (`Agent Reports/2026-09-24-1810_fixverdict_FIX_verdict-combo.md`) landed two fixes: (1) 500-shape — closing `'Follow the instructions above.'` user-turn on BOTH persona calls (judge 3-arg, brief 2-arg) + RouterError logged in catches; (2) language plumbing — route-local `deriveLanguage(planText,reply)` either-or on kept-ends views, Turkish when the visible Turkish half trips it, else English; English-thread prompt byte-identical (SHA256 `2176621d…931dc`, 453 chars). 4 pins ALL mutation-red; `packages/ai` zero bytes; fresh review PASS (`Agent Reports/2026-09-24-1830_reviewer_REVIEW_verdictcombo.md`) with D/E strengthening (misfire-lock + old-bytes/new-suite both directions; parallel-worker abort class unreproducible in 4 runs → harness-duty, non-blocking); verdict CLOSED (`Agent Reports/2026-09-24-1845_orchestrator_REVIEW_verdictcombo-verdict.md`). Gates: focused 41/41 + full web 925+73skip(998) + tsc/eslint/prettier 0.
+
+**Why.** Business terms: konuşarak bot yapma kapısı 500'le kapalıydı — düzelmeden canlı denemenin anlamı yoktu. Şimdi rotanın Türkçe/İngilizce kararını da veren, çökmeyen tek dalga indi; yarın canlı Türkçe deneme (§6) kapısı açık.
+
+**Cost & risk.** Cost: $0 (test-only, no live key spent). Risk: verdict "yes" path now truly reachable — live §6 gate MUST run with real key in founder's hands, orchestrator-only + founder watching, before any stranger claim (Hard Rules 4/12).
+
+**Superseded by:** none
+
+### D-149 — Thread-census scope: 4 LIVE + 1 DEAD, translation-wave boundary (orchestrator-saved, 2026-09-24)
+
+- **Date:** 2026-09-24
+- **Decided by:** orchestrator (engineering — scope ruling, founder decides the wave go/no-go)
+- **Door type:** two-way (reversible — inventory only, zero bytes changed)
+- **Type:** engineering
+
+**Context.** Five quoted residue/comment lines re-derived from disk (`Agent Reports/2026-09-24-1800_reconthread_REVIEW_thread-census.md`): `thread.ts:52→52-53`, `137→138`, `148→142+146` under `components/ui/`; 4 LIVE residue on the shared error-row channel (`chat-thread.tsx:36`: ERROR_RESIDUE + 401 recipes) + 1 DEAD page-input (`ATTACHMENTS_UNSUPPORTED` — composer gate, no page input, unit pin suffices). None in current sweeps; byte-locks (`thread.test.ts`, detail `:455`, server `route.ts:448`) must move WITH any translation (D-004 English-standing not re-litigated). Correction wave OPEN, needs founder file-boundary ruling (translation sweep + detail capsule + sibling-class edge).
+
+**Why.** Business terms: çeviri dalgasının sınırı belli — 4 canlı satırın testi kilidiyle birlikte taşınmalı, 1 ölü satıra dokunulmaz. Sınırsız çeviri testleri kırar.
+
+**Cost & risk.** Cost: $0 (read-only). Risk: a file-boundary-crossing translation sweep without the byte-locks green-locks breaks suites — wave stays OPEN until founder scopes it.
+
+**Superseded by:** none
+
+### D-150 — :523neg: vacuous thread-wide negative → scoped load-bearing :552 (2026-09-24)
+
+- **Date:** 2026-09-24
+- **Decided by:** orchestrator (engineering — standing negative-pin hygiene)
+- **Door type:** two-way (reversible — test-only, zero prod bytes)
+- **Type:** engineering
+
+**Context.** `:523` thread-wide `not.toContain('Düşünüyor')` was vacuous — no live turn on that render, so it could never redden. Fix (`Agent Reports/2026-09-24-1800_fix523_FIX_newpage-523neg.md`): scoped `:552` negative on a genuinely-live second turn (fresh stream + `/api/bots` delegating re-stub + settle-and-re-assert `:547-548`); `:522` pin + PARKED sweep + mint-once intact; 49/49. Fresh review PASS (`Agent Reports/2026-09-24-1900_reviewer_REVIEW_newpage-523neg.md`): every claim re-derived from disk (hash `4570CDF5…` pinned), load-bearing mutation independently reproduced in guarded out-of-repo copy (exclusivity defect → EXACTLY one red at `:552:40`; negative removed → 49 green = sole-catcher proof); Q1–Q3 AFFIRMED. CLOSED (`Agent Reports/2026-09-24-2000_orchestrator_REVIEW_523neg-verdict.md`). Standing harness rule: any `waitFor` used as the precondition for a *negative* assertion is unsound without settle-and-re-assert (transient render satisfied the wait, 49/49 green on broken bytes — fixed in-repo `:547-548`).
+
+**Why.** Business terms: bekçi-test gerçekten bekliyor artık — bozuk davranışta kırmızı, sağlamda yeşil. Kural kalıcı: negatif iddia öncesi bekleme tek başına yetmez, ikinci doğrulama şart.
+
+**Cost & risk.** Cost: $0 (test-only). Risk: none — prod hashes byte-identical ×4.
+
+**Superseded by:** none
+
+### D-151 — Live Turkish E2E deferred to tomorrow (founder-ordered 2026-09-24)
+
+- **Date:** 2026-09-24
+- **Decided by:** founder (`yarin yapariz simdilik dokumanlari doldur`)
+- **Door type:** two-way (reversible — scheduling only, no code)
+- **Type:** product
+
+**Context.** §6 gate (Turkish plan → `evet` → builder_runs + pg-boss + no double-run) needs: local PG + env wiring + dev server + founder-supplied real key in founder's hands, orchestrator-only + founder watching. Prereqs discovered read-only (Docker up, `corvus-dev-pg` Up, 16 tables, no journal; `.env` absent; WIRO_API_KEY present, DATABASE_URL/CORVUS_DEV_LOGIN missing). No migrate run (founder decision required first), no secret touched. Founder deferred live to tomorrow, ordered docs filled now.
+
+**Why.** Business terms: canlı deneme yarın birlikte — anahtar sende, ben yanında. Bu gece evrak kapanır, yarın tek kapı kalır.
+
+**Cost & risk.** Cost: $0 tonight (per-call billing hits only on the live run, founder's key). Risk: a verdict-yes path never exercised on the real provider until §6 runs — no stranger claim before it.
 
 **Superseded by:** none

@@ -47,6 +47,7 @@ COPY apps/web/next-env.d.ts apps/web/next-env.d.ts
 COPY apps/web/app apps/web/app
 COPY apps/web/components apps/web/components
 COPY apps/web/lib apps/web/lib
+COPY apps/web/proxy.ts apps/web/proxy.ts
 COPY apps/web/public apps/web/public
 
 # Order matters: @corvus/ai's sources import @corvus/spec, so spec's dist must

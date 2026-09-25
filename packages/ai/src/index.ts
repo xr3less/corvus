@@ -10,3 +10,4 @@ export * from './router.js';
 export * from './cost.js';
 export * from './budget.js';
 export * from './builder-prompt.js';
+export * from './persona-prompt.js';

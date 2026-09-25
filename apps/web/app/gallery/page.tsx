@@ -7,6 +7,7 @@
     Wrapped in the same left rail as /dashboard so the route reads as the app. */
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardRail } from '@/components/ui/dashboard-rail';
+import { forkErrorMessage } from '@/lib/http/refusal';
 import styles from './page.module.css';
 
 interface GalleryTemplate {
@@ -66,15 +67,14 @@ interface ForkFailure {
   loggedOut: boolean;
 }
 
-/* Non-401 fork failures surface the route's own error text; anything without
-   one degrades to the status line. */
-function forkErrorMessage(payload: unknown, status: number): string {
-  if (typeof payload === 'object' && payload !== null) {
-    const error = (payload as { error?: unknown }).error;
-    if (typeof error === 'string' && error !== '') return error;
-  }
-  return `Fork failed (${status}). Try again.`;
-}
+/* Refusal reader lives in lib/http/refusal.ts (shared forkErrorMessage
+   import above). Non-401 fork failures surface the route's own reason: a
+   KI-033 trial refusal arrives as { error: <code>, message: <the honest
+   sentence> } — the route writes both (/api/templates/[slug]/fork), so the
+   person reads the reason in words instead of a code like
+   'trial_bot_limit'. `message` is preferred for that reason; `error` stays
+   the fallback for the code-only shape, and a body with neither degrades to
+   the status line. */
 
 /* Discord glyph path ported 1:1 from the landing template cards (app/page.tsx)
    so the gallery tile centers the same mark. Defined once per page as a symbol. */
@@ -102,11 +102,13 @@ function toneForCategory(category: string): TileTone {
 export default function GalleryPage() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(ALL);
-  /* Live list, honest on failure: the grid starts empty and fills from
+  /* Live list, honest on failure: the grid starts unloaded and fills from
      GET /api/templates only on a fully valid 200 payload. Any failure
      (network, non-200, bad JSON, shape mismatch) renders the honest
-     unavailable state — never mock rows. */
-  const [templates, setTemplates] = useState<GalleryTemplate[]>([]);
+     unavailable state — never mock rows. `null` means "request in flight" so
+     the loading shell holds until the fetch resolves — never the no-match
+     empty state as a stand-in. */
+  const [templates, setTemplates] = useState<GalleryTemplate[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [forked, setForked] = useState<string[]>([]);
   const [forking, setForking] = useState<string[]>([]);
@@ -230,12 +232,12 @@ export default function GalleryPage() {
   }
 
   const categories = useMemo(
-    () => Array.from(new Set(templates.map((template) => template.category))),
+    () => Array.from(new Set((templates ?? []).map((template) => template.category))),
     [templates],
   );
 
   const needle = query.trim().toLowerCase();
-  const visible = templates.filter((template) => {
+  const visible = (templates ?? []).filter((template) => {
     const inCategory = category === ALL || template.category === category;
     const inSearch =
       needle === '' ||
@@ -260,7 +262,7 @@ export default function GalleryPage() {
           <header className={styles.head}>
             <h1 className={styles.title}>Templates</h1>
             <p className={styles.sub}>
-              Start from a template — describe the diff, then fork it to your bots.
+              Fork a template to your bots, then customize it with AI.
             </p>
           </header>
 
@@ -302,9 +304,13 @@ export default function GalleryPage() {
             </div>
           </section>
 
-          {loadFailed && templates.length === 0 ? (
+          {loadFailed && (templates === null || templates.length === 0) ? (
             <div className={styles.empty}>
               <p className={styles.emptyText}>Templates unavailable — try again.</p>
+            </div>
+          ) : templates === null ? (
+            <div className={styles.empty}>
+              <p className={styles.emptyText}>Loading templates…</p>
             </div>
           ) : visible.length === 0 ? (
             <div className={styles.empty}>
@@ -367,7 +373,11 @@ export default function GalleryPage() {
                               </span>
                             </div>
                             <div className={styles.tTitleRow}>
-                              <h3 className={styles.tTitle}>{template.name}</h3>
+                              <h3 className={styles.tTitle}>
+                                <a href={`/gallery/${encodeURIComponent(template.id)}`}>
+                                  {template.name}
+                                </a>
+                              </h3>
                               <span className={styles.botBadge}>BOT</span>
                             </div>
                             <p className={styles.cardDetail}>{template.detail}</p>
@@ -381,6 +391,10 @@ export default function GalleryPage() {
                                 {' · '}
                                 <a href={result.inviteUrl} target="_blank" rel="noopener">
                                   Add to Discord (shared test app)
+                                </a>
+                                {' · '}
+                                <a href={`/dashboard/bots/${result.botId}`}>
+                                  Customize with AI
                                 </a>
                               </p>
                             ) : null}
