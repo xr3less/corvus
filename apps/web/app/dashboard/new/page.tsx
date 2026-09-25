@@ -12,13 +12,20 @@
    (derived name) without blocking the chat turn (first turn streams with the
    current null id); the minted id is committed to state once no stream is in
    flight and passed to useChatStream, so turn two carries it.
-   Verdict auto-start (founder-locked 2026-09-22): no Build button, no
-   word-list matcher. When the newest judged user reply immediately follows
-   the plan ask line, the page POSTs { botId, turns } to
-   /api/builder/verdict exactly once. A `yes` with a runId renders the
-   EXISTING BuilderProgress inline plus the ?runId= link. `no`/`unclear` and
-   409 are no longer silent: each renders its own short Turkish line, so a
-   refused start is never something the person has to guess at. */
+   Verdict auto-start (founder-locked 2026-09-22; position-based since
+   2026-09-25): no Build button, no word-list matcher, no string gate at all.
+   The plan offer is a POSITION, not a sentence — when the newest judged user
+   reply is immediately preceded by an assistant turn, that assistant turn IS
+   the plan offer, so the page POSTs { botId, turns } to
+   /api/builder/verdict exactly once and lets the model's verdict object
+   decide. Nothing in this file reads the assistant's words: an English plan,
+   a Turkish plan, and a paraphrase approval ("baslat", "yap", "sen karar
+   ver") all take the same path, which is the whole point — a wording the
+   author did not anticipate used to leave the person typing into a dead
+   page. A `yes` with a runId renders the EXISTING BuilderProgress inline plus
+   the ?runId= link. `no`/`unclear` and 409 are no longer silent: each renders
+   its own short Turkish line, so a refused start is never something the
+   person has to guess at. */
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PromptInput } from '@/components/ui/ai-chat-input';
@@ -42,15 +49,14 @@ const SUGGESTIONS = ['Karşılama mesajı', 'Moderasyon kuralı', 'XP ödülleri
 const MINT_FALLBACK_ERROR = 'Botun kaydedilemedi. Sohbetin duruyor — tekrar dene.';
 const START_FALLBACK_ERROR = 'Kurulum başlatılamadı. Tekrar dene.';
 
-/* The server refused the verdict with 409 no_plan_asked: the last assistant
-   turn it read did not carry the ask line it matches (the route knows the
-   English line; a Turkish plan it cannot read comes back this way). The route
-   ships that sentence as `message` and the page prefers it, like every other
-   refusal here; this constant is the honest fallback for the older code-only
-   409 body, byte-identical to the route's own (NO_PLAN_MESSAGE) on purpose.
-   Either way the refusal is said out loud instead of swallowed. The remedy is
-   real: asking the assistant for the plan again posts it with the locked
-   English ask line, and the next short "evet" passes both gates. */
+/* The server refused the verdict with 409 no_plan_asked: the turns it read
+   carried no assistant turn at all, so there was nothing that could be a plan
+   offer. The route ships its sentence as `message` and the page prefers it,
+   like every other refusal here; this constant is the honest fallback for the
+   older code-only 409 body, byte-identical to the route's own
+   (NO_PLAN_MESSAGE) on purpose. Either way the refusal is said out loud
+   instead of swallowed. The remedy is real: ask the assistant for the plan,
+   then reply again — the next reply after an assistant turn is judged. */
 const PLAN_MISSING_MESSAGE =
   'Kurulum başlamadı — plan mesajı okunamadı. Asistandan planı yeniden iste, sonra kısaca “evet” yaz.';
 
@@ -61,52 +67,20 @@ const PLAN_MISSING_MESSAGE =
 const VERDICT_HINT =
   'Kurulum için onay gerekiyor — kısaca “evet” yaz ya da değiştirmek istediğin yeri yaz.';
 
-/* The plan ask lines the assistant can end a plan with: the English line the
-   persona prompt locks verbatim (`Can I start? Reply yes to build.`), plus the
-   Turkish forms it uses when it answers in the owner's language — a Turkish
-   plan the owner can plainly read used to close this path, because only the
-   English line was recognized and nothing told them why. Matching is
-   diacritic-folded, so the model's `Başlayayım mı?` and a keyboard's
-   `Baslayayim mi?` match the same question. */
-const ASK_LINES = ['Can I start?', 'Başlayayım mı?', 'Başlayalım mı?'];
-
-/* Turkish letters folded to their ASCII twins (lowercased first): 'İ' arrives
-   from toLowerCase() as 'i' plus a combining dot, so that dot is dropped too. */
-const TURKISH_FOLD: Record<string, string> = {
-  ı: 'i',
-  ş: 's',
-  ğ: 'g',
-  ç: 'c',
-  ö: 'o',
-  ü: 'u',
-  â: 'a',
-  î: 'i',
-};
-
-function foldTurkish(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\u0307/g, '')
-    .replace(/[ışğçöüâî]/g, (letter) => TURKISH_FOLD[letter] ?? letter);
-}
-
-/* True when an assistant turn carries any locked ask line. */
-function isPlanAsk(text: string): boolean {
-  const folded = foldTurkish(text);
-  return ASK_LINES.some((line) => folded.includes(foldTurkish(line)));
-}
+/* The plan offer is a POSITION, not a sentence: an assistant turn standing
+   immediately before the last user reply IS the offer, whatever words it used.
+   Nothing in this file reads the assistant's text — no ask line, no diacritic
+   folding, no substring search. The judge (the verdict route) is the only
+   reader of the words, and its verdict object decides. */
 
 /* Verdict turns tail: last VERDICT_TURNS_MAX rows mapped to role/content, each
    text capped via the shared kept-ends view (boundedTurn from
    lib/verdict/bounds.ts — text that already fits travels untouched, otherwise
    the middle is dropped behind the same marker the route writes, exactly `max`
-   chars; a head-only slice silently drops exactly what the route's ask-line
-   gate is about — the plan turn ENDS with the ask line — so a long plan used
-   to reach the route ask-line-less and come back 409 with nothing shown).
-   Sent ending at the judged user row — trailing post-yes assistant replies are
-   excluded so the server's last-assistant ask-line check sees the plan, not
-   the ack. Bounds live in lib/verdict/bounds.ts (single source of truth);
-   the only page-local names are the ask lines. */
+   chars; the kept-ends shape still matters because the route's judge reads the
+   plan's END). Sent ending at the judged user row — trailing post-yes assistant
+   replies are excluded so the turns the route reads end at the reply being
+   judged. Bounds live in lib/verdict/bounds.ts (single source of truth). */
 
 function deriveBotName(text: string): string {
   return text.trim().slice(0, 32).trim() || 'Adsız bot';
@@ -225,8 +199,9 @@ function NewBotPageInner() {
     }
   }, [streaming, pendingBotId, botId]);
 
-  /* Model-verdict auto-start: when the latest user reply immediately follows
-     the plan ask line, and the bot is saved, and no run exists yet, and no
+  /* Model-verdict auto-start: when the latest user reply is immediately
+     preceded by an assistant turn (that POSITION is the plan offer — its words
+     are never read), and the bot is saved, and no run exists yet, and no
      stream or verdict is in flight — POST { botId, turns } to
      /api/builder/verdict exactly once. `yes` + runId shows progress; `no` and
      `unclear` render the Turkish re-ask hint, 409 renders its own Turkish
@@ -275,7 +250,9 @@ function NewBotPageInner() {
     if (judgedUserIdRef.current === lastUser.id) return;
     if (verdictFailedUserIdRef.current === lastUser.id) return;
     const prev = messages[lastUserIdx - 1];
-    if (!prev || prev.role !== 'assistant' || !isPlanAsk(prev.text)) return;
+    /* Position is the offer: an assistant turn standing immediately before the
+       reply. No content check — any assistant wording qualifies. */
+    if (!prev || prev.role !== 'assistant') return;
     if (botId === null) return;
     buildingRef.current = true;
     judgedUserIdRef.current = lastUser.id;
@@ -302,8 +279,7 @@ function NewBotPageInner() {
              hand the raw code no_plan_asked to the screen for the older
              code-only body. The route's sentence wins when present; otherwise
              the page's own byte-identical sentence stands in. Swallowing this
-             was the defect — a Turkish plan the route's English ask-line gate
-             cannot read refused the start with nothing on screen at all. */
+             was the defect — a refusal with nothing on screen at all. */
           let message = PLAN_MISSING_MESSAGE;
           try {
             const data = (await response.json()) as { message?: unknown };
@@ -351,7 +327,7 @@ function NewBotPageInner() {
         /* M-8: a transport failure must not pin the judged row. The pin is set
            before the POST, so without this reset the still-eligible turn could
            never post again and "Try again" would describe an impossible remedy.
-           Clearing re-arms the same ask-line row for a fresh POST once the
+           Clearing re-arms the same eligible row for a fresh POST once the
            user sends the next turn; the failure marker holds this same row so
            settling alone does not re-post in a loop. */
         judgedUserIdRef.current = null;
@@ -422,20 +398,15 @@ function NewBotPageInner() {
     submit(value, attachments);
   }
 
-  /* Mint race: the plan adjacency holds but the bot id has not landed yet —
-     show the saving line and queue no POST. Derived (not state) so it clears
+  /* Mint race: the plan-offer position holds but the bot id has not landed yet
+     — show the saving line and queue no POST. Derived (not state) so it clears
      the moment the id commits. */
   let showSaving = false;
   if (botId === null && runId === null && !building && !streaming && messages.length > 0) {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       if (messages[i].role === 'user') {
         const before = messages[i - 1];
-        if (
-          before &&
-          before.role === 'assistant' &&
-          isPlanAsk(before.text) &&
-          judgedUserIdRef.current !== messages[i].id
-        ) {
+        if (before && before.role === 'assistant' && judgedUserIdRef.current !== messages[i].id) {
           showSaving = true;
         }
         break;

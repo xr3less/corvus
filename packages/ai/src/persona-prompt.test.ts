@@ -149,64 +149,62 @@ describe('buildPersonaPrompt trigger + slash rules (KI-036)', () => {
   });
 });
 
-describe('buildPersonaPrompt propose-then-ask (B-option C1)', () => {
-  it('contains the C1 ask line verbatim, plain variant', () => {
-    expect(buildPersonaPrompt()).toContain('Can I start? Reply yes to build.');
-  });
-
-  it('contains the C1 ask line verbatim, botName variant', () => {
-    expect(buildPersonaPrompt({ botName: 'StudyBuddy' })).toContain(
-      'Can I start? Reply yes to build.',
-    );
-  });
-
+describe('buildPersonaPrompt plan-offer then wait (intent-based start, 2026-09-25)', () => {
   it('states the at-most-2-3 question cap before the plan summary', () => {
     const prompt = buildPersonaPrompt();
     expect(prompt).toContain('After at most 2-3 short questions');
     expect(prompt).toContain('2-4 bullet plan summary');
   });
 
-  it('re-asks with the plan and the ask line when the owner signals acceptance', () => {
-    /* The dead-thread defect this guards: a pointer reply (the assistant's own
-       reply to a readiness signal) never carried `Can I start?`, the only
-       precondition the page's auto-start pipeline checks — so every following
-       `yes`, in Turkish or English, was rejected client-side with no verdict
-       POST and no visible result, and nothing ever re-emitted the ask line. */
+  it('waits for the owner reply in their own words after the plan', () => {
+    /* The loop defect this guards: a paraphrase approval ("baslat", "yap",
+       "sen karar ver") earned ANOTHER plan instead of reaching the verdict
+       judge, because two byte-exact ask-line gates had to match first. The
+       prompt now posts the plan once and waits — the owner's next reply is
+       judged for approval intent, in whatever words they use. */
     const prompt = buildPersonaPrompt();
-    expect(prompt).toContain('signals acceptance in any wording');
-    expect(prompt).toContain('post the 2-4 bullet plan AGAIN');
-    expect(prompt).toContain('product starts the build from the page');
-    expect(prompt).toContain('must appear in the reply to an acceptance signal itself');
+    expect(prompt).toContain("Then wait for the owner's reply in their own words");
+    expect(prompt).toContain('any clear approval starts the build from the page');
+    expect(prompt).toContain('you never start, run, or claim any build yourself');
   });
 
-  it('names the Turkish acceptance signal the owner actually types', () => {
-    /* The owner writes Turkish, so the rule names those signals too — a rule
-       that only said "yes" left `tamamdir basla` unruled. */
-    const prompt = buildPersonaPrompt();
-    expect(prompt).toContain('evet');
-    expect(prompt).toContain('tamamdir');
-    expect(prompt).toContain('basla');
-    expect(prompt).toContain('sen karar ver');
+  it('carries no ask-line contract in any language', () => {
+    /* The five strings the deleted string gates matched (founder-approved
+       removals). Assert the whole SET and its size: one surviving line would
+       re-open the loop with no error anywhere. */
+    const removed = [
+      'Can I start? Reply yes to build.',
+      'Baslayayim mi? Baslamak icin evet yaz.',
+      'Baslayayim mi?',
+      'Baslayalim mi?',
+      'yazman yeterli, ben baslatiyorum',
+    ];
+    expect(removed).toHaveLength(5);
+    for (const line of removed) {
+      expect(buildPersonaPrompt()).not.toContain(line);
+      expect(buildPersonaPrompt({ botName: 'StudyBuddy' })).not.toContain(line);
+    }
   });
 
-  it('hands off in plain words: a written confirmation is all it takes', () => {
-    /* The defect this guards: a reply that ends with the ask line but never says
-       what happens next left the owner asking the chat to start it — and any
-       reply that did not re-carry the ask line was rejected client-side, so the
-       thread died. The handoff sentence states the auto-start in words and never
-       names a control. */
+  it('re-asks nothing on an acceptance signal', () => {
+    /* Both copies of the ask line are gone, and so is the rule that emitted a
+       second one. Nothing in the prompt tells the chat to answer approval with
+       another plan. */
     const prompt = buildPersonaPrompt();
-    expect(prompt).toContain('a written confirmation is all it takes');
-    expect(prompt).toContain('starts the build from that reply');
-    expect(prompt).toContain('yazman yeterli, ben baslatiyorum');
+    expect(prompt).not.toContain('signals acceptance in any wording');
+    expect(prompt).not.toContain('post the 2-4 bullet plan AGAIN');
+    expect(prompt).not.toContain('final line is always this exact line');
+    expect(prompt).not.toContain('accept line');
+    expect(prompt).not.toContain('a written confirmation is all it takes');
   });
 
-  it('pins the re-ask line as a second byte-exact copy of the C1 ask line', () => {
-    /* Both copies are load-bearing: the page's adjacency gate and the route's
-       ask-line gate match that exact substring, so a reworded re-ask would
-       silently close the auto-start path again. */
-    const askLine = 'Can I start? Reply yes to build.';
-    expect(buildPersonaPrompt().split(askLine).length - 1).toBeGreaterThanOrEqual(2);
+  it('carries no acceptance-word list: the judge weighs words, not the chat', () => {
+    /* Wording belongs to the verdict prompt's Turkish guidance, which the
+       model-judged verdict consumes. A word list in the chat prompt is what
+       made a paraphrase approval fail in the first place. */
+    const prompt = buildPersonaPrompt();
+    expect(prompt).not.toContain('sen karar ver');
+    expect(prompt).not.toContain('tamamdir');
   });
 
   it('stays side-effect-free: never claims a build started or is done', () => {
@@ -268,6 +266,46 @@ describe('buildVerdictPrompt verdict judging', () => {
     const prompt = buildVerdictPrompt('plan', 'yes');
     expect(prompt).toContain('Never write code');
     expect(prompt).toContain('bot token');
+  });
+});
+
+describe('buildVerdictPrompt / buildBriefPrompt Turkish guidance', () => {
+  it('adds the Turkish approval-intent guidance for a Turkish thread', () => {
+    /* The whole point of intent-based start: the judge, not a word list, decides
+       what counts as approval. The guidance tells it a clear paraphrase such as
+       telling the assistant to proceed is a yes. */
+    const prompt = buildVerdictPrompt('plan', 'baslat', 'turkish');
+    expect(prompt).toContain('judge APPROVAL INTENT');
+    expect(prompt).toContain('not exact words');
+    expect(prompt).toContain('emit exactly {"verdict":"yes"}');
+    expect(prompt).toContain(
+      'a hedged, conditional, off-topic, or change-asking Turkish reply is unclear',
+    );
+  });
+
+  it('omits the Turkish guidance for an English thread', () => {
+    const prompt = buildVerdictPrompt('plan', 'yes', 'english');
+    expect(prompt).not.toContain('judge APPROVAL INTENT');
+  });
+
+  it('keeps the verdict tri-state shape intact in both languages', () => {
+    for (const language of ['english', 'turkish'] as const) {
+      const prompt = buildVerdictPrompt('plan', 'yes', language);
+      expect(prompt).toContain('{"verdict":"yes"|"no"|"unclear"}');
+      expect(prompt).toContain('EXACTLY one JSON object');
+    }
+  });
+
+  it('adds the Turkish brief guidance and keeps behavior-kind tokens English', () => {
+    const prompt = buildBriefPrompt('thread', 'turkish');
+    expect(prompt).toContain('write the requirement lines in Turkish');
+    expect(prompt).toContain('never translated');
+  });
+
+  it('omits the Turkish brief guidance for an English thread', () => {
+    expect(buildBriefPrompt('thread', 'english')).not.toContain(
+      'write the requirement lines in Turkish',
+    );
   });
 });
 

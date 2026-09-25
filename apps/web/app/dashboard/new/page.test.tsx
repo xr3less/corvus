@@ -79,19 +79,18 @@ const PARKED_RESIDUE: [string, string][] = [
 const MODEL_NAMES = ['Sonnet', 'GPT', 'Gemini', 'GLM', 'grok'];
 const TRIAL_EXPIRED_MESSAGE = 'Your 3-day trial ended — your bots are paused. Nothing is deleted.';
 
-/* The plan ask lines the page recognizes: the English line the persona prompt
-   locks, plus the Turkish forms the assistant uses when it answers in the
-   owner's language. The verdict auto-start only ever judges a user reply that
-   immediately follows an assistant turn carrying one of these. */
-const ASK_LINE = 'Can I start?';
-const ASK_LINE_TR = 'Başlayayım mı?';
-const ASK_LINE_TR_ASCII = 'Baslayayim mi?';
-const PLAN_REPLY = `Here is the plan: welcome plus XP roles. ${ASK_LINE}`;
+/* The plan offer is a POSITION, not a sentence: an assistant turn standing
+   immediately before the last user reply IS the offer, whatever words it used.
+   These fixtures therefore carry no ask line at all — a plain plan statement
+   and a plain approval are exactly the paraphrase case the string gates used
+   to miss, so every fixture here would have failed the old gates. */
+const PLAN_REPLY = 'Here is the plan: welcome plus XP roles.';
 /* The same plan as the owner actually reads it: the assistant answers in
-   Turkish and asks the question in Turkish. This turn closes the auto-start
-   path today — the page only recognized the English line, so the next reply
-   was never judged and nothing on screen said why. */
-const PLAN_REPLY_TR = `Plan şu: karşılama mesajı ve XP rolleri. ${ASK_LINE_TR}`;
+   Turkish. The page posts it byte-identically whatever language it is in. */
+const PLAN_REPLY_TR = 'Plan şu: karşılama mesajı ve XP rolleri.';
+/* Paraphrase approvals — the wordings the deleted ask-line gate could never
+   have matched, in the owner's own voice and in English. */
+const PARAPHRASE_APPROVALS = ['baslat', 'yap', 'sen karar ver', 'you decide'];
 const YES_REPLY = 'Yes, looks good';
 const EVET_REPLY = 'evet';
 const ACK_REPLY = 'Starting your build.';
@@ -252,8 +251,8 @@ interface SentTurn {
 /* The turns the page actually posted to /api/builder/verdict (the last call when
    the flow posted more than once), plus a pin on the POST shape ({ botId, turns }
    and nothing else). Absence of the call is itself a failure here: a request the
-   page never made cannot carry an ask line, so the assertions below fail rather
-   than pass vacuously. */
+   page never made cannot carry the judged reply, so the assertions below fail
+   rather than pass vacuously. */
 function sentTurns(stub: ReturnType<typeof vi.fn>, verdictCalls = 1): SentTurn[] {
   const calls = callsTo(stub, '/api/builder/verdict');
   expect(calls).toHaveLength(verdictCalls);
@@ -268,24 +267,25 @@ function sentTurns(stub: ReturnType<typeof vi.fn>, verdictCalls = 1): SentTurn[]
   return body.turns;
 }
 
-/* The turn the route's ask-line gate reads: the last assistant row in the tail. */
+/* The assistant turn the page judged against: the last assistant row in the
+   tail. Under the position rule this is the turn standing immediately before
+   the judged user reply — its words are never read by the page. */
 function lastAssistant(turns: SentTurn[]): SentTurn {
   const assistants = turns.filter((turn) => turn.role === 'assistant');
   expect(assistants.length).toBeGreaterThan(0);
   return assistants[assistants.length - 1];
 }
 
-/* A plan turn of exactly `total` chars whose END carries the ask line — the
-   shape the persona prompt produces and the shape a head-only slice destroys. */
-function longAskPlan(total: number, askLine = ASK_LINE): string {
+/* A plan turn of exactly `total` chars — plain prose with no ask line of any
+   kind, so nothing about the position rule depends on its wording. */
+function longPlan(total: number): string {
   const filler = 'Add a welcome message and XP roles for the study channel. ';
-  const head = filler.repeat(Math.ceil(total / filler.length)).slice(0, total - askLine.length);
-  return `${head}${askLine}`;
+  return filler.repeat(Math.ceil(total / filler.length)).slice(0, total);
 }
 
-/* Drives the exact plan -> yes flow the verdict effect watches for, and returns
-   the fetch stub once the verdict call has settled. `planReply` is the plan turn
-   the assistant streams. */
+/* Drives the exact plan -> approval flow the verdict effect watches for, and
+   returns the fetch stub once the verdict call has settled. `planReply` is the
+   plan turn the assistant streams. */
 async function drivePlanThenYes(
   planReply: string,
   verdictResponse: unknown = verdictYes('run-123'),
@@ -755,10 +755,10 @@ describe('new bot page', () => {
   });
 
   /* The refusal the page used to swallow: the route answers 409
-     { error: 'no_plan_asked' } when the assistant turn it read does not carry
-     the ask line it matches. Silence there meant a Turkish plan produced no
-     build, no error, no explanation — the person's "evet" looked ignored. The
-     page now names what happened, in Turkish, with no run and no link. */
+     { error: 'no_plan_asked' } when the turns it read carried no assistant turn
+     at all. Silence there meant a refused start with no build, no error, no
+     explanation — the person's reply looked ignored. The page now names what
+     happened, in Turkish, with no run and no link. */
   it('verdict 409 no-plan-asked shows the server’s Turkish sentence, no run', async () => {
     const fetchStub = await drivePlanThenYes(PLAN_REPLY, verdictConflict());
     await flushSettled();
@@ -787,48 +787,127 @@ describe('new bot page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
+  /* The position rule, stated positively: an assistant turn directly before the
+     reply is ALL it takes. Each plan below is an ordinary sentence with no ask
+     line, no question, no keyword — under the deleted string gate every one of
+     them would have been judged never, and the person's reply would have gone
+     nowhere. */
+  it.each([
+    'Here is the plan: welcome plus XP roles.',
+    'Plan şu: karşılama mesajı ve XP rolleri.',
+    'OK — I think that covers it.',
+    'Sure, drafting something now.',
+  ])('any assistant turn before the reply triggers the verdict: %s', async (plan) => {
+    const fetchStub = await drivePlanThenYes(plan);
+    const turns = sentTurns(fetchStub);
+    /* Byte-identical to the row the page holds: nothing is rewritten to
+       satisfy a gate that no longer exists. */
+    expect(lastAssistant(turns).content).toBe(plan);
+    const link = await screen.findByRole('link', { name: BUILD_LINK_NAME });
+    expect(link.getAttribute('href')).toBe('/dashboard?runId=run-123');
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  /* The founder-facing case the string gates missed: the owner approves in
+     their own words. The page posts the same { botId, turns } for every one of
+     these — the wording is the judge's business, not the page's. */
+  it.each(PARAPHRASE_APPROVALS)(
+    'a paraphrase approval (“%s”) is posted like any other reply',
+    async (approval) => {
+      const fetchStub = await drivePlanThenYes(PLAN_REPLY, verdictYes('run-123'), approval);
+      const turns = sentTurns(fetchStub);
+      expect(turns[turns.length - 1]).toEqual({ role: 'user', content: approval });
+      expect(lastAssistant(turns).content).toBe(PLAN_REPLY);
+      const link = await screen.findByRole('link', { name: BUILD_LINK_NAME });
+      expect(link.getAttribute('href')).toBe('/dashboard?runId=run-123');
+      expect(consoleError).not.toHaveBeenCalled();
+    },
+  );
+
+  /* The one turn the position rule does NOT judge: the very first user turn has
+     no assistant turn before it, so there is nothing that could be a plan
+     offer. (Every later turn is preceded by an assistant row, because the hook
+     always appends user-then-assistant — so "no predecessor" is the only
+     ineligible shape, and the server's zero-assistant-turns 409 is the
+     backstop for a direct caller.) */
+  it('the first user turn is never judged — no assistant turn precedes it', async () => {
+    const first = sseStream();
+    const second = sseStream();
+    const fetchStub = vi.fn();
+    let chatCalls = 0;
+    fetchStub.mockImplementation((url: string) => {
+      if (url === '/api/bots') return Promise.resolve(mintResponse(BOT_ID));
+      if (url === '/api/builder/verdict') return Promise.resolve(verdictYes('run-123'));
+      if (url.startsWith('/api/builder?runId=')) return Promise.resolve(builderPhase('queued'));
+      chatCalls += 1;
+      return Promise.resolve(streamResponse(chatCalls <= 1 ? first.stream : second.stream));
+    });
+    vi.stubGlobal('fetch', fetchStub);
+    render(<NewBotPage />);
+
+    /* Turn one: the only user row in the thread, nothing before it. Its reply
+       arrives and the page still posts nothing — the position does not hold. */
+    await submitCreation('A moderation helper');
+    await act(async () => {
+      first.push(frame({ t: 'content', text: 'What should it watch for?' }));
+      first.push(frame({ t: 'done', credits: 0.05 }));
+      first.close();
+    });
+    await waitFor(() => expect(screen.getByText('What should it watch for?')).toBeTruthy());
+    await flushSettled();
+    expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(0);
+
+    /* Turn two: its predecessor IS an assistant turn, so the position holds and
+       exactly one verdict posts. */
+    await submitCreation('Spam and slurs');
+    await act(async () => {
+      second.push(frame({ t: 'content', text: PLAN_REPLY }));
+      second.push(frame({ t: 'done', credits: 0.05 }));
+      second.close();
+    });
+    await waitFor(() => expect(screen.getByText(PLAN_REPLY)).toBeTruthy());
+    await waitFor(() => expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1));
+    const turns = sentTurns(fetchStub);
+    expect(turns[turns.length - 1]).toEqual({ role: 'user', content: 'Spam and slurs' });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
   /* The plan turn is an ordinary chat turn: POST /api/chat stores up to 2000
      chars of it, so the verdict POST must carry up to 2000 too. A head-only
-     slice lost the ask line that ENDS the plan, so a long plan reached the route
-     ask-line-less, answered 409, and the UI said nothing at all. */
+     slice dropped the plan's END, so a long plan reached the route truncated. */
   it.each([501, 1500, 2000])(
-    'a %i-char plan turn still sends the ask line that ends it',
+    'a %i-char plan turn is posted whole under the bound',
     async (planLength) => {
-      const plan = longAskPlan(planLength);
-      /* The precondition: this really is a plan whose ask line a head-only
-         slice at the old 500-char bound would have dropped. */
+      const plan = longPlan(planLength);
       expect(plan).toHaveLength(planLength);
-      expect(plan.endsWith(ASK_LINE)).toBe(true);
-      expect(plan.slice(0, 500)).not.toContain(ASK_LINE);
 
       const fetchStub = await drivePlanThenYes(plan);
       const turns = sentTurns(fetchStub);
-      expect(lastAssistant(turns).content).toContain(ASK_LINE);
+      expect(lastAssistant(turns).content).toBe(plan);
       expect(consoleError).not.toHaveBeenCalled();
     },
   );
 
   it('a plan turn capped at the bound keeps both ends, drops the middle, and never exceeds it', async () => {
-    const plan = longAskPlan(3000);
+    const plan = longPlan(3000);
     const fetchStub = await drivePlanThenYes(plan);
     const turns = sentTurns(fetchStub);
     const sent = lastAssistant(turns);
 
     /* Exactly the bound: the request cannot grow past what the route accepts. */
     expect(sent.content).toHaveLength(VERDICT_TURN_MAX);
-    /* Both ends survive — the ask line that ends the plan, and the head that
-       carries the plan's substance (to the char, at the head/tail boundary) —
-       with the middle dropped behind the same marker the route writes. */
+    /* Both ends survive — the plan's head and its end (which is where a person
+       and the judge both look for the conclusion) — with the middle dropped
+       behind the same marker the route writes. */
     const headLength = VERDICT_TURN_MAX - VERDICT_TURN_TAIL_MAX - TURN_ELLIPSIS.length;
     expect(sent.content.startsWith(plan.slice(0, headLength))).toBe(true);
     expect(sent.content.slice(headLength, headLength + TURN_ELLIPSIS.length)).toBe(TURN_ELLIPSIS);
     expect(sent.content.endsWith(plan.slice(-VERDICT_TURN_TAIL_MAX))).toBe(true);
-    expect(sent.content.endsWith(ASK_LINE)).toBe(true);
     expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('a turn that already fits the bound travels untouched — no marker, no padding', async () => {
-    const plan = longAskPlan(1200);
+    const plan = longPlan(1200);
     expect(plan).toHaveLength(1200);
     expect(plan).not.toContain('…');
     const fetchStub = await drivePlanThenYes(plan);
@@ -842,7 +921,7 @@ describe('new bot page', () => {
   it('a long plan turn reaches the verdict POST unchanged when it fits the bound', async () => {
     /* 2000 is the route's own TURN_MAX: the page must not shorten a turn the
        route would have accepted whole. */
-    const plan = longAskPlan(VERDICT_TURN_MAX);
+    const plan = longPlan(VERDICT_TURN_MAX);
     const fetchStub = await drivePlanThenYes(plan);
     const turns = sentTurns(fetchStub);
     expect(lastAssistant(turns).content).toBe(plan);
@@ -850,10 +929,9 @@ describe('new bot page', () => {
   });
 
   it('a long thread still sends exactly 12 turns, ending at the judged reply', async () => {
-    /* The 12-row tail bound is unchanged by the per-turn fix: a thread past 12
-       rows sends exactly 12, and they still END at the judged user row (the
-       route reads the last assistant turn for the ask line). Seven submissions
-       are 14 rows, so the tail has to drop the opening user row. */
+    /* The 12-row tail bound: a thread past 12 rows sends exactly 12, and they
+       still END at the judged user row. Seven submissions are 14 rows, so the
+       tail has to drop the opening user row. */
     const streams: ReturnType<typeof sseStream>[] = [];
     const fetchStub = vi.fn((url: string) => {
       if (url === '/api/bots') return Promise.resolve(mintResponse(BOT_ID));
@@ -870,7 +948,7 @@ describe('new bot page', () => {
       await submitCreation(`Idea number ${turn}`);
       await waitFor(() => expect(streams).toHaveLength(turn));
       const sse = streams[turn - 1];
-      const reply = `Plan for idea ${turn}. ${ASK_LINE}`;
+      const reply = `Plan for idea ${turn}.`;
       await act(async () => {
         sse.push(frame({ t: 'content', text: reply }));
         sse.push(frame({ t: 'done', credits: 0.05 }));
@@ -885,23 +963,20 @@ describe('new bot page', () => {
 
     const turns = sentTurns(fetchStub, TURNS - 1);
     expect(turns).toHaveLength(12);
-    expect(turns[0]).toEqual({ role: 'assistant', content: `Plan for idea 1. ${ASK_LINE}` });
+    expect(turns[0]).toEqual({ role: 'assistant', content: 'Plan for idea 1.' });
     expect(turns[11]).toEqual({ role: 'user', content: `Idea number ${TURNS}` });
-    expect(lastAssistant(turns).content).toContain(ASK_LINE);
+    expect(lastAssistant(turns).content).toBe(`Plan for idea ${TURNS - 1}.`);
     for (const turn of turns) {
       expect(turn.content.length).toBeLessThanOrEqual(VERDICT_TURN_MAX);
     }
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  /* The Turkish plan path. The assistant answers in the owner's language, so a
-     plan the owner can plainly read ends with a Turkish question. Before this,
-     the page recognized only the English ask line: the reply was never judged,
-     no verdict POST left, and the screen said nothing — the owner typed "evet"
-     and the product looked dead. Each accepted Turkish form drives the same
-     plan → evet flow, and the turns posted are byte-identical to what the model
-     wrote (nothing is rewritten to satisfy a gate). */
-  it.each([ASK_LINE_TR, ASK_LINE_TR_ASCII, 'Başlayalım mı?'])(
+  /* The Turkish path. The assistant answers in the owner's language; under the
+     position rule the language is irrelevant — the turn before the reply is
+     the offer, whatever it says. The turns posted are byte-identical to what
+     the model wrote. */
+  it.each([EVET_REPLY, 'tamam', 'başla'])(
     'a Turkish plan ending with %s starts the build on evet',
     async (askLine) => {
       const plan = `Plan şu: karşılama mesajı ve XP rolleri. ${askLine}`;
@@ -1036,9 +1111,10 @@ describe('new bot page', () => {
     const first = sseStream();
     const second = sseStream();
     const third = sseStream();
-    /* The ack re-arms adjacency (ask line again) so that the silence below
-       must come from the in-flight/building once-guard, not from adjacency. */
-    const reaskAck = 'Noted. Can I start?';
+    /* The turn below is POSITION-eligible by construction (an assistant turn
+       precedes it), so the silence must come from the in-flight/building
+       once-guard — not from eligibility. */
+    const midAck = 'Noted — still working on that.';
     let resolveVerdict: (value: unknown) => void = () => {};
     const verdictGate = new Promise((gate) => {
       resolveVerdict = gate;
@@ -1076,11 +1152,11 @@ describe('new bot page', () => {
     await waitFor(() => expect(callsTo(fetchStub, '/api/chat')).toHaveLength(2));
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(0);
     await act(async () => {
-      second.push(frame({ t: 'content', text: reaskAck }));
+      second.push(frame({ t: 'content', text: midAck }));
       second.push(frame({ t: 'done', credits: 0.05 }));
       second.close();
     });
-    await waitFor(() => expect(screen.getByText(reaskAck)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(midAck)).toBeTruthy());
     /* The first verdict is now in flight (building). A second yes streams… */
     await waitFor(() => expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1));
     await submitCreation('Also add XP roles');
@@ -1091,7 +1167,7 @@ describe('new bot page', () => {
     });
     await waitFor(() => expect(screen.getByText('On it.')).toBeTruthy());
     await flushSettled();
-    /* …and even with adjacency re-armed, no second verdict posts. */
+    /* …and even with an eligible turn streaming in, no second verdict posts. */
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
 
     await act(async () => {
@@ -1204,16 +1280,14 @@ describe('new bot page', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  /* M-8: a verdict transport failure clears the judged pin, so the next
-     eligible turn — a fresh user reply following the ask line — posts again
-     instead of staying dead. The middle turn (preceded by the ack, not the
-     ask line) still posts nothing: the retry comes from eligibility, not
-     from re-posting for rows that never qualified. */
+  /* M-8: a verdict transport failure clears the judged pin, so the NEXT user
+     turn posts again instead of staying dead. The row that died is held by the
+     failure marker, so settling alone never re-posts it in a loop: between the
+     failure and the next turn the POST count stays at 1. */
   it('a verdict transport failure retries on the next eligible turn', async () => {
     const first = sseStream();
     const second = sseStream();
     const third = sseStream();
-    const fourth = sseStream();
     const fetchStub = vi.fn();
     let chatCalls = 0;
     let verdictCalls = 0;
@@ -1234,8 +1308,7 @@ describe('new bot page', () => {
       chatCalls += 1;
       if (chatCalls === 1) return Promise.resolve(streamResponse(first.stream));
       if (chatCalls === 2) return Promise.resolve(streamResponse(second.stream));
-      if (chatCalls === 3) return Promise.resolve(streamResponse(third.stream));
-      return Promise.resolve(streamResponse(fourth.stream));
+      return Promise.resolve(streamResponse(third.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
     render(<NewBotPage />);
@@ -1261,43 +1334,35 @@ describe('new bot page', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toBe('Kurulum başlatılamadı. Tekrar dene.');
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
-    await flushSettled();
-
-    /* A middle turn preceded by the ack — not the ask line — judges nothing. */
-    const REASK = `Still ready when you are. ${ASK_LINE}`;
-    await submitCreation('Wait — add XP roles first');
-    await act(async () => {
-      third.push(frame({ t: 'content', text: REASK }));
-      third.push(frame({ t: 'done', credits: 0.05 }));
-      third.close();
-    });
-    await waitFor(() => expect(screen.getByText(REASK)).toBeTruthy());
+    /* Settling does not re-post for the row that already died. */
     await flushSettled();
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
 
-    /* The next user reply follows the ask line again: a fresh verdict posts
-       and the run lands. */
+    /* The next user turn posts again — the pin really was cleared, so the
+       failure is not a dead end. The run lands this time. */
     await submitCreation('Yes, start now');
     await act(async () => {
-      fourth.push(frame({ t: 'content', text: 'On it.' }));
-      fourth.push(frame({ t: 'done', credits: 0.05 }));
-      fourth.close();
+      third.push(frame({ t: 'content', text: 'On it.' }));
+      third.push(frame({ t: 'done', credits: 0.05 }));
+      third.close();
     });
     await waitFor(() => expect(screen.getByText('On it.')).toBeTruthy());
 
     const link = await screen.findByRole('link', { name: BUILD_LINK_NAME });
     expect(link.getAttribute('href')).toBe('/dashboard?runId=run-789');
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(2);
+    const turns = sentTurns(fetchStub, 2);
+    expect(turns[turns.length - 1]).toEqual({ role: 'user', content: 'Yes, start now' });
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  /* M-9: a failed build re-opens the run latch — a later eligible yes posts a
-     FRESH verdict and a fresh run starts. The first build's poll reaches
-     terminal `failed` (run-1 keeps rendering honest "Build failed"); the user
-     then sends a new eligible reply after the ask line and the page posts a
-     second verdict carrying the new row, landing run-2. The SAME failed row
-     never re-posts (loop guard = judged pin, same class as M-8's marker):
-     between failure and the fresh yes, verdict POSTs stay at 1. */
+  /* M-9: a failed build re-opens the run latch — a later turn posts a FRESH
+     verdict and a fresh run starts. The first build's poll reaches terminal
+     `failed` (run-1 keeps rendering honest "Build failed"); the page-owned
+     latch marks exactly that runId, so the next user turn posts a second
+     verdict carrying the new row and lands run-2. The SAME failed row never
+     re-posts (loop guard = judged pin, same class as M-8's marker): between
+     the failure and the fresh turn, verdict POSTs stay at 1. */
   it('a failed build lets a later yes post a fresh verdict and start a fresh run', async () => {
     const streams: ReturnType<typeof sseStream>[] = [];
     const fetchStub = vi.fn();
@@ -1333,7 +1398,7 @@ describe('new bot page', () => {
     vi.stubGlobal('fetch', fetchStub);
     render(<NewBotPage />);
 
-    /* Turn 1: description → plan with the ask line. */
+    /* Turn 1: description → plan. */
     await submitCreation('A moderation helper');
     await act(async () => {
       streams[0].push(frame({ t: 'content', text: PLAN_REPLY }));
@@ -1361,23 +1426,12 @@ describe('new bot page', () => {
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
     failFirstBuilderPoll = false;
 
-    /* Turn 3: a fresh eligible reply after the ask line — a FRESH verdict
-       posts and the fresh run lands. */
-    const REASK = `Still ready when you are. ${ASK_LINE}`;
-    await submitCreation('Fine — try the build again');
-    await act(async () => {
-      streams[2].push(frame({ t: 'content', text: REASK }));
-      streams[2].push(frame({ t: 'done', credits: 0.05 }));
-      streams[2].close();
-    });
-    await waitFor(() => expect(screen.getByText(REASK)).toBeTruthy());
-    await flushSettled();
-
+    /* Turn 3: a fresh reply — a FRESH verdict posts and the fresh run lands. */
     await submitCreation('Yes, start fresh');
     await act(async () => {
-      streams[3].push(frame({ t: 'content', text: 'On it.' }));
-      streams[3].push(frame({ t: 'done', credits: 0.05 }));
-      streams[3].close();
+      streams[2].push(frame({ t: 'content', text: 'On it.' }));
+      streams[2].push(frame({ t: 'done', credits: 0.05 }));
+      streams[2].close();
     });
     await waitFor(() => expect(screen.getByText('On it.')).toBeTruthy());
 
@@ -1403,10 +1457,12 @@ describe('new bot page', () => {
   /* M-9 follow-up: the per-runId failure marker must not leak across a runId
      change. The page-owned poll still shows run-1's terminal `failed` at the
      commit where run-2 lands; that stale phase must not mark run-2 failed.
-     While run-2 is live (non-terminal poll), a further eligible yes posts
-     nothing and the run stays run-2 — held by the run gate, not just the
-     judged pin (the yes below is a NEW user row, so the pin cannot hold it). */
-  it('a live second run keeps the run gate closed for a further eligible yes', async () => {
+     While run-2 is live (non-terminal poll), a further POSITION-ELIGIBLE turn
+     posts nothing and the run stays run-2 — held by the run gate, not just the
+     judged pin (the turn below is a NEW user row, so the pin cannot hold it).
+     Under the position rule this is the sharper form of the assertion: the
+     turn is eligible by construction, so only the run gate can hold it. */
+  it('a live second run keeps the run gate closed for a further eligible turn', async () => {
     const streams: ReturnType<typeof sseStream>[] = [];
     const fetchStub = vi.fn();
     let verdictCalls = 0;
@@ -1441,7 +1497,7 @@ describe('new bot page', () => {
     vi.stubGlobal('fetch', fetchStub);
     render(<NewBotPage />);
 
-    /* Turn 1: description → plan with the ask line. */
+    /* Turn 1: description → plan. */
     await submitCreation('A moderation helper');
     await act(async () => {
       streams[0].push(frame({ t: 'content', text: PLAN_REPLY }));
@@ -1469,56 +1525,31 @@ describe('new bot page', () => {
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
     failFirstBuilderPoll = false;
 
-    /* Turns 3-4: a fresh eligible reply after the ask line — a FRESH verdict
-       posts and the fresh run lands. */
-    const REASK = `Still ready when you are. ${ASK_LINE}`;
-    await submitCreation('Fine — try the build again');
+    /* Turn 3: a fresh reply — a FRESH verdict posts and run-2 lands. */
+    await submitCreation('Yes, start fresh');
     await act(async () => {
-      streams[2].push(frame({ t: 'content', text: REASK }));
+      streams[2].push(frame({ t: 'content', text: 'On it.' }));
       streams[2].push(frame({ t: 'done', credits: 0.05 }));
       streams[2].close();
     });
-    await waitFor(() => expect(screen.getByText(REASK)).toBeTruthy());
-    await flushSettled();
-
-    await submitCreation('Yes, start fresh');
-    await act(async () => {
-      streams[3].push(frame({ t: 'content', text: 'On it.' }));
-      streams[3].push(frame({ t: 'done', credits: 0.05 }));
-      streams[3].close();
-    });
     await waitFor(() => expect(screen.getByText('On it.')).toBeTruthy());
-
     await waitFor(() => expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(2));
     const freshLink = await screen.findByRole('link', { name: BUILD_LINK_NAME });
     expect(freshLink.getAttribute('href')).toBe('/dashboard?runId=run-2');
     await flushSettled();
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(2);
 
-    /* Turn 5: a middle turn — preceded by the ack, not the ask line — judges
-       nothing, but re-arms adjacency with a fresh ask line. */
-    const REASK_TWO = `Still happy to adjust. ${ASK_LINE}`;
+    /* Turn 4: another reply — eligible by position (an assistant turn precedes
+       it) WHILE run-2 is live (its poll stays non-terminal `queued`). A leaked
+       failure marker would leave the run gate open and post a third verdict —
+       the gate must hold it at exactly 2 and the run must stay run-2. */
     await submitCreation('Add XP roles too');
     await act(async () => {
-      streams[4].push(frame({ t: 'content', text: REASK_TWO }));
-      streams[4].push(frame({ t: 'done', credits: 0.05 }));
-      streams[4].close();
+      streams[3].push(frame({ t: 'content', text: 'Sure — noted.' }));
+      streams[3].push(frame({ t: 'done', credits: 0.05 }));
+      streams[3].close();
     });
-    await waitFor(() => expect(screen.getByText(REASK_TWO)).toBeTruthy());
-    await flushSettled();
-    expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(2);
-
-    /* Turn 6: a fresh eligible yes WHILE run-2 is live (its poll stays
-       non-terminal `queued`). A leaked failure marker would leave the run gate
-       open and post a third verdict — the gate must hold it at exactly 2 and
-       the run must stay run-2. */
-    await submitCreation('Yes, keep building');
-    await act(async () => {
-      streams[5].push(frame({ t: 'content', text: 'On it, still building.' }));
-      streams[5].push(frame({ t: 'done', credits: 0.05 }));
-      streams[5].close();
-    });
-    await waitFor(() => expect(screen.getByText('On it, still building.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Sure — noted.')).toBeTruthy());
     await flushSettled();
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(2);
     const heldLink = await screen.findByRole('link', { name: BUILD_LINK_NAME });

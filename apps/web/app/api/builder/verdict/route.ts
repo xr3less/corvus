@@ -8,19 +8,24 @@
 // Gate order mirrors builder/start: session 401 (fail-closed) → KI-033
 // trial-clock 403 BEFORE body → 422 botId uuid + turns shape → 404 ownership
 // (same bots query incl. soft-deleted exclusion) → KI-033 monthly-allowance
-// 403 (with the other pre-model gates, mirroring app/api/chat/route.ts) → last
-// assistant turn must carry a plan ask line else 409 no_plan_asked → ONE
+// 403 (with the other pre-model gates, mirroring app/api/chat/route.ts) → the
+// posted turns must carry at least one assistant turn, the plan offer itself,
+// else 409 no_plan_asked → ONE
 // persona-lane call with buildVerdictPrompt (strict JSON; garbage = unclear,
 // never throws) → on `yes` a SECOND persona-lane call with buildBriefPrompt →
 // clamp brief 1..2000 → INSERT builder_runs + pg-boss send IDENTICAL to
 // builder/start. On `no`/`unclear`: 200 { verdict, started:false } with NO row
 // and NO job.
 //
-// The ask gate is language-independent: the persona prompt locks the English
-// line, but the model answers a Turkish owner in Turkish, so a Turkish plan
-// that ends with `Başlayayım mı?` (either letter case, with or without its
-// diacritics) passes the same gate the English line passes. The accepted set
-// and the fold are twins of the new-bot page's own — see ASK_LINES below.
+// The plan trigger is POSITION, never wording (founder lock 2026-09-25, option
+// 1): the last assistant turn in the posted tail IS the plan offer, so no
+// string a person or a model writes can gate the start. The wording gate this
+// route used to carry refused every paraphrase approval — "baslat", "yap",
+// "sen karar ver", "you decide" — and the plan re-rendered forever, because an
+// approval the accept-line matcher did not recognize never reached the judge at
+// all. What starts a build now is the model's own verdict object below, never a
+// word list; the 409 fires only when NO assistant turn was posted, which is the
+// one case where no plan was ever offered for anyone to accept.
 //
 // Every refusal keeps its machine `error` code and carries the Turkish
 // `message` the owner reads (see the copy block below); the two KI-033 403
@@ -35,7 +40,7 @@
 //
 // Thread source: the repo's only server-side thread-ish store is
 // interview_progress, which holds interview question/answer pairs — not chat
-// turns — so it can never supply the ask line this route judges. The client
+// turns — so it can never supply the plan turn this route judges. The client
 // therefore sends a bounded turns tail (12 turns, each up to the SAME 2000-char
 // per-turn bound POST /api/chat accepts for history), so a plan the chat route
 // will happily store can never be refused here for length alone.
@@ -140,21 +145,21 @@ const START_FAILED_MESSAGE = 'Kurulum başlatılamadı — tekrar dene.';
 const CREDITS_CHECK_MESSAGE = 'AI kredisi kontrol edilemedi — sonra tekrar dene.';
 const DB_NOT_CONFIGURED_MESSAGE = 'Sunucu şu an veritabanına bağlanamıyor.';
 
-// The plan ask lines a judged plan turn may end with: the English line the
-// persona prompt locks verbatim (`Can I start? Reply yes to build.`), plus the
-// Turkish forms the model writes when it answers in the owner's language.
-// Language alone must never refuse a start — a Turkish plan the owner can
-// plainly read used to fail this gate and come back 409 with nothing on screen.
-// This list and the fold below are the twin of the new-bot page's own
-// (ASK_LINES / foldTurkish in app/dashboard/new/page.tsx): the two gates must
-// recognize the same set, or a plan can pass the page and be refused here.
-const ASK_LINES = ['Can I start?', 'Başlayayım mı?', 'Başlayalım mı?'];
-
 // Turkish letters folded to their ASCII twins (lowercased first): 'İ' arrives
 // from toLowerCase() as 'i' plus a combining dot, so that dot is dropped too.
-// Whitespace runs collapse, so a line-broken or double-spaced ask reads as the
-// same question.
-const TURKISH_FOLD: Record<string, string> = {
+// Whitespace runs collapse, so a line-broken or double-spaced message reads as
+// the same text.
+//
+// Only the language detector below uses this map now. It used to be the mirror
+// of the new-bot page's own copy, both feeding the ask-line gates, and the two
+// had to stay in step or a plan could pass one and be refused by the other.
+// Those gates are gone (founder lock 2026-09-25, option 1), so what is left is a
+// local helper with one job: let a diacritic-free Turkish spelling — 'baslat'
+// for 'başlat' — reach the same stem and word needles the accented spelling
+// reaches. It is named for that job and not for the deleted gate's twin, so a
+// reader grepping for the old gate finds nothing that is still load-bearing.
+// The detection behavior itself is unchanged.
+const FOLD_TO_ASCII: Record<string, string> = {
   ı: 'i',
   ş: 's',
   ğ: 'g',
@@ -165,20 +170,13 @@ const TURKISH_FOLD: Record<string, string> = {
   î: 'i',
 };
 
-function foldAskText(text: string): string {
+function foldTurkish(text: string): string {
   return text
     .toLowerCase()
     .replace(/\u0307/g, '')
-    .replace(/[ışğçöüâî]/g, (letter) => TURKISH_FOLD[letter] ?? letter)
+    .replace(/[ışğçöüâî]/g, (letter) => FOLD_TO_ASCII[letter] ?? letter)
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-// True when the turn carries any locked ask line, whatever its language,
-// casing or spacing.
-function askedToStart(text: string): boolean {
-  const folded = foldAskText(text);
-  return ASK_LINES.some((line) => folded.includes(foldAskText(line)));
 }
 
 // --- The owner's language, derived route-side (F3 language plumbing) --------
@@ -193,7 +191,7 @@ function askedToStart(text: string): boolean {
 //
 // The shape is lib/demo/brain.ts's detector (strong signal: a Turkish-specific
 // letter or a Turkish stem; weak signal: two or more short Turkish words), with
-// the stems folded through this route's own TURKISH_FOLD so a diacritic-free
+// the stems folded through this route's own FOLD_TO_ASCII so a diacritic-free
 // spelling lands on the same needle. It is deliberately conservative: an
 // ASCII-only English thread must resolve to 'english', because the guidance
 // lands between the `Reply:` and `Answer with EXACTLY` markers the reply-view
@@ -203,7 +201,7 @@ function askedToStart(text: string): boolean {
 const TURKISH_LETTERS = /[çğışöüÇĞİŞÖÜ]/;
 
 // Stems, matched as substrings so Turkish suffixes ride along. ASCII because
-// the input is folded first (see foldAskText), so 'şablon' matches 'sablon'.
+// the input is folded first (see foldTurkish), so 'şablon' matches 'sablon'.
 const TURKISH_STEMS = [
   'merhaba',
   'selam',
@@ -246,7 +244,7 @@ const TURKISH_WORDS = [
 const TURKISH_WORD_RE = new RegExp(`(?:^|[^a-z0-9])(${TURKISH_WORDS.join('|')})(?![a-z0-9])`);
 
 function isTurkishText(text: string): boolean {
-  const folded = foldAskText(text);
+  const folded = foldTurkish(text);
   if (TURKISH_LETTERS.test(text) || TURKISH_STEMS.some((stem) => folded.includes(stem))) {
     return true;
   }
@@ -595,15 +593,20 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
-  // The last assistant turn must carry the plan ask line: without it no plan
-  // was ever put to the user, so there is nothing to judge — and, by founder
-  // lock, nothing that may start. The persona prompt ends the plan turn with
-  // that line, so the turn is read through the same kept-ends view the judge
-  // sees: length alone can never hide the ask line, while a turn whose END is
-  // something else still fails this gate.
+  // The plan trigger is POSITION, not wording (founder lock 2026-09-25, option
+  // 1): the last assistant turn in the posted tail IS the plan offer, and the
+  // model's verdict object below is the only thing that decides whether the
+  // reply accepted it. No wording gate stands here anymore — the accept-line
+  // matcher that used to was refused every paraphrase approval ("baslat", "yap",
+  // "sen karar ver", "you decide") before the judge could see it, so the plan
+  // re-rendered forever. The 409 is kept for the one case where no plan was ever
+  // offered: a tail carrying no assistant turn at all, which is a genuine
+  // absence of anything to accept — and, by founder lock, of anything that may
+  // start. The sentence the owner reads is byte-identical to the one the old
+  // gate wrote: one situation, one text.
   const assistantTurns = turns.filter((turn) => turn.role === 'assistant');
   const planTurn = assistantTurns.length > 0 ? assistantTurns[assistantTurns.length - 1] : null;
-  if (!planTurn || !askedToStart(boundedView(planTurn.content, PLAN_MAX, PLAN_TAIL_MAX))) {
+  if (!planTurn) {
     return NextResponse.json({ error: 'no_plan_asked', message: NO_PLAN_MESSAGE }, { status: 409 });
   }
 

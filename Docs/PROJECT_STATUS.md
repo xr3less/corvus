@@ -6,7 +6,9 @@
 
 ---
 
-## Current state — 2026-09-24 night (verdict-combo + :523neg DONE — live E2E deferred to tomorrow)
+## Current state — 2026-09-25 (niyetle-başla DONE + canlı-denendi D-153; çeviri-dalgası DONUK)
+
+**"Başla" demenin artık tek bir doğru yazımı yok (D-153, kurucu-onaylı Option 1):** yeni bot sohbetinde planı görüp kendi cümlenle onaylaman yeterli — "başlat", "yap", "sen karar ver", "evet" hepsi inşayı başlatıyor; kararsız cümleler ("emin değilim, şunu da eklesek mi?") hiçbir şey başlatmıyor. Eskiden plan aynı cümleyle dönüp duruyordu, o döngü kapandı. 3 yapım + 3 bağımsız denetim geçti, birleşik kod denetimi temiz (933 test), canlı deneme de doğruladı: Türkçe onay gerçekten inşa satırını + iş kuyruğunu üretiyor (~1 kredi harcama). Kayıt D-153'te, raporlar `Agent Reports/2026-09-25-1553_*` + `...-1625_liveprobe_*`. **Yeni sohbette dene** (eski sohbetler eski planı tekrar gösterir). **Bilinen pürüz:** ekrandaki ipucu hâlâ "evet yaz" diyor ama her cümle çalışıyor — yazıyı değiştirmek senin kararın, söylemen yeterli. **Çeviri-dalgası DURDU** (senin emrin — ürün metinlerine dokunulmuyor). Sırada: A8 canlı kanıt + şablon galerisi.
 
 **Canlı adres (yabancılara paylaşma — KI-030 açık):** `https://13-140-181-113.nip.io/`
 

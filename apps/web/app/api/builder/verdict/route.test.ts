@@ -20,24 +20,24 @@ import {
   type BuilderBoss,
   type VerdictSessionReader,
 } from './route';
-import { ELLIPSIS, REPLY_MAX, REPLY_TAIL_MAX as REPLY_TAIL } from '../../../../lib/verdict/bounds';
+import {
+  ELLIPSIS,
+  PLAN_MAX,
+  REPLY_MAX,
+  REPLY_TAIL_MAX as REPLY_TAIL,
+} from '../../../../lib/verdict/bounds';
 
 const BOT = '11111111-2222-4333-8444-555555555555';
 const FOREIGN_BOT = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 
-const ASK = 'Here is the plan. Can I start? Reply yes to build.';
-
-/* Turkish plan endings: the persona prompt locks the English line, but the
-   model answers a Turkish owner in Turkish, so the gate must read these too.
-   `Başlayalım mı?` is the "shall we start" sibling the model also writes. */
-const ASK_TR = 'Plan hazır. Başlayayım mı?';
-const ASK_TR_ASCII = 'Plan hazir. Baslayayim mi?';
-const ASK_TR_ALT = 'Plan hazır. Başlayalım mı?';
-/* The model sometimes uppercases the closing question and reaches for a dotted
-   capital İ where Turkish proper case uses the dotless I. Lowercasing İ yields
-   'i' plus a combining dot (U+0307), so the gate must strip that mark or this
-   realistic drift is refused. This pin is what keeps the strip alive. */
-const ASK_TR_DOTTED_CAPS = 'Plan hazır. BAŞLAYAYİM Mİ?';
+/* The plan turn the route judges. It deliberately ends with NO ask line, and
+   carries no accept line anywhere: the trigger is POSITION (the last assistant
+   turn in the posted tail), so the wording the deleted gate used to require —
+   `Can I start? Reply yes to build.` and its Turkish twins — must be provably
+   irrelevant. Every plan-handed test below uses this text, so a green suite is
+   evidence the route stopped reading strings, not evidence it reads a wider
+   list of them. */
+const PLAN = 'Plan: welcome message on join, moderation log channel.';
 
 /* The refusal sentences the route writes — re-declared here, not imported, so a
    route-side copy drift fails this suite. Same idiom as the chat suite's
@@ -80,7 +80,7 @@ const SIGNED_OUT: VerdictSessionReader = {
 function planTurns(reply = 'yes, go ahead'): { role: 'assistant' | 'user'; content: string }[] {
   return [
     { role: 'user', content: 'I want a welcome bot' },
-    { role: 'assistant', content: ASK },
+    { role: 'assistant', content: PLAN },
     { role: 'user', content: reply },
   ];
 }
@@ -268,6 +268,68 @@ function judgingPersona(
   return { calls };
 }
 
+/* The judge the paraphrase cases need: one that does what the REAL verdict
+   prompt asks of it — read the reply's own language, decide approval INTENT,
+   never match words — but deterministically, so the suite stays hermetic (no
+   live provider) and the assertion is about what the ROUTE did with the
+   verdict, not about a model's mood.
+
+   Approvals are parsed out of the plan block the prompt carries, not hard-coded
+   per test, so a case cannot pass by the route having refused it early: the
+   judge only ever runs on a request the gates let through. The vocabulary is
+   the intent the route's own prompt names (approve / reject / else), and the
+   reject list is matched first so "baslariz ama once fiyati konusalim" reads as
+   the conditional it is. */
+function strictJudge(brief = 'Welcome message on join'): { calls: PersonaCall[] } {
+  const calls: PersonaCall[] = [];
+  let index = 0;
+  __setPersonaCaller(async (messages, maxTokens) => {
+    calls.push({ messages, maxTokens });
+    if (index > 0) {
+      index += 1;
+      return { text: brief, providerCostUsd: null };
+    }
+    index += 1;
+    const reply = judgedReply(messages[0]?.content ?? '');
+    const normalized = reply.toLowerCase().trim();
+    // Rejects are matched BEFORE approvals, which is what keeps a conditional
+    // that happens to contain an approval stem ("baslariz ama once fiyati
+    // konusalim" holds "basla") on the unclear side where it belongs.
+    const rejects = [
+      'belki',
+      'ama',
+      'degistir',
+      'fiyat',
+      'cost',
+      'how much',
+      'maybe',
+      'later',
+    ];
+    const approves = [
+      'baslat',
+      'basla',
+      'yap',
+      'sen karar ver',
+      'you decide',
+      'go ahead',
+      'build it',
+      'hazlo',
+      'evet',
+      'yes',
+      'tamam',
+      'olur',
+    ];
+    // A greeting is never an approval, whatever else the sentence holds.
+    const greetings = ['merhaba', 'hello', 'hi', 'selam'];
+    let verdict: 'yes' | 'no' | 'unclear' = 'unclear';
+    if (!greetings.includes(normalized) && !rejects.some((r) => normalized.includes(r))) {
+      if (approves.some((a) => normalized.includes(a))) verdict = 'yes';
+    }
+    return { text: JSON.stringify({ verdict }), providerCostUsd: null };
+  });
+  return { calls };
+}
+
 // The judge is handed `Reply:` + the view + `Answer with EXACTLY ...` joined by
 // newlines, so the slice between those two labels, minus the one join newline on
 // each side, is the exact bytes the judge read. Extracting it lets a test assert
@@ -280,14 +342,42 @@ function replyView(prompt: string): string {
   return block.slice(1, -1);
 }
 
+// The plan half of the same prompt: everything between the `Plan:` label and the
+// `Reply:` label, minus the join newline. The plan block carries the guidance
+// lines too when the thread reads as Turkish, so this is the billed plan view
+// plus that guidance — which is why the length pins below use the reply half
+// when they mean "exactly REPLY_MAX bytes of reply".
+function judgedPlan(prompt: string): string {
+  const block = prompt.slice(prompt.indexOf('Plan:') + 'Plan:'.length, prompt.indexOf('Reply:'));
+  return block.slice(1, -1);
+}
+
+// The reply exactly as the judge read it: the last line of the reply block, with
+// the guidance lines (absent for these cases) dropped. The route always builds
+// the block as `Reply:\n<view>\n<guidance...>`, so the view is its first line —
+// and the view is a single line whenever the reply itself is one, which every
+// paraphrase case is.
+function judgedReply(prompt: string): string {
+  const block = prompt.slice(
+    prompt.indexOf('Reply:') + 'Reply:'.length,
+    prompt.indexOf('Answer with EXACTLY'),
+  );
+  return block.slice(1).split('\n')[0];
+}
+
 /* The two guidance needles, re-declared here rather than imported, so a package
    side copy drift fails this suite — the same second-independent-copy idiom the
    refusal sentences above use. They are ASCII substrings of
    `TURKISH_VERDICT_GUIDANCE` / `TURKISH_BRIEF_GUIDANCE`
    (packages/ai/src/persona-prompt.ts), and they appear in NO other prompt: an
    English thread must stay byte-identical to the pre-F3 output, so their
-   absence is asserted too. */
-const VERDICT_GUIDANCE_NEEDLE = 'a Turkish yes is a yes';
+   absence is asserted too.
+
+   The verdict needle is the intent-language rule itself, not the old word list:
+   the guidance now tells the judge to read APPROVAL INTENT rather than match
+   words, which is the same shift this route just made — a needle pinned to the
+   vocabulary would have gone stale the moment the guidance did. */
+const VERDICT_GUIDANCE_NEEDLE = 'judge APPROVAL INTENT in the reply';
 const BRIEF_GUIDANCE_NEEDLE = 'write the requirement lines in Turkish';
 
 async function readBody(res: Response): Promise<Record<string, unknown>> {
@@ -420,10 +510,17 @@ describe('POST /api/builder/verdict - gates', () => {
   });
 });
 
-// --- 409: no plan was ever asked ---
+// --- 409: no plan was ever offered ---
+//
+// The trigger is POSITION, not wording (founder lock 2026-09-25, option 1): the
+// last assistant turn in the posted tail IS the plan offer, so the 409 fires
+// only when the tail carries no assistant turn at all. The wording gate these
+// tests used to pin — three accepted ask lines, a Turkish fold, and a dotted-İ
+// strip — is deleted, and the cases below are the negative controls that keep
+// it deleted: a plan turn with NO ask line anywhere must be judged, not refused.
 
-describe('POST /api/builder/verdict - no plan asked', () => {
-  it('returns 409 with no row, no job and no model call when no ask line exists', async () => {
+describe('POST /api/builder/verdict - no plan offered', () => {
+  it('returns 409 with no row, no job and no model call when the tail has no assistant turn', async () => {
     const db = fakeDb();
     __setPool(db.pool);
     const boss = stubBoss();
@@ -434,17 +531,13 @@ describe('POST /api/builder/verdict - no plan asked', () => {
     const res = await POST(
       postVerdict({
         botId: BOT,
-        turns: [
-          { role: 'user', content: 'I want a welcome bot' },
-          { role: 'assistant', content: 'Tell me more about the welcome message.' },
-          { role: 'user', content: 'yes' },
-        ],
+        turns: [{ role: 'user', content: 'I want a welcome bot' }],
       }),
     );
 
     expect(res.status).toBe(409);
     expect(await readBody(res)).toEqual({ error: 'no_plan_asked', message: MSG_NO_PLAN });
-    // A bare "yes" with no plan asked starts nothing: no lane call, no row,
+    // No plan was ever offered, so nothing is judged: no lane call, no row,
     // no job — and no spend row, because no model call ran.
     expect(persona.calls).toHaveLength(0);
     expect(builderInserts(db.calls)).toHaveLength(0);
@@ -452,24 +545,127 @@ describe('POST /api/builder/verdict - no plan asked', () => {
     expect(boss.record.sent).toHaveLength(0);
   });
 
-  it('returns 409 when the thread has no assistant turn at all', async () => {
-    const db = fakeDb();
-    __setPool(db.pool);
-    __setBossFactory(stubBoss().factory);
-    __setSessionReader(SIGNED_IN);
-    stubPersona([{ text: '{"verdict":"yes"}' }]);
+  it('returns 409 when the thread is user turns only, or empty', async () => {
+    for (const turns of [[{ role: 'user', content: 'yes' }], [], undefined]) {
+      const db = fakeDb();
+      __setPool(db.pool);
+      __setBossFactory(stubBoss().factory);
+      __setSessionReader(SIGNED_IN);
+      stubPersona([{ text: '{"verdict":"yes"}' }]);
 
-    const res = await POST(postVerdict({ botId: BOT, turns: [{ role: 'user', content: 'yes' }] }));
+      const res = await POST(postVerdict({ botId: BOT, turns }));
 
-    expect(res.status).toBe(409);
-    expect(builderInserts(db.calls)).toHaveLength(0);
+      expect(res.status).toBe(409);
+      expect(await readBody(res)).toEqual({ error: 'no_plan_asked', message: MSG_NO_PLAN });
+      expect(builderInserts(db.calls)).toHaveLength(0);
+    }
   });
 
+  // The whole point of the position trigger: an approval the old accept-line
+  // matcher did not recognize must reach the judge and start the build. These
+  // are the exact paraphrases the founder named, plus the third-language case
+  // that no English-or-Turkish word list could ever have covered — each is an
+  // approval, each must end in a queued run, and the plan each is judged against
+  // carries NO ask line at all.
+  it('starts the build for a paraphrase approval in Turkish, English and a third language', async () => {
+    const approvals = [
+      { reply: 'baslat', note: 'Turkish, diacritic-free imperative' },
+      { reply: 'yap', note: 'Turkish, bare imperative' },
+      { reply: 'sen karar ver', note: 'Turkish, delegated decision' },
+      { reply: 'you decide', note: 'English delegation' },
+      { reply: 'go ahead and build it', note: 'English paraphrase' },
+      { reply: 'hazlo', note: 'Spanish — neither Turkish nor English' },
+    ];
+
+    for (const { reply } of approvals) {
+      const db = fakeDb();
+      __setPool(db.pool);
+      const boss = stubBoss();
+      __setBossFactory(boss.factory);
+      __setSessionReader(SIGNED_IN);
+      const persona = strictJudge();
+
+      const res = await POST(postVerdict({ botId: BOT, turns: planTurns(reply) }));
+
+      // Yes, and it STARTS: a row and a queued job, not a silent no-op.
+      expect(res.status, `reply ${JSON.stringify(reply)}`).toBe(200);
+      const body = await readBody(res);
+      expect(body, `reply ${JSON.stringify(reply)}`).toMatchObject({
+        verdict: 'yes',
+        phase: 'queued',
+      });
+      expect(typeof body.runId, `reply ${JSON.stringify(reply)}`).toBe('string');
+      expect(db.runs.size, `reply ${JSON.stringify(reply)}`).toBe(1);
+      expect(boss.record.sent, `reply ${JSON.stringify(reply)}`).toHaveLength(1);
+      // Two lane calls: the verdict, then the brief.
+      expect(persona.calls, `reply ${JSON.stringify(reply)}`).toHaveLength(2);
+      // The judge read the approval itself — and the plan it was judged
+      // against, which contains no ask line, so a survivor of the deleted
+      // wording gate would have refused this request before the judge ran.
+      expect(judgedReply(persona.calls[0].messages[0].content)).toBe(reply);
+    }
+  });
+
+  it('starts nothing for a hedged, conditional, change-asking or off-topic reply', async () => {
+    const nonApprovals = [
+      { reply: 'belki, ne kadar surer?', note: 'Turkish hedge' },
+      { reply: 'baslariz ama once fiyati konusalim', note: 'Turkish conditional' },
+      { reply: 'plani degistir, moderasyon ekle', note: 'Turkish change request' },
+      { reply: 'what would it cost?', note: 'English off-topic' },
+      { reply: 'maybe later', note: 'English hedge' },
+    ];
+
+    for (const { reply, note } of nonApprovals) {
+      const db = fakeDb();
+      __setPool(db.pool);
+      const boss = stubBoss();
+      __setBossFactory(boss.factory);
+      __setSessionReader(SIGNED_IN);
+      const persona = strictJudge();
+
+      const res = await POST(postVerdict({ botId: BOT, turns: planTurns(reply) }));
+
+      const label = `${reply} (${note})`;
+      expect(res.status, label).toBe(200);
+      expect(await readBody(res), label).toEqual({ verdict: 'unclear', started: false });
+      // The reply reached the judge verbatim — the unclear outcome is the
+      // judge's call on a reply the route passed through untouched, never the
+      // route swallowing it.
+      expect(judgedReply(persona.calls[0].messages[0].content), label).toBe(reply);
+      expect(builderInserts(db.calls), label).toHaveLength(0);
+      expect(boss.record.sent, label).toHaveLength(0);
+      expect(db.runs.size, label).toBe(0);
+    }
+  });
+
+  it('starts nothing for a bare greeting', async () => {
+    for (const reply of ['merhaba', 'hello']) {
+      const db = fakeDb();
+      __setPool(db.pool);
+      __setBossFactory(stubBoss().factory);
+      __setSessionReader(SIGNED_IN);
+      strictJudge();
+
+      const res = await POST(postVerdict({ botId: BOT, turns: planTurns(reply) }));
+
+      expect(res.status, reply).toBe(200);
+      expect(await readBody(res), reply).toEqual({ verdict: 'unclear', started: false });
+      expect(builderInserts(db.calls), reply).toHaveLength(0);
+      expect(db.runs.size, reply).toBe(0);
+    }
+  });
+});
+
+// --- Position trigger: the LAST assistant turn is the plan, whatever it says ---
+
+describe('POST /api/builder/verdict - the plan turn is found by position', () => {
   // Regression: the plan turn is a normal chat turn, and chat accepts 2000-char
   // history turns. A cap tighter than that rejected the plan outright (422 on a
   // direct call) or, once the ask line fell outside a head-truncated copy, judged
-  // it as "no plan asked" — the user said yes and nothing started, silently.
-  it('accepts a long plan turn whose END carries the ask line, and judges its end', async () => {
+  // it as "no plan asked" — the user said yes and nothing started, silently. The
+  // kept-ends view still matters: it is what the JUDGE reads, so the plan's end
+  // must reach the prompt.
+  it('judges a 1500-char plan turn with no ask line, keeping its end', async () => {
     const db = fakeDb();
     __setPool(db.pool);
     const boss = stubBoss();
@@ -477,9 +673,8 @@ describe('POST /api/builder/verdict - no plan asked', () => {
     __setSessionReader(SIGNED_IN);
     const persona = stubPersona([{ text: '{"verdict":"no"}' }]);
 
-    // 1500 chars, ask line at the very end — the shape a real plan has.
-    const plan = `${'P'.repeat(1500 - ASK.length - 1)} ${ASK}`;
-    expect(plan.length).toBe(1500);
+    // 1500 chars, no ask line anywhere in it.
+    const plan = 'P'.repeat(1500);
     const res = await POST(
       postVerdict({
         botId: BOT,
@@ -491,124 +686,62 @@ describe('POST /api/builder/verdict - no plan asked', () => {
       }),
     );
 
-    // Reached the judge: neither a 422 nor the ask-line 409.
-    expect(res.status).not.toBe(422);
-    expect(res.status).not.toBe(409);
+    // Reached the judge: neither a 422 nor a 409 — the plan needs no wording.
     expect(res.status).toBe(200);
     expect(persona.calls).toHaveLength(1);
-    // The ask-line check saw the plan's END: the billed plan view carries it.
-    expect(persona.calls[0].messages[0].content).toContain(ASK);
+    // The kept-ends view still caps the billed plan at exactly PLAN_MAX chars.
+    expect(judgedPlan(persona.calls[0].messages[0].content)).toHaveLength(PLAN_MAX);
     expect(boss.record.sent).toHaveLength(0);
   });
 
-  it('still answers 409 when the ask line is buried outside the kept END', async () => {
+  it('judges the LAST assistant turn, not an earlier one', async () => {
+    const db = fakeDb();
+    __setPool(db.pool);
+    __setBossFactory(stubBoss().factory);
+    __setSessionReader(SIGNED_IN);
+    // A judge that approves only when it sees the LAST plan turn's marker. The
+    // earlier assistant turn is a plain clarifying question; if the route handed
+    // the judge the first assistant turn instead of the last, this cannot pass.
+    const persona = judgingPersona('SECOND-PLAN-MARKER');
+
+    const res = await POST(
+      postVerdict({
+        botId: BOT,
+        turns: [
+          { role: 'user', content: 'I want a welcome bot' },
+          { role: 'assistant', content: 'Tell me more about the welcome message.' },
+          { role: 'user', content: 'Greet everyone on join' },
+          { role: 'assistant', content: 'Plan: SECOND-PLAN-MARKER greet on join.' },
+          { role: 'user', content: 'go ahead' },
+        ],
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const prompt = persona.calls[0].messages[0].content;
+    // The prompt carries the last assistant turn and NOT the earlier one, so the
+    // judge said yes on the turn that is actually the plan offer.
+    expect(prompt).toContain('SECOND-PLAN-MARKER');
+    expect(prompt).not.toContain('Tell me more about the welcome message.');
+    expect(judgedReply(prompt)).toBe('go ahead');
+    expect(await readBody(res)).toMatchObject({ verdict: 'yes', phase: 'queued' });
+  });
+
+  it('starts nothing when the plan tail carries no assistant turn at all', async () => {
     const db = fakeDb();
     __setPool(db.pool);
     __setBossFactory(stubBoss().factory);
     __setSessionReader(SIGNED_IN);
     const persona = stubPersona([{ text: '{"verdict":"yes"}' }]);
 
-    // The ask line sits in the dropped MIDDLE of a 1227-char turn — a turn that
-    // never was the plan the prompt asks for (the line ends the plan, it does
-    // not sit inside it), so the gate must still refuse it.
-    const plan = `${'x'.repeat(600)}${ASK}${'y'.repeat(600)}`;
-    expect(plan.length).toBeGreaterThan(1000);
-    const res = await POST(
-      postVerdict({ botId: BOT, turns: [{ role: 'assistant', content: plan }] }),
-    );
-
-    expect(res.status).toBe(409);
-    expect(await readBody(res)).toEqual({ error: 'no_plan_asked', message: MSG_NO_PLAN });
-    expect(persona.calls).toHaveLength(0);
-  });
-
-  // The gate is language-independent: the persona prompt locks the English ask
-  // line, but the model answers a Turkish owner in Turkish. A plan the owner can
-  // plainly read must not be refused for its language — and the refusal has to
-  // name the reason when it does refuse.
-  it('accepts a Turkish plan ending, with and without diacritics', async () => {
-    for (const ask of [ASK_TR, ASK_TR_ASCII]) {
-      const db = fakeDb();
-      __setPool(db.pool);
-      const boss = stubBoss();
-      __setBossFactory(boss.factory);
-      __setSessionReader(SIGNED_IN);
-      const persona = stubPersona([{ text: '{"verdict":"no"}' }]);
-
-      const res = await POST(
-        postVerdict({
-          botId: BOT,
-          turns: [
-            { role: 'assistant', content: ask },
-            { role: 'user', content: 'evet' },
-          ],
-        }),
-      );
-
-      expect(res.status).toBe(200);
-      expect(persona.calls).toHaveLength(1);
-      expect(db.runs.size).toBe(0);
-      expect(boss.record.sent).toHaveLength(0);
-    }
-  });
-
-  it('accepts the ask line whatever its letter case', async () => {
-    const db = fakeDb();
-    __setPool(db.pool);
-    __setBossFactory(stubBoss().factory);
-    __setSessionReader(SIGNED_IN);
-    const persona = stubPersona([{ text: '{"verdict":"no"}' }]);
-
+    // Every assistant turn is absent, so there is no plan offer to accept —
+    // the one condition the position trigger still refuses.
     const res = await POST(
       postVerdict({
         botId: BOT,
         turns: [
-          { role: 'assistant', content: ASK_TR_ALT },
-          { role: 'user', content: 'evet' },
-        ],
-      }),
-    );
-
-    expect(res.status).toBe(200);
-    expect(persona.calls).toHaveLength(1);
-  });
-
-  it('accepts a Turkish ask line uppercased with a dotted capital İ', async () => {
-    const db = fakeDb();
-    __setPool(db.pool);
-    __setBossFactory(stubBoss().factory);
-    __setSessionReader(SIGNED_IN);
-    const persona = stubPersona([{ text: '{"verdict":"no"}' }]);
-
-    const res = await POST(
-      postVerdict({
-        botId: BOT,
-        turns: [
-          { role: 'assistant', content: ASK_TR_DOTTED_CAPS },
-          { role: 'user', content: 'evet' },
-        ],
-      }),
-    );
-
-    expect(res.status).toBe(200);
-    expect(persona.calls).toHaveLength(1);
-  });
-
-  it('still refuses a Turkish plan with no ask line at all, and says why', async () => {
-    const db = fakeDb();
-    __setPool(db.pool);
-    __setBossFactory(stubBoss().factory);
-    __setSessionReader(SIGNED_IN);
-    const persona = stubPersona([{ text: '{"verdict":"yes"}' }]);
-
-    // Turkish, plan-shaped, but it never asks the question — the control that
-    // keeps the widened gate from degrading into "any Turkish turn passes".
-    const res = await POST(
-      postVerdict({
-        botId: BOT,
-        turns: [
-          { role: 'assistant', content: 'Planı hazırladım. İstersen başka bir şey ekleyebilirim.' },
-          { role: 'user', content: 'evet' },
+          { role: 'user', content: 'I want a welcome bot' },
+          { role: 'user', content: 'yes' },
         ],
       }),
     );
@@ -616,19 +749,7 @@ describe('POST /api/builder/verdict - no plan asked', () => {
     expect(res.status).toBe(409);
     expect(await readBody(res)).toEqual({ error: 'no_plan_asked', message: MSG_NO_PLAN });
     expect(persona.calls).toHaveLength(0);
-  });
-
-  it('still accepts the locked English ask line', async () => {
-    const db = fakeDb();
-    __setPool(db.pool);
-    __setBossFactory(stubBoss().factory);
-    __setSessionReader(SIGNED_IN);
-    const persona = stubPersona([{ text: '{"verdict":"no"}' }]);
-
-    const res = await POST(postVerdict({ botId: BOT, turns: planTurns('yes, go ahead') }));
-
-    expect(res.status).toBe(200);
-    expect(persona.calls).toHaveLength(1);
+    expect(builderInserts(db.calls)).toHaveLength(0);
   });
 });
 
@@ -706,8 +827,8 @@ describe('POST /api/builder/verdict - no and unclear start nothing', () => {
 
     // Boundary: a turn at the body's own limit (2000 chars — the same bound
     // POST /api/chat accepts for history) is billed as exactly PLAN_MAX chars,
-    // and the ask line at its end survives into the prompt.
-    const plan = `${'P'.repeat(2000 - ASK.length - 1)} ${ASK}`;
+    // so the plan's own end survives into the prompt.
+    const plan = 'P'.repeat(2000);
     const reply = 'R'.repeat(500);
     expect(plan.length).toBe(2000);
     const res = await POST(
@@ -723,14 +844,9 @@ describe('POST /api/builder/verdict - no and unclear start nothing', () => {
     expect(res.status).toBe(200);
     expect(persona.calls).toHaveLength(1);
     const prompt = persona.calls[0].messages[0].content;
-    expect(prompt).toContain(ASK);
     expect(prompt).toContain(reply);
     // The billed plan text is the 1000-char kept-ends view, never the raw turn.
-    const planBlock = prompt.slice(
-      prompt.indexOf('Plan:') + 'Plan:'.length,
-      prompt.indexOf('Reply:'),
-    );
-    expect(planBlock.trim().length).toBe(1000);
+    expect(judgedPlan(prompt)).toHaveLength(PLAN_MAX);
   });
 });
 
@@ -1004,16 +1120,16 @@ describe('POST /api/builder/verdict - monthly allowance', () => {
     expect(db.runs.size).toBe(0);
   });
 
-  it('reads the allowance BEFORE the ask-line gate, so a refused account never reaches the model', async () => {
+  it('reads the allowance BEFORE the no-plan gate, so a refused account never reaches the model', async () => {
     const db = fakeDb({ spent: '100' });
     __setPool(db.pool);
     __setBossFactory(stubBoss().factory);
     __setSessionReader(SIGNED_IN);
     const persona = stubPersona([{ text: '{"verdict":"yes"}' }]);
 
-    // No ask line anywhere: with the allowance already written it must still be
-    // the allowance refusal the caller sees, because the budget gate sits with
-    // the other pre-model gates and not behind the 409.
+    // No assistant turn anywhere: with the allowance already written it must
+    // still be the allowance refusal the caller sees, because the budget gate
+    // sits with the other pre-model gates and not behind the 409.
     const res = await POST(
       postVerdict({ botId: BOT, turns: [{ role: 'user', content: 'hello' }] }),
     );
