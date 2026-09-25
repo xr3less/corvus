@@ -16,3 +16,7 @@ infra/compose/backups/
 # Test/browser run artifacts: local junk, never source
 apps/web/.vitest/
 .playwright-mcp/
+# Local run junk: boot/suite logs + hero render artifact
+apps/testbot/boot.log
+apps/web/suite-final.log
+/f13-hero.png
