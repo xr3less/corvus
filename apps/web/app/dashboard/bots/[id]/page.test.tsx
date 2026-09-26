@@ -398,14 +398,34 @@ describe('bot detail page', () => {
   it('second turn carries the completed first turn as history', async () => {
     const first = sseStream();
     const second = sseStream();
-    /* First slot is the mount-time trial signal (fail-open 401: no banner),
-       second the draft load (no draft for mock ids). */
-    const fetchStub = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
-      .mockResolvedValueOnce(streamResponse(first.stream))
-      .mockResolvedValueOnce(streamResponse(second.stream));
+    /* Mount-time trial signal (fail-open 401: no banner) + draft load (no
+       draft for mock ids). /api/conversations* is routed to honest stubs so
+       the Wave-1 open/append never shifts the chat slots. */
+    const convId = '22222222-3333-4444-8555-666666666666';
+    const queue: unknown[] = [
+      { ok: false, status: 401, json: async () => ({}) },
+      { ok: false, status: 404, json: async () => ({}) },
+      streamResponse(first.stream),
+      streamResponse(second.stream),
+    ];
+    const fetchStub = vi.fn(async (url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href === '/api/conversations' && (init?.method ?? 'GET') === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ conversationId: convId }) };
+      }
+      if (href === '/api/conversations' && (init?.method ?? 'GET') === 'GET') {
+        return { ok: true, status: 200, json: async () => ({ conversations: [] }) };
+      }
+      if (href === `/api/conversations/${convId}` && init?.method === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ saved: 2 }) };
+      }
+      if (href.startsWith('/api/conversations/') && (init?.method ?? 'GET') === 'GET') {
+        return { ok: true, status: 200, json: async () => ({ turns: [] }) };
+      }
+      const next = queue.shift();
+      if (next === undefined) throw new Error(`unexpected fetch: ${href}`);
+      return next;
+    });
     vi.stubGlobal('fetch', fetchStub);
     renderDetail('bot-3');
     await submitDetail('First question');
@@ -417,9 +437,14 @@ describe('bot detail page', () => {
     await waitFor(() => expect(screen.getByText('First answer.')).toBeTruthy());
 
     await submitDetail('Second question');
-    /* Trial signal + draft load + two submits. */
-    expect(fetchStub).toHaveBeenCalledTimes(4);
-    const secondInit = fetchStub.mock.calls[3][1] as RequestInit;
+    /* Trial + draft + open + chat1 + append1 + chat2 = 6 (append2 never fires:
+       the second stream stays open). */
+    await waitFor(() => expect(fetchStub).toHaveBeenCalledTimes(6));
+    const chatCalls = fetchStub.mock.calls.filter((call) => String(call[0]) === '/api/chat');
+    expect(chatCalls).toHaveLength(2);
+    const openCall = fetchStub.mock.calls.find((call) => String(call[0]) === '/api/conversations');
+    expect(JSON.parse(String((openCall?.[1] as RequestInit).body))).toEqual({ botId: null });
+    const secondInit = chatCalls[1]?.[1] as RequestInit;
     expect(JSON.parse(String(secondInit.body))).toEqual({
       botId: null,
       message: 'Second question',
@@ -433,18 +458,38 @@ describe('bot detail page', () => {
 
   it('a 401 says logged-out in plain words and Tekrar dene re-issues after login', async () => {
     const sse = sseStream();
-    /* First the mount-time trial signal (fail-open 401), then the draft load
-       (no draft for mock ids). */
-    const fetchStub = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
-      .mockResolvedValueOnce({
+    /* Mount-time trial signal (fail-open 401) + draft load (no draft for mock
+       ids); /api/conversations* answers honest stubs so the Wave-1 open/append
+       never shifts the chat slots. */
+    const convId = '22222222-3333-4444-8555-666666666666';
+    const queue: unknown[] = [
+      { ok: false, status: 401, json: async () => ({}) },
+      { ok: false, status: 404, json: async () => ({}) },
+      {
         ok: false,
         status: 401,
         json: async () => ({ error: 'unauthorized' }),
-      })
-      .mockResolvedValueOnce(streamResponse(sse.stream));
+      },
+      streamResponse(sse.stream),
+    ];
+    const fetchStub = vi.fn(async (url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href === '/api/conversations' && (init?.method ?? 'GET') === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ conversationId: convId }) };
+      }
+      if (href === '/api/conversations' && (init?.method ?? 'GET') === 'GET') {
+        return { ok: true, status: 200, json: async () => ({ conversations: [] }) };
+      }
+      if (href === `/api/conversations/${convId}` && init?.method === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ saved: 2 }) };
+      }
+      if (href.startsWith('/api/conversations/') && (init?.method ?? 'GET') === 'GET') {
+        return { ok: true, status: 200, json: async () => ({ turns: [] }) };
+      }
+      const next = queue.shift();
+      if (next === undefined) throw new Error(`unexpected fetch: ${href}`);
+      return next;
+    });
     vi.stubGlobal('fetch', fetchStub);
     renderDetail('bot-3');
     await submitDetail('Add a welcome rule');
@@ -455,8 +500,12 @@ describe('bot detail page', () => {
     await screen.findByText('You are logged out — log in again, then press Retry.');
 
     fireEvent.click(screen.getByRole('button', { name: 'Tekrar dene' }));
-    /* Trial signal + draft load + failed submit + retry. */
-    expect(fetchStub).toHaveBeenCalledTimes(4);
+    /* Trial + draft + open + failed chat + retry chat = 5 (appends land after
+       the stream settles, not before this assertion). */
+    await waitFor(() => {
+      const chats = fetchStub.mock.calls.filter((call) => String(call[0]) === '/api/chat');
+      expect(chats).toHaveLength(2);
+    });
 
     await act(async () => {
       sse.push(frame({ t: 'content', text: 'Recovered.' }));
@@ -1769,14 +1818,34 @@ describe('bot detail chat stream', () => {
   it('shows an honest inline error and Tekrar dene re-issues the same message on one row', async () => {
     const first = sseStream();
     const second = sseStream();
-    /* First the mount-time trial signal (fail-open 401), then the draft load
-       (no draft for mock ids), then stream + retry. */
-    const fetchStub = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
-      .mockResolvedValueOnce(streamResponse(first.stream))
-      .mockResolvedValueOnce(streamResponse(second.stream));
+    /* Mount-time trial signal (fail-open 401) + draft load (no draft for mock
+       ids); /api/conversations* answers honest stubs so the Wave-1 open/append
+       never shifts the chat slots. */
+    const convId = '22222222-3333-4444-8555-666666666666';
+    const queue: unknown[] = [
+      { ok: false, status: 401, json: async () => ({}) },
+      { ok: false, status: 404, json: async () => ({}) },
+      streamResponse(first.stream),
+      streamResponse(second.stream),
+    ];
+    const fetchStub = vi.fn(async (url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href === '/api/conversations' && (init?.method ?? 'GET') === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ conversationId: convId }) };
+      }
+      if (href === '/api/conversations' && (init?.method ?? 'GET') === 'GET') {
+        return { ok: true, status: 200, json: async () => ({ conversations: [] }) };
+      }
+      if (href === `/api/conversations/${convId}` && init?.method === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ saved: 2 }) };
+      }
+      if (href.startsWith('/api/conversations/') && (init?.method ?? 'GET') === 'GET') {
+        return { ok: true, status: 200, json: async () => ({ turns: [] }) };
+      }
+      const next = queue.shift();
+      if (next === undefined) throw new Error(`unexpected fetch: ${href}`);
+      return next;
+    });
     vi.stubGlobal('fetch', fetchStub);
     renderDetail('bot-3');
     await submitDetail('Add a welcome rule');
@@ -1789,8 +1858,12 @@ describe('bot detail chat stream', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Tekrar dene' }));
     expect(screen.getAllByText('Sen: Add a welcome rule')).toHaveLength(1);
-    /* Trial signal + draft load + failed stream + retry. */
-    expect(fetchStub).toHaveBeenCalledTimes(4);
+    /* Trial + draft + open + failed stream + retry = 5 (appends land after
+       the streams settle). */
+    await waitFor(() => {
+      const chats = fetchStub.mock.calls.filter((call) => String(call[0]) === '/api/chat');
+      expect(chats).toHaveLength(2);
+    });
     expect(screen.queryByRole('button', { name: 'Tekrar dene' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Düşünüyor' })).toBeTruthy();
 

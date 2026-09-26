@@ -30,7 +30,10 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PromptInput } from '@/components/ui/ai-chat-input';
 import { BuilderProgress, useBuilderProgress } from '@/components/ui/builder-progress';
+import { BuildStatusRibbon } from '@/components/ui/build-status-ribbon';
 import { ChatAssistantRow } from '@/components/ui/chat-thread';
+import { PlanApprovalCard } from '@/components/ui/plan-approval-card';
+import { VersionHistory } from '@/components/ui/version-history';
 import { useChatStream } from '@/components/ui/use-chat-stream';
 import threadStyles from '@/components/ui/chat-thread.module.css';
 import {
@@ -66,6 +69,13 @@ const PLAN_MISSING_MESSAGE =
    what to change. */
 const VERDICT_HINT =
   'Kurulum için onay gerekiyor — kısaca “evet” yaz ya da değiştirmek istediğin yeri yaz.';
+
+/* Canned one-click approval word (Wave 4): the exact word the page copy
+   already tells the person to type (see VERDICT_HINT and the hints below —
+   “evet” yaz). The card sends it through handleSubmit like any typed reply,
+   so the thread shows it as the person's own turn and the verdict effect
+   judges it by position. Not new copy: it echoes the existing instruction. */
+const APPROVAL_WORD = 'evet';
 
 /* The plan offer is a POSITION, not a sentence: an assistant turn standing
    immediately before the last user reply IS the offer, whatever words it used.
@@ -166,6 +176,21 @@ function NewBotPageInner() {
   const [verdictHint, setVerdictHint] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
   const [building, setBuilding] = useState(false);
+  /* Build-stop is LOCAL-ONLY (Wave 4 ribbon slice): halts ALL polling —
+     unmounts BuilderProgress AND nulls the page-owned useBuilderProgress arg;
+     the server run keeps going. Resets on each
+     new runId so a fresh run always starts polling. */
+  const [buildStopped, setBuildStopped] = useState(false);
+  /* Undo surface (Wave 4 versions slice, ADDITIVE): key-bumped on every
+     successful rollback so VersionHistory (which refetches on botId change)
+     revalidates from the server — never hand-edited. Reset per run so a fresh
+     runId starts a fresh undo state beneath it. failedRunId mirrors the M-9
+     runFailedRunIdRef marker as state: setting a ref never re-renders, so a
+     render gate reading only the ref would stay shut forever (both polls stop
+     at terminal `failed`, scheduling no further render). The ref stays the
+     authority; this mirror only schedules the render that reads it. */
+  const [historyKey, setHistoryKey] = useState(0);
+  const [failedRunId, setFailedRunId] = useState<string | null>(null);
   /* Exactly-once mint guard (synchronous ref: a second submit while the first
      mint is still in flight must not re-mint). The mint name still derives
      from the first user message (via mintOnce) — that part is unchanged. */
@@ -189,8 +214,13 @@ function NewBotPageInner() {
   const runFailedRunIdRef = useRef<string | null>(null);
   const { messages, streaming, submit, retry } = useChatStream(botId);
   /* Page-owned poll of the live run: feeds ONLY the M-9 latch reset below.
-     The BuilderProgress display runs its own poll; both stop at terminal. */
-  const buildPhase = useBuilderProgress(runId).phase;
+     The BuilderProgress display runs its own poll; both stop at terminal.
+     Ribbon stop (Wave 4e3b2): while `buildStopped` the arg is null so this
+     poll halts too — Durdur means zero /api/builder GETs, not just an
+     unmounted timeline. The call stays unconditional (hooks rule); only the
+     argument is gated. Null means "do not poll" per useBuilderProgress
+     (builder-progress.tsx:71-75 resets to IDLE and returns, no fetch). */
+  const buildPhase = useBuilderProgress(buildStopped ? null : runId).phase;
 
   useEffect(() => {
     if (!streaming && pendingBotId !== null && botId === null) {
@@ -217,6 +247,22 @@ function NewBotPageInner() {
      runId clears any marker carried from the previous run, and the stale
      phase still showing the old run's terminal state is ignored — only a
      `failed` observed while watching THIS runId marks it. */
+  /* Ribbon stop reset (Wave 4 ribbon slice, ADDITIVE): a fresh runId always
+     restarts visible polling. Separate from the M-9 latch below — neither
+     reads the other's refs. */
+  useEffect(() => {
+    setBuildStopped(false);
+  }, [runId]);
+  /* Undo surface reset (Wave 4 versions slice, ADDITIVE): separate from the
+     ribbon reset above — neither reads the other. failedRunId mirrors the
+     M-9 marker (runFailedRunIdRef is the authority; the mirror only schedules
+     renders). A fresh runId resets the mirror so a fresh run starts beneath
+     the stale phase (the M-9 follow-up guard in the latch below keeps the
+     stale terminal phase from re-marking it). */
+  useEffect(() => {
+    setHistoryKey(0);
+    setFailedRunId(null);
+  }, [runId]);
   const latchRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (runId === null) {
@@ -229,8 +275,14 @@ function NewBotPageInner() {
       runFailedRunIdRef.current = null;
       return;
     }
-    if (buildPhase === 'failed') {
+    if (buildPhase === 'failed' && runFailedRunIdRef.current !== runId) {
       runFailedRunIdRef.current = runId;
+      // Reason P143: mirror the marker into STATE so the gate below
+      // re-renders. Setting ref values never schedules a render; without
+      // this only a later unrelated render (e.g. a next chat turn) would
+      // reveal the failed gate. `runFailedRunIdRef` stays the authority —
+      // this state never drives the verdict latch, only the failed-run gate.
+      setFailedRunId(runId);
     }
   }, [runId, buildPhase]);
 
@@ -398,6 +450,21 @@ function NewBotPageInner() {
     submit(value, attachments);
   }
 
+  /* Plan-approval card visibility (Wave 4 approval slice, ADDITIVE): the
+     thread ends on a settled assistant turn — that POSITION is the plan
+     offer, the same idiom the verdict effect above uses (it never reads the
+     assistant's words either). The bot id is saved, no run started yet, and
+     no chat stream is open (an in-flight stream would swallow the click: the
+     hook's streaming guard refuses the submit). A verdict POST in flight
+     keeps the card mounted but approving, so the button reads the sending
+     line instead of vanishing mid-flight. Typed "evet" and paraphrase
+     approvals keep their existing auto-start path — untouched. */
+  let showApprovalCard = false;
+  if (botId !== null && runId === null && !streaming && messages.length > 0) {
+    const lastTurn = messages[messages.length - 1];
+    if (lastTurn.role === 'assistant') showApprovalCard = true;
+  }
+
   /* Mint race: the plan-offer position holds but the bot id has not landed yet
      — show the saving line and queue no POST. Derived (not state) so it clears
      the moment the id commits. */
@@ -412,6 +479,59 @@ function NewBotPageInner() {
         break;
       }
     }
+  }
+
+  /* One-click approval (Wave 4): sends the canned approval word through the
+     EXISTING handleSubmit path — same mint-once guard, same verdict
+     once-guards apply. No direct verdict POST from this path. */
+  function handleApprove() {
+    handleSubmit(APPROVAL_WORD, []);
+  }
+
+  /* Undo surface (Wave 4 versions slice, ADDITIVE): renders ONLY when the
+     page-owned poll reached terminal `failed` (corroborated by the M-9 latch
+     marker — runFailedRunIdRef is the authority, failedRunId its render
+     mirror — so no second poller) AND the bot id is saved. onUndo posts the
+     ({ botId, version }) body the EXISTING rollback route validates — the
+     version NUMBER travels alongside the row uuid from VersionHistory, so the
+     body always matches validateRollbackBody. Success remounts VersionHistory
+     (key bump) so the list revalidates from the server; a degraded answer
+     surfaces the route's own sentence through the page's honest-fallback
+     idiom (readRefusalMessage first) — never silent, never an invented
+     success line. A pre-publish bot (prod pointer NULL) answers 404 from the
+     route: that message posts as-is, unmodified. Never touched by the card,
+     ribbon, verdict effect, or M-9 latch logic. */
+  const runFailed =
+    runId !== null &&
+    buildPhase === 'failed' &&
+    runFailedRunIdRef.current === runId &&
+    failedRunId === runId;
+  const showVersionHistory = runFailed && botId !== null;
+  function handleUndo(_versionId: string, versionNumber: number) {
+    if (botId === null) return;
+    const target = botId;
+    fetch('/api/spec/rollback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ botId: target, version: versionNumber }),
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          setHistoryKey((nonce) => nonce + 1);
+          return;
+        }
+        let message = START_FALLBACK_ERROR;
+        try {
+          const data = (await response.json()) as unknown;
+          message = readRefusalMessage(data) ?? START_FALLBACK_ERROR;
+        } catch {
+          /* keep the honest fallback */
+        }
+        setBuildError(message);
+      })
+      .catch(() => {
+        setBuildError(START_FALLBACK_ERROR);
+      });
   }
 
   /* A chip only fills the composer — it never sends. */
@@ -462,11 +582,43 @@ function NewBotPageInner() {
             {mintError !== null ? <p role="alert">{mintError}</p> : null}
             {buildError !== null ? <p role="alert">{buildError}</p> : null}
             {verdictHint !== null ? <p role="status">{verdictHint}</p> : null}
+            {/* One-click plan approval (Wave 4, ADDITIVE): mounted by position
+                — the thread ends on a settled assistant turn, bot id saved, no
+                run yet. onApprove reuses handleSubmit with the canned word, so
+                the same guards apply as typed "evet". */}
+            {runId === null && (showApprovalCard || building) ? (
+              <PlanApprovalCard onApprove={handleApprove} approving={building || streaming} />
+            ) : null}
             {runId !== null ? (
               <section aria-label="Kurulum ilerlemesi">
+                {/* Build-status ribbon (Wave 4, ADDITIVE): one honest pill above
+                    the run progress. Durdur/Devam et are LOCAL-ONLY — Durdur
+                    unmounts BuilderProgress so the visible poll halts (the
+                    server run keeps going); Devam et re-mounts it to re-poll.
+                    No fetch, no verdict/latch touch. */}
+                <BuildStatusRibbon
+                  phase={buildPhase}
+                  streaming={streaming}
+                  approving={building}
+                  stopped={buildStopped}
+                  onStop={() => setBuildStopped(true)}
+                  onResume={() => setBuildStopped(false)}
+                />
                 <p role="status">Kurulum başladı — ilerlemeyi aşağıda takip edebilirsin.</p>
-                <BuilderProgress runId={runId} />
+                {buildStopped ? null : <BuilderProgress runId={runId} />}
                 <a href={`/dashboard?runId=${runId}`}>Kurulum ilerlemesini aç</a>
+                {/* Version history / undo (Wave 4, ADDITIVE): renders ONLY on a
+                    failed run with the bot id saved (gate logic above shares no
+                    state with card/ribbon/latch). Success remounts via the
+                    historyKey so the list refetches; failure posts the route's
+                    sentence into the existing honest-fallback alert line. */}
+                {showVersionHistory && botId !== null ? (
+                  <VersionHistory
+                    key={`${botId}:${runId}:${historyKey}`}
+                    botId={botId}
+                    onUndo={handleUndo}
+                  />
+                ) : null}
               </section>
             ) : null}
           </div>

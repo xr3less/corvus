@@ -63,11 +63,48 @@ function allowlistedDetail(phase: unknown, detail: unknown): Record<string, unkn
     }
     return out;
   }
+  // Active phases: the checkpoint slice the timeline renders — forwarded
+  // primitive-only and by name, leak-proof by construction (raw provider text,
+  // the `_builder` marker, and per-attempt internals stay in the row).
+  const phaseText = typeof phase === 'string' ? phase : '';
+  if (phaseText === 'queued' || phaseText === 'generating' || phaseText === 'syncing') {
+    return allowlistedCheckpointDetail(detail);
+  }
   // Unknown phase: forward nothing rather than guessing at its internals.
   return {};
 }
 
-// --- Handler ---
+// Active phases (queued/generating/syncing) may carry the additive checkpoint
+// keys the worker writes into the row's detail (owned by wave3-resume's
+// `builder/checkpoints.ts`; this route only reads the shape). Forwarded
+// primitive-only and by name, so internal diagnostics (raw provider text, the
+// `_builder` provenance marker, per-attempt internals) still never leak. A key
+// that is missing, blank, or non-primitive degrades to absent — the timeline
+// shows its honest empty line instead.
+const ACTIVE_CHECKPOINT_KEYS = [
+  'briefChars',
+  'attempt',
+  'stepStartedAt',
+  'lastGoodPhase',
+  'checkpointBrief',
+  'error',
+  'provider',
+] as const;
+
+function allowlistedCheckpointDetail(detail: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of ACTIVE_CHECKPOINT_KEYS) {
+    const value = detail[key];
+    if (typeof value === 'string') {
+      if (value.length > 0) {
+        out[key] = value;
+      }
+    } else if (typeof value === 'number' && Number.isFinite(value)) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
 
 export async function GET(req: Request): Promise<NextResponse> {
   let session = null;

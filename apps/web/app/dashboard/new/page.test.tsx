@@ -215,17 +215,77 @@ function builderPhase(phase: string) {
   };
 }
 
-/* Route a stubbed fetch by URL: /api/bots mints, everything else streams chat. */
+/* Wave-1 persistence lane (hook use-chat-stream.ts:134 + thread.ts:205): every
+   submit opens POST /api/conversations BEFORE POST /api/chat, and appends
+   completed rows after the stream settles (POST /api/conversations/[id]).
+   Answered honestly here so stream slots stay chat-only: only /api/chat draws
+   from the stream queue. The open id is a valid uuid so isUuid passes; the
+   list/get shapes match lib/conversations/client.ts. */
+function conversationOpen(botId: string) {
+  return {
+    ok: true,
+    status: 200,
+    body: null,
+    json: async (): Promise<unknown> => ({ conversationId: botId }),
+  };
+}
+
+function conversationList() {
+  return {
+    ok: true,
+    status: 200,
+    body: null,
+    json: async (): Promise<unknown> => ({ conversations: [] }),
+  };
+}
+
+function conversationTurns() {
+  return {
+    ok: true,
+    status: 200,
+    body: null,
+    json: async (): Promise<unknown> => ({ turns: [] }),
+  };
+}
+
+function conversationAppended() {
+  return {
+    ok: true,
+    status: 200,
+    body: null,
+    json: async (): Promise<unknown> => ({ saved: 0 }),
+  };
+}
+
+/* Honest router for the persistence lane. Returns a Response-like when the URL
+   is a conversations URL, else null so the caller falls through to its own
+   mint/verdict/chat routing. Branches on method: POST /api/conversations opens
+   ({ conversationId }), GET lists ({ conversations: [] }); POST [id] appends
+   ({ saved: 0 }), GET reads ({ turns: [] }). */
+function conversationStub(url: string, init?: RequestInit, botId: string = BOT_ID) {
+  if (url === '/api/conversations') {
+    return Promise.resolve(init?.method === 'POST' ? conversationOpen(botId) : conversationList());
+  }
+  if (url.startsWith('/api/conversations/')) {
+    return Promise.resolve(init?.method === 'POST' ? conversationAppended() : conversationTurns());
+  }
+  return null;
+}
+
+/* Route a stubbed fetch by URL: /api/bots mints, the persistence lane
+   (/api/conversations*) is answered honestly, and only /api/chat streams. */
 function chatFirstStub(
   first: ReadableStream<Uint8Array>,
   second: ReadableStream<Uint8Array>,
   botId: string,
 ) {
   let chatCalls = 0;
-  return (url: string) => {
+  return (url: string, init?: RequestInit) => {
     if (url === '/api/bots') {
       return Promise.resolve(mintResponse(botId));
     }
+    const conversation = conversationStub(url, init, botId);
+    if (conversation !== null) return conversation;
     chatCalls += 1;
     return Promise.resolve(streamResponse(chatCalls <= 1 ? first : second));
   };
@@ -295,8 +355,10 @@ async function drivePlanThenYes(
   const second = sseStream();
   const fetchStub = vi.fn();
   let chatCalls = 0;
-  fetchStub.mockImplementation((url: string) => {
+  fetchStub.mockImplementation((url: string, init?: RequestInit) => {
     if (url === '/api/bots') return Promise.resolve(mintResponse(BOT_ID));
+    const conversation = conversationStub(url, init);
+    if (conversation !== null) return conversation;
     if (url === '/api/builder/verdict') return Promise.resolve(verdictResponse);
     if (url.startsWith('/api/builder?runId=')) return Promise.resolve(builderPhase('queued'));
     chatCalls += 1;
@@ -479,10 +541,12 @@ describe('new bot page', () => {
 
   it('submitting streams the reply into a thread with botId null', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -531,9 +595,12 @@ describe('new bot page', () => {
       'fetch',
       /* Mints still go through the original stub, so the mint-once count
          below keeps watching the whole test rather than only its first half. */
-      vi.fn((url: string) =>
-        url === '/api/bots' ? fetchStub(url) : Promise.resolve(streamResponse(live.stream)),
-      ),
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url === '/api/bots') return fetchStub(url);
+        const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+        if (conversation !== null) return conversation;
+        return Promise.resolve(streamResponse(live.stream));
+      }),
     );
     await submitCreation('Second question');
     await waitFor(() =>
@@ -578,7 +645,7 @@ describe('new bot page', () => {
     await flushSettled();
 
     await submitCreation('Second question');
-    expect(callsTo(fetchStub, '/api/chat')).toHaveLength(2);
+    await waitFor(() => expect(callsTo(fetchStub, '/api/chat')).toHaveLength(2));
     const chats = callsTo(fetchStub, '/api/chat');
     const secondInit = chats[1][1] as RequestInit;
     expect(JSON.parse(String(secondInit.body))).toEqual({
@@ -631,6 +698,8 @@ describe('new bot page', () => {
         if (url === '/api/bots') {
           return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
         }
+        const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+        if (conversation !== null) return conversation;
         capturedSignal = init?.signal ?? undefined;
         return Promise.resolve(streamResponse(sse.stream));
       }),
@@ -691,10 +760,12 @@ describe('new bot page', () => {
     const second = sseStream();
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         return Promise.resolve(verdictYes('run-123'));
       }
@@ -835,8 +906,10 @@ describe('new bot page', () => {
     const second = sseStream();
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') return Promise.resolve(mintResponse(BOT_ID));
+      const conversationHead = conversationStub(url, init);
+      if (conversationHead !== null) return conversationHead;
       if (url === '/api/builder/verdict') return Promise.resolve(verdictYes('run-123'));
       if (url.startsWith('/api/builder?runId=')) return Promise.resolve(builderPhase('queued'));
       chatCalls += 1;
@@ -933,9 +1006,12 @@ describe('new bot page', () => {
        still END at the judged user row. Seven submissions are 14 rows, so the
        tail has to drop the opening user row. */
     const streams: ReturnType<typeof sseStream>[] = [];
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') return Promise.resolve(mintResponse(BOT_ID));
+      const conversationHead = conversationStub(url, init);
+      if (conversationHead !== null) return conversationHead;
       if (url === '/api/builder/verdict') return Promise.resolve(verdictSilent('no'));
+      if (url !== '/api/chat') return Promise.reject(new Error('unexpected call: ' + url));
       const sse = sseStream();
       streams.push(sse);
       return Promise.resolve(streamResponse(sse.stream));
@@ -1004,8 +1080,10 @@ describe('new bot page', () => {
   });
 
   it('the Turkish hint clears once the person replies again', async () => {
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') return Promise.resolve(mintResponse(BOT_ID));
+      const conversationHead = conversationStub(url, init);
+      if (conversationHead !== null) return conversationHead;
       if (url === '/api/builder/verdict') return Promise.resolve(verdictSilent('unclear'));
       const sse = sseStream();
       return Promise.resolve(streamResponse(sse.stream));
@@ -1066,10 +1144,12 @@ describe('new bot page', () => {
     const second = sseStream();
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         return Promise.resolve(verdictSilent('unclear'));
       }
@@ -1121,10 +1201,12 @@ describe('new bot page', () => {
     });
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         return verdictGate.then(() => verdictYes('run-123'));
       }
@@ -1189,10 +1271,12 @@ describe('new bot page', () => {
     });
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return mintGate.then(() => mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         return Promise.resolve(verdictYes('run-456'));
       }
@@ -1244,10 +1328,12 @@ describe('new bot page', () => {
     const second = sseStream();
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         return Promise.reject(new Error('connection reset'));
       }
@@ -1291,10 +1377,12 @@ describe('new bot page', () => {
     const fetchStub = vi.fn();
     let chatCalls = 0;
     let verdictCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         verdictCalls += 1;
         if (verdictCalls <= 1) {
@@ -1368,10 +1456,12 @@ describe('new bot page', () => {
     const fetchStub = vi.fn();
     let verdictCalls = 0;
     let failFirstBuilderPoll = true;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         verdictCalls += 1;
         if (verdictCalls <= 1) {
@@ -1391,6 +1481,7 @@ describe('new bot page', () => {
       if (url.startsWith('/api/builder?runId=run-2')) {
         return Promise.resolve(builderPhase('queued'));
       }
+      if (url !== '/api/chat') return Promise.reject(new Error('unexpected call: ' + url));
       const sse = sseStream();
       streams.push(sse);
       return Promise.resolve(streamResponse(sse.stream));
@@ -1400,6 +1491,7 @@ describe('new bot page', () => {
 
     /* Turn 1: description → plan. */
     await submitCreation('A moderation helper');
+    await waitFor(() => expect(streams).toHaveLength(1));
     await act(async () => {
       streams[0].push(frame({ t: 'content', text: PLAN_REPLY }));
       streams[0].push(frame({ t: 'done', credits: 0.05 }));
@@ -1410,6 +1502,7 @@ describe('new bot page', () => {
 
     /* Turn 2: yes → first verdict posts, run-1 starts. */
     await submitCreation(YES_REPLY);
+    await waitFor(() => expect(streams).toHaveLength(2));
     await act(async () => {
       streams[1].push(frame({ t: 'content', text: ACK_REPLY }));
       streams[1].push(frame({ t: 'done', credits: 0.05 }));
@@ -1421,13 +1514,14 @@ describe('new bot page', () => {
     expect(firstLink.getAttribute('href')).toBe('/dashboard?runId=run-1');
 
     /* The build fails: honest readout, and settling alone re-posts nothing. */
-    await waitFor(() => expect(screen.getByText('Build failed')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Build failed with error')).toBeTruthy());
     await flushSettled();
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
     failFirstBuilderPoll = false;
 
     /* Turn 3: a fresh reply — a FRESH verdict posts and the fresh run lands. */
     await submitCreation('Yes, start fresh');
+    await waitFor(() => expect(streams).toHaveLength(3));
     await act(async () => {
       streams[2].push(frame({ t: 'content', text: 'On it.' }));
       streams[2].push(frame({ t: 'done', credits: 0.05 }));
@@ -1467,10 +1561,12 @@ describe('new bot page', () => {
     const fetchStub = vi.fn();
     let verdictCalls = 0;
     let failFirstBuilderPoll = true;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         verdictCalls += 1;
         if (verdictCalls <= 1) {
@@ -1490,6 +1586,7 @@ describe('new bot page', () => {
       if (url.startsWith('/api/builder?runId=run-2')) {
         return Promise.resolve(builderPhase('queued'));
       }
+      if (url !== '/api/chat') return Promise.reject(new Error('unexpected call: ' + url));
       const sse = sseStream();
       streams.push(sse);
       return Promise.resolve(streamResponse(sse.stream));
@@ -1499,6 +1596,7 @@ describe('new bot page', () => {
 
     /* Turn 1: description → plan. */
     await submitCreation('A moderation helper');
+    await waitFor(() => expect(streams).toHaveLength(1));
     await act(async () => {
       streams[0].push(frame({ t: 'content', text: PLAN_REPLY }));
       streams[0].push(frame({ t: 'done', credits: 0.05 }));
@@ -1509,6 +1607,7 @@ describe('new bot page', () => {
 
     /* Turn 2: yes → first verdict posts, run-1 starts. */
     await submitCreation(YES_REPLY);
+    await waitFor(() => expect(streams).toHaveLength(2));
     await act(async () => {
       streams[1].push(frame({ t: 'content', text: ACK_REPLY }));
       streams[1].push(frame({ t: 'done', credits: 0.05 }));
@@ -1520,13 +1619,14 @@ describe('new bot page', () => {
     expect(firstLink.getAttribute('href')).toBe('/dashboard?runId=run-1');
 
     /* The build fails: honest readout, and settling alone re-posts nothing. */
-    await waitFor(() => expect(screen.getByText('Build failed')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Build failed with error')).toBeTruthy());
     await flushSettled();
     expect(callsTo(fetchStub, '/api/builder/verdict')).toHaveLength(1);
     failFirstBuilderPoll = false;
 
     /* Turn 3: a fresh reply — a FRESH verdict posts and run-2 lands. */
     await submitCreation('Yes, start fresh');
+    await waitFor(() => expect(streams).toHaveLength(3));
     await act(async () => {
       streams[2].push(frame({ t: 'content', text: 'On it.' }));
       streams[2].push(frame({ t: 'done', credits: 0.05 }));
@@ -1544,6 +1644,7 @@ describe('new bot page', () => {
        failure marker would leave the run gate open and post a third verdict —
        the gate must hold it at exactly 2 and the run must stay run-2. */
     await submitCreation('Add XP roles too');
+    await waitFor(() => expect(streams).toHaveLength(4));
     await act(async () => {
       streams[3].push(frame({ t: 'content', text: 'Sure — noted.' }));
       streams[3].push(frame({ t: 'done', credits: 0.05 }));
@@ -1558,10 +1659,12 @@ describe('new bot page', () => {
   });
 
   it('a whitespace submit never chats, mints, or judges — no alert', async () => {
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sseStream().stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -1580,7 +1683,7 @@ describe('new bot page', () => {
 
   it('a failed mint shows an error, keeps the chat, and never judges', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve({
           ok: false,
@@ -1589,6 +1692,8 @@ describe('new bot page', () => {
           json: async () => ({ error: 'mint blew up' }),
         });
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -1615,7 +1720,7 @@ describe('new bot page', () => {
     const third = sseStream();
     let mintCalls = 0;
     let chatCalls = 0;
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         mintCalls += 1;
         if (mintCalls <= 1) {
@@ -1628,6 +1733,8 @@ describe('new bot page', () => {
         }
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       chatCalls += 1;
       if (chatCalls <= 1) return Promise.resolve(streamResponse(first.stream));
       if (chatCalls <= 2) return Promise.resolve(streamResponse(second.stream));
@@ -1675,7 +1782,7 @@ describe('new bot page', () => {
      something a person can act on. */
   it('shows the server’s honest sentence when the mint is refused by the trial gate', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve({
           ok: false,
@@ -1684,6 +1791,8 @@ describe('new bot page', () => {
           json: async () => ({ error: 'trial_expired', message: TRIAL_EXPIRED_MESSAGE }),
         });
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -1702,10 +1811,12 @@ describe('new bot page', () => {
     const second = sseStream();
     const fetchStub = vi.fn();
     let chatCalls = 0;
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse(BOT_ID));
       }
+      const conversation = conversationStub(url, init, BOT_ID);
+      if (conversation !== null) return conversation;
       if (url === '/api/builder/verdict') {
         return Promise.resolve({
           ok: false,
@@ -1745,10 +1856,12 @@ describe('new bot page', () => {
 
   it('repro: composer is interactive after the reply completes', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -1774,10 +1887,12 @@ describe('new bot page', () => {
 
     /* Interactive means the held text actually sends now. */
     const sse2 = sseStream();
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse2.stream));
     });
     fireEvent.keyDown(screen.getByLabelText('Prompt'), { key: 'Enter' });
@@ -1787,10 +1902,12 @@ describe('new bot page', () => {
 
   it('repro: composer unlocks after an error event', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -1813,10 +1930,12 @@ describe('new bot page', () => {
 
   it('repro: composer unlocks on a chat HTTP error', async () => {
     let chatCalls = 0;
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       chatCalls += 1;
       if (chatCalls <= 1) {
         return Promise.resolve({
@@ -1845,10 +1964,12 @@ describe('new bot page', () => {
 
   it('repro: composer unlocks on a chat network throw', async () => {
     let chatCalls = 0;
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       chatCalls += 1;
       if (chatCalls <= 1) {
         return Promise.reject(new Error('connection reset'));
@@ -1876,10 +1997,12 @@ describe('new bot page', () => {
     const mintGate = new Promise((gate) => {
       resolveMint = gate;
     });
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return mintGate.then(() => mintResponse('33333333-3333-4333-8333-333333333333'));
       }
+      const conversationMid = conversationStub(url, init, '33333333-3333-4333-8333-333333333333');
+      if (conversationMid !== null) return conversationMid;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -1908,10 +2031,12 @@ describe('new bot page', () => {
     });
     await flushSettled();
     const sse2 = sseStream();
-    fetchStub.mockImplementation((url: string) => {
+    fetchStub.mockImplementation((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('33333333-3333-4333-8333-333333333333'));
       }
+      const conversation = conversationStub(url, init, '33333333-3333-4333-8333-333333333333');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse2.stream));
     });
     await submitCreation('Second question');
@@ -1927,7 +2052,7 @@ describe('new bot page', () => {
     const sse = sseStream();
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string) => {
+      vi.fn((url: string, init?: RequestInit) => {
         if (url === '/api/bots') {
           return Promise.resolve({
             ok: false,
@@ -1936,6 +2061,8 @@ describe('new bot page', () => {
             json: async () => ({ error: 'mint blew up' }),
           });
         }
+        const conversation = conversationStub(url, init, BOT_ID);
+        if (conversation !== null) return conversation;
         return Promise.resolve(streamResponse(sse.stream));
       }),
     );
@@ -1972,10 +2099,12 @@ describe('new bot page', () => {
 
   it('type-while-streaming: textarea stays editable and chips keep filling', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);
@@ -2008,10 +2137,12 @@ describe('new bot page', () => {
 
   it('send click and Enter do nothing while streaming and the text is preserved', async () => {
     const sse = sseStream();
-    const fetchStub = vi.fn((url: string) => {
+    const fetchStub = vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/bots') {
         return Promise.resolve(mintResponse('11111111-1111-4111-8111-111111111111'));
       }
+      const conversation = conversationStub(url, init, '11111111-1111-4111-8111-111111111111');
+      if (conversation !== null) return conversation;
       return Promise.resolve(streamResponse(sse.stream));
     });
     vi.stubGlobal('fetch', fetchStub);

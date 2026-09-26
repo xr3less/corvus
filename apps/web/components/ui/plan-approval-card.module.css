@@ -1,0 +1,68 @@
+/* Plan approval card — Wave 4 approval slice. Corvus 04 dark tokens, same idiom
+   as builder-progress.module.css: black field, hairline border, muted -> white
+   labels, 12px radius, teal accent reserved for the approve action. No new
+   global vars and no globals.css touch — every value below is scoped to this
+   module. Motion is decorative only and disabled under prefers-reduced-motion. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  background: #0c0c0e;
+}
+
+.title {
+  margin: 0;
+  color: #fafafa;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+.approve {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #2dd4bf;
+  color: #0c0c0e;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.approve:hover:not(:disabled) {
+  background: #5eead4;
+}
+
+.approve:disabled {
+  background: #3f3f46;
+  color: #a1a1aa;
+  cursor: not-allowed;
+}
+
+.approve:focus-visible {
+  outline: 2px solid #2dd4bf;
+  outline-offset: 2px;
+}
+
+.hint {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 20px;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .approve {
+    transition: none;
+  }
+}

@@ -1,19 +1,40 @@
 // Unit tests for the shared chat-thread primitives. Pure functions only —
 ///network and provider behavior stay in the stream/route suites.
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { HISTORY_UNAVAILABLE_NOTICE } from '../conversations/client';
 import {
   BRIEF_MAX_CHARS,
   chatBotId,
+  ensureConversationForBot,
   formatCredits,
   HISTORY_MAX_ROWS,
   historyBefore,
+  overlayDraft,
   parseSseFrame,
+  PERSISTED_TURNS_CAP,
+  persistThreadTurns,
   readHttpError,
+  rehydrateThread,
   stitchBrief,
   threadHistory,
   toChatStreamEvent,
+  toPersistedTurns,
+  toThreadRow,
   type ThreadRow,
 } from './thread';
+
+const NOTICE = 'Conversation history unavailable — new messages still send.';
+const BOT = '11111111-2222-4333-8444-555555555555';
+const CONV = '22222222-3333-4444-8555-666666666666';
+
+function okJson(body: unknown, status = 200): Response {
+  return Response.json(body, { status });
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 function userRow(id: string, text: string): ThreadRow {
   return {
@@ -223,5 +244,179 @@ describe('stitchBrief', () => {
   it('clamps to maxChars and trims the seam', () => {
     expect(stitchBrief([userRow('u-1', 'abcdef')], undefined, 4)).toBe('abcd');
     expect(stitchBrief([userRow('u-1', 'ab'), userRow('u-2', 'cd')], undefined, 5)).toBe('ab\ncd');
+  });
+});
+
+describe('persistence wiring (wave1b2a, fail-closed)', () => {
+  it('exposes the single allowed failure sentence, byte-identical', () => {
+    expect(HISTORY_UNAVAILABLE_NOTICE).toBe(NOTICE);
+    expect(PERSISTED_TURNS_CAP).toBe(50);
+  });
+
+  it('ensureConversationForBot persists the coerced botId first and returns it intact', async () => {
+    const fetchStub = vi.fn(async () => okJson({ conversationId: CONV }));
+    vi.stubGlobal('fetch', fetchStub);
+    const result = await ensureConversationForBot(BOT);
+    expect(result).toEqual({ ok: true, conversationId: CONV, botId: BOT });
+    const [, init] = fetchStub.mock.calls[0] as unknown as [unknown, { body: string }];
+    expect(JSON.parse(init.body)).toEqual({ botId: BOT });
+  });
+
+  it('ensureConversationForBot coerces a display id to null before the POST', async () => {
+    const fetchStub = vi.fn(async () => okJson({ conversationId: CONV }));
+    vi.stubGlobal('fetch', fetchStub);
+    const result = await ensureConversationForBot('bot-3');
+    expect(result).toEqual({ ok: true, conversationId: CONV, botId: null });
+    const [, init] = fetchStub.mock.calls[0] as unknown as [unknown, { body: string }];
+    expect(JSON.parse(init.body)).toEqual({ botId: null });
+  });
+
+  it('ensureConversationForBot fails closed keeping the botId — the send lane continues', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    const result = await ensureConversationForBot(BOT);
+    expect(result).toEqual({ ok: false, botId: BOT, status: null, notice: NOTICE });
+  });
+
+  it('rehydrateThread rehydrates the persisted window with ids intact', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        okJson({
+          turns: [
+            { id: 't-1', role: 'user', text: 'hi' },
+            { id: 't-2', role: 'assistant', text: 'hello' },
+          ],
+        }),
+      ),
+    );
+    const result = await rehydrateThread(CONV);
+    expect(result).toEqual({
+      ok: true,
+      rows: [
+        { id: 't-1', role: 'user', text: 'hi', attachmentCount: 0 },
+        { id: 't-2', role: 'assistant', text: 'hello', attachmentCount: 0, status: 'done' },
+      ],
+      truncated: false,
+    });
+  });
+
+  it('rehydrateThread caps the window at 50 and flags the honest truncation', async () => {
+    const turns = Array.from({ length: 60 }, (_, i) => ({
+      id: `t-${i}`,
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      text: `m${i}`,
+    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => okJson({ turns, note: 'older-history-truncated' })),
+    );
+    const result = await rehydrateThread(CONV);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(50);
+      expect(result.rows[0]).toEqual(expect.objectContaining({ id: 't-10', text: 'm10' }));
+      expect(result.truncated).toBe(true);
+    }
+  });
+
+  it('rehydrateThread adds no verdict row and never re-posts — read-only refresh', async () => {
+    const fetchStub = vi.fn(async () => okJson({ turns: [] }));
+    vi.stubGlobal('fetch', fetchStub);
+    await rehydrateThread(CONV);
+    expect(fetchStub).toHaveBeenCalledTimes(1);
+    const first = fetchStub.mock.calls[0] as unknown as [unknown, unknown?];
+    expect(first[1]).toBeUndefined();
+  });
+
+  it('rehydrateThread fails closed with the single allowed notice, rows empty', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    const result = await rehydrateThread(CONV);
+    expect(result).toEqual({ ok: false, rows: [], truncated: false, status: null, notice: NOTICE });
+  });
+
+  it('overlayDraft renders the local draft OVER history without mutating either input', () => {
+    const persisted = [userRow('t-1', 'old')];
+    const draft = [userRow('local-1', 'draft text')];
+    const rows = overlayDraft(persisted, draft);
+    expect(rows.map((row) => row.id)).toEqual(['t-1', 'local-1']);
+    expect(persisted).toHaveLength(1);
+    expect(draft).toHaveLength(1);
+  });
+
+  it('toThreadRow keeps ids byte-identical so a verdict guard never re-fires after refresh', () => {
+    const user = toThreadRow({ id: 'u-9', role: 'user', text: 'evet' });
+    expect(user).toEqual({ id: 'u-9', role: 'user', text: 'evet', attachmentCount: 0 });
+    const assistant = toThreadRow({ id: 'a-9', role: 'assistant', text: 'plan' });
+    expect(assistant).toEqual({
+      id: 'a-9',
+      role: 'assistant',
+      text: 'plan',
+      attachmentCount: 0,
+      status: 'done',
+    });
+  });
+
+  it('toPersistedTurns skips in-flight/empty/error rows and caps 2000 chars', () => {
+    const rows: ThreadRow[] = [
+      userRow('u-1', '  keep  '),
+      userRow('u-blank', '   '),
+      {
+        ...userRow('thinking-1', ''),
+        role: 'assistant',
+        status: 'thinking',
+      },
+      {
+        ...userRow('error-1', ''),
+        role: 'assistant',
+        status: 'error',
+        error: 'boom',
+        sourceText: 'keep',
+      },
+      doneRow('a-1', 'reply'),
+      userRow('u-long', `x`.repeat(2500)),
+    ];
+    const turns = toPersistedTurns(rows);
+    expect(turns).toEqual([
+      { role: 'user', text: 'keep' },
+      { role: 'assistant', text: 'reply' },
+      { role: 'user', text: `x`.repeat(2000) },
+    ]);
+  });
+
+  it('persistThreadTurns appends completed rows and skips empty batches without a fetch', async () => {
+    const fetchStub = vi.fn(async () => okJson({ saved: 2, turns: [] }));
+    vi.stubGlobal('fetch', fetchStub);
+    const stored = await persistThreadTurns(CONV, [userRow('u-1', 'hi'), doneRow('a-1', 'hello')]);
+    expect(stored).toEqual({ ok: true, saved: 2 });
+    expect(fetchStub).toHaveBeenCalledTimes(1);
+  });
+
+  it('persistThreadTurns reads an empty batch as zero saved, not a failure', async () => {
+    const fetchStub = vi.fn(async () => okJson({ saved: 1, turns: [] }));
+    vi.stubGlobal('fetch', fetchStub);
+    const stored = await persistThreadTurns(CONV, []);
+    expect(stored).toEqual({ ok: true, saved: 0 });
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it('persistThreadTurns fails closed so the message still sends locally', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    const stored = await persistThreadTurns(CONV, [userRow('u-1', 'hi')]);
+    expect(stored).toEqual({ ok: false, status: null, notice: NOTICE });
   });
 });

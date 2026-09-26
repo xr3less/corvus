@@ -125,10 +125,32 @@ describe('BuilderProgress', () => {
     });
 
     expect(screen.getByRole('alert').textContent).toBe('Unexpected builder phase');
+    expect(screen.getByRole('button', { name: 'Retry check' })).toBeTruthy();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-polls once when Retry check is pressed on the unknown-phase error', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ phase: 'teleporting' }))
+      .mockResolvedValueOnce(jsonResponse({ phase: 'queued', detail: {} }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByRole('alert').textContent).toBe('Unexpected builder phase');
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Retry check' }).click();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Kurulum adımları')).toBeTruthy();
   });
 
   it('shows honest text for the terminal failed phase and stops polling', async () => {
@@ -140,10 +162,81 @@ describe('BuilderProgress', () => {
       await vi.advanceTimersByTimeAsync(0);
     });
 
-    expect(screen.getByRole('status').textContent).toBe('Build failed');
+    expect(screen.getByText('Build failed with error')).toBeTruthy();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the real failure cause verbatim and keeps polling stopped', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ phase: 'failed', detail: { error: 'router_failed', step: 'sync' } }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByText('Build failed with error')).toBeTruthy();
+    expect(screen.getByText('router_failed')).toBeTruthy();
+    expect(screen.getByText('step: sync')).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries the poll once when Retry check is pressed after a failed run', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ phase: 'failed', detail: { error: 'sync_failed' } }))
+      .mockResolvedValueOnce(jsonResponse({ phase: 'live', detail: {} }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('sync_failed')).toBeTruthy();
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Retry check' }).click();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders per-step checkpoint detail for active phases and the honest empty line', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        phase: 'generating',
+        detail: { provider: 'wiro sonnet-5', attempt: 1, rawPreview: 'must not leak' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<BuilderProgress runId="r" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByText('Kurulum adımları')).toBeTruthy();
+    expect(screen.getByText('provider: wiro sonnet-5')).toBeTruthy();
+    // `attempt` belongs to two steps (queued + generating); both render it.
+    expect(screen.getAllByText('attempt: 1')).toHaveLength(2);
+    // Internal diagnostics never render, even when the route forwards them.
+    expect(screen.queryByText(/must not leak/)).toBeNull();
+    // Steps with no detail for this phase show the honest empty line.
+    expect(screen.getAllByText('Ayrıntı henüz yok').length).toBeGreaterThan(0);
+    // Expand/collapse controls exist per step with the exact locked copy.
+    expect(screen.getAllByText('Ayrıntıları göster').length).toBe(4);
+    expect(screen.getAllByText('Ayrıntıları gizle').length).toBe(4);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

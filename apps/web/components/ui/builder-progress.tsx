@@ -9,13 +9,14 @@
  * error text verbatim when the poll fails.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { readRefusalMessage } from '@/lib/http/refusal';
+import { RUN_TIMELINE_STEPS, RunTimeline, type RunTimelinePhase } from './run-timeline';
 import styles from './builder-progress.module.css';
 
-export const BUILDER_STEPS = ['queued', 'generating', 'syncing', 'live'] as const;
+export const BUILDER_STEPS = RUN_TIMELINE_STEPS;
 export type BuilderStep = (typeof BUILDER_STEPS)[number];
-export type BuilderPhase = BuilderStep | 'failed';
+export type BuilderPhase = RunTimelinePhase;
 
 const TERMINAL_PHASES: readonly BuilderPhase[] = ['live', 'failed'];
 
@@ -24,20 +25,22 @@ const TERMINAL_PHASES: readonly BuilderPhase[] = ['live', 'failed'];
 // surfaced as an error instead of freezing the stepper on a blank, dead state.
 const ALL_PHASES: readonly BuilderPhase[] = ['queued', 'generating', 'syncing', 'live', 'failed'];
 
-const STEP_LABELS: Record<BuilderStep, string> = {
-  queued: 'Queued',
-  generating: 'Generating',
-  syncing: 'Syncing',
-  live: 'Live',
-};
-
 export interface BuilderProgressState {
   phase: BuilderPhase | null;
   detail: unknown;
   error: string | null;
+  // Carries an unknown future phase string verbatim so the caller can render
+  // the `Unexpected builder phase` error state inside the timeline instead of
+  // the hook-level alert. Null for every known or missing phase.
+  unknownPhase: string | null;
 }
 
-const IDLE_STATE: BuilderProgressState = { phase: null, detail: null, error: null };
+const IDLE_STATE: BuilderProgressState = {
+  phase: null,
+  detail: null,
+  error: null,
+  unknownPhase: null,
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -66,6 +69,7 @@ function readErrorMessage(err: unknown): string {
 export function useBuilderProgress(
   runId: string | null | undefined,
   intervalMs = 2000,
+  retryNonce = 0,
 ): BuilderProgressState {
   const [state, setState] = useState<BuilderProgressState>(IDLE_STATE);
 
@@ -83,7 +87,8 @@ export function useBuilderProgress(
       try {
         response = await fetch(`/api/builder?runId=${encodeURIComponent(target)}`);
       } catch (err) {
-        if (!cancelled) setState({ phase: null, detail: null, error: readErrorMessage(err) });
+        if (!cancelled)
+          setState({ phase: null, detail: null, error: readErrorMessage(err), unknownPhase: null });
         return;
       }
       let body: unknown = null;
@@ -98,19 +103,38 @@ export function useBuilderProgress(
           phase: null,
           detail: null,
           error: readApiError(body) ?? `Request failed (${response.status})`,
+          unknownPhase: null,
         });
         return;
       }
       const phaseValue = isRecord(body) ? body['phase'] : undefined;
       // A 200 carrying a phase outside the allowlist can never be rendered as
-      // progress. Show it as the error it is, and stop — never a blank stepper
-      // that has silently stopped polling (D7).
-      if (!isBuilderPhase(phaseValue)) {
-        setState({ phase: null, detail: null, error: 'Unexpected builder phase' });
+      // progress. Carry it in `unknownPhase` so RunTimeline shows it as the
+      // error it is (`Unexpected builder phase`), and stop — never a blank
+      // stepper that has silently stopped polling (D7). A missing/non-string
+      // phase stays the hook-level error it always was.
+      if (typeof phaseValue === 'string' && !isBuilderPhase(phaseValue)) {
+        setState({ phase: null, detail: null, error: null, unknownPhase: phaseValue });
         return;
       }
-      setState({ phase: phaseValue, detail: isRecord(body) ? body['detail'] : null, error: null });
-      // Keep polling only while the phase is genuinely non-terminal.
+      if (!isBuilderPhase(phaseValue)) {
+        setState({
+          phase: null,
+          detail: null,
+          error: 'Unexpected builder phase',
+          unknownPhase: null,
+        });
+        return;
+      }
+      setState({
+        phase: phaseValue,
+        detail: isRecord(body) ? body['detail'] : null,
+        error: null,
+        unknownPhase: null,
+      });
+      // Keep polling only while the phase is genuinely non-terminal. An unknown
+      // phase name is treated as terminal here (it renders the error state, so
+      // the retry button re-polls instead of the timer).
       if (!TERMINAL_PHASES.includes(phaseValue)) {
         timer = setTimeout(() => {
           void poll();
@@ -123,20 +147,12 @@ export function useBuilderProgress(
       cancelled = true;
       if (timer !== null) clearTimeout(timer);
     };
-  }, [runId, intervalMs]);
+    /* retryNonce is an intentional re-poll trigger: the hook re-runs its
+       effect (fresh poll, same contract) when the timeline's Retry check
+       button bumps it. */
+  }, [runId, intervalMs, retryNonce]);
 
   return state;
-}
-
-type StepState = 'pending' | 'current' | 'done';
-
-function stepState(index: number, phase: BuilderPhase | null): StepState {
-  if (phase === null || phase === 'failed') return 'pending';
-  const currentIndex = BUILDER_STEPS.indexOf(phase as BuilderStep);
-  if (currentIndex === -1) return 'pending';
-  if (index < currentIndex) return 'done';
-  if (index === currentIndex) return 'current';
-  return 'pending';
 }
 
 export interface BuilderProgressProps {
@@ -145,7 +161,11 @@ export interface BuilderProgressProps {
 }
 
 export function BuilderProgress({ runId, intervalMs = 2000 }: BuilderProgressProps) {
-  const state = useBuilderProgress(runId, intervalMs);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const state = useBuilderProgress(runId, intervalMs, retryNonce);
+  const retry = useCallback(() => {
+    setRetryNonce((nonce) => nonce + 1);
+  }, []);
 
   if (!runId) {
     return (
@@ -165,28 +185,17 @@ export function BuilderProgress({ runId, intervalMs = 2000 }: BuilderProgressPro
     );
   }
 
+  // `unknownPhase` (a future phase string the server may one day report)
+  // renders inside the timeline as `Unexpected builder phase` with a
+  // `Retry check` re-poll — the error state, not a blank stepper.
   return (
     <div className={styles.root}>
-      <ol className={styles.steps} aria-label="Builder progress">
-        {BUILDER_STEPS.map((step, index) => {
-          const kind = stepState(index, state.phase);
-          return (
-            <li
-              key={step}
-              className={`${styles.step} ${styles[kind]}`}
-              aria-current={kind === 'current' ? 'step' : undefined}
-            >
-              <span aria-hidden="true" className={styles.dot} />
-              <span className={styles.label}>{STEP_LABELS[step]}</span>
-            </li>
-          );
-        })}
-      </ol>
-      {state.phase === 'failed' ? (
-        <p role="status" className={styles.failed}>
-          Build failed
-        </p>
-      ) : null}
+      <RunTimeline
+        key={`${runId}:${retryNonce}`}
+        phase={state.unknownPhase ?? state.phase}
+        detail={state.detail}
+        onRetry={retry}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@
    with `/dashboard/bots/[id]`, whose page shell is still English; that makes
    the thread rows Turkish inside an English page, which is recorded for the
    orchestrator rather than silently decided here. */
+import type { ReactNode } from 'react';
 import { ThinkingTrace } from './thinking-trace';
 import { formatCredits, type ThreadRow } from '@/lib/chat/thread';
 import styles from './chat-thread.module.css';
@@ -17,9 +18,21 @@ import styles from './chat-thread.module.css';
 export interface ChatAssistantRowProps {
   message: ThreadRow;
   onRetry: (id: string) => void;
+  /* Wave 4 pass-through slots (additive, optional): the page composes
+     <PlanApprovalCard /> / <BuildStatusRibbon /> and passes the elements
+     here. This row owns no approval or status logic — it only renders the
+     given nodes inside its own <li> when present. When absent, the existing
+     output below is unchanged. */
+  approvalCard?: ReactNode;
+  statusRibbon?: ReactNode;
 }
 
-export function ChatAssistantRow({ message, onRetry }: ChatAssistantRowProps) {
+export function ChatAssistantRow({
+  message,
+  onRetry,
+  approvalCard,
+  statusRibbon,
+}: ChatAssistantRowProps) {
   return (
     <li className={styles.chatRow}>
       {message.status === 'thinking' ? (
@@ -62,6 +75,8 @@ export function ChatAssistantRow({ message, onRetry }: ChatAssistantRowProps) {
           ) : null}
         </>
       )}
+      {approvalCard ?? null}
+      {statusRibbon ?? null}
     </li>
   );
 }

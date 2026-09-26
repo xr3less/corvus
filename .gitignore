@@ -19,4 +19,5 @@ apps/web/.vitest/
 # Local run junk: boot/suite logs + hero render artifact
 apps/testbot/boot.log
 apps/web/suite-final.log
+apps/web/dev-fresh.log
 /f13-hero.png

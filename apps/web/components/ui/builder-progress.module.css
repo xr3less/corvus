@@ -81,6 +81,171 @@
   color: #fca5a5;
 }
 
+/* Per-step timeline (RunTimeline). Reuses the same dot scale and Corvus 04
+   dark tokens as the flat stepper above: muted -> white labels, teal accent
+   for the live step, red only for the failed cause. Native <details> elements
+   expand the per-step facts — no JS accordion state, no fake progress. */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.timelineTitle {
+  margin: 0;
+  color: #fafafa;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.timelineSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timelineStep {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: #71717a;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.timelineStepRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail {
+  margin-left: 16px;
+}
+
+.summary {
+  display: inline-flex;
+  cursor: pointer;
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 20px;
+  border-radius: 6px;
+}
+
+.summary:hover {
+  color: #fafafa;
+}
+
+.summary:focus-visible {
+  outline: 2px solid #2dd4bf;
+  outline-offset: 2px;
+}
+
+/* Native <details> toggles open natively; the two labels swap so the control
+   always names its own action (show when closed, hide when open). */
+.hideLabel {
+  display: none;
+}
+
+.detail[open] .showLabel {
+  display: none;
+}
+
+.detail[open] .hideLabel {
+  display: inline;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.detailBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 2px;
+}
+
+.detailLine {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.detailEmpty {
+  margin: 0;
+  padding: 4px 0 2px;
+  color: #71717a;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.failBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-left: 3px solid #f87171;
+  border-radius: 8px;
+  background: #0b0b0d;
+}
+
+.failTitle {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.failCause {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.retry {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 8px;
+  background: transparent;
+  color: #fafafa;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: #141417;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dot {
     transition: none;

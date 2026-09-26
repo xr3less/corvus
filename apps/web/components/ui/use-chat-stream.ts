@@ -7,8 +7,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   chatBotId,
+  ensureConversationForBot,
   historyBefore,
   parseSseFrame,
+  persistThreadTurns,
   readHttpError,
   threadHistory,
   type ChatStreamEvent,
@@ -36,14 +38,59 @@ export function useChatStream(botId: string | null | undefined) {
      submit is refused. The ref is the synchronous guard, the state drives
      the render. */
   const [streaming, setStreaming] = useState(false);
+  /* Conversation persistence (wave1b2c, fail-closed over lib/chat/thread.ts).
+     `conversationId` names the server thread the completed turns are appended
+     to; `historyNotice` carries the single honest down-path sentence while the
+     local thread keeps working. Ordering contract (thread.ts:175-176): the
+     ensure call is awaited BEFORE the verdict effect runs — the coerced botId
+     is persisted via POST /api/conversations first, so a refresh never
+     re-judges a stale verdict with a lost botId. The send lane never blocks on
+     persistence: a failed ensure/persist only sets the notice. */
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [historyNotice, setHistoryNotice] = useState<string | null>(null);
   const streamingRef = useRef(false);
   const streamAbortRef = useRef<AbortController | null>(null);
   const messageSeq = useRef(0);
   const botIdRef = useRef(botId);
   botIdRef.current = botId;
+  /* Synchronous mirror of `messages` for the persist tail: the finally block
+     above runs after the last streamed event's setState queued but before the
+     re-render commits, so reading state there would persist the pre-stream
+     rows. Every writer below appends through this ref first. */
+  const messagesRef = useRef<ThreadRow[]>([]);
+  function setRows(next: ThreadRow[] | ((prev: ThreadRow[]) => ThreadRow[])) {
+    const value = typeof next === 'function' ? next(messagesRef.current) : next;
+    messagesRef.current = value;
+    setMessages(value);
+  }
+  /* One in-flight ensure per bot id: concurrent submits while the POST is open
+     share the same promise instead of opening duplicate conversations. The key
+     is the RAW id (not the coerced one) so a verdict-scoping change always
+     re-ensures. Verified by the persist-ordering test (POST before /api/chat). */
+  const ensureRef = useRef<{ key: string; promise: Promise<string | null> } | null>(null);
+
+  /* Opens (or reuses the in-flight) server conversation for the current bot.
+     Returns the conversationId, or null when persistence is down — and then the
+     honest notice is set once so the page can say so without blocking sends. */
+  function ensureConversation(): Promise<string | null> {
+    const raw = botIdRef.current;
+    const key = raw ?? '';
+    const inFlight = ensureRef.current;
+    if (inFlight !== null && inFlight.key === key) return inFlight.promise;
+    const promise = ensureConversationForBot(raw).then((opened) => {
+      if (opened.ok) {
+        setConversationId(opened.conversationId);
+        return opened.conversationId;
+      }
+      setHistoryNotice((current) => current ?? opened.notice);
+      return null;
+    });
+    ensureRef.current = { key, promise };
+    return promise;
+  }
 
   function patchMessage(id: string, patch: (row: ThreadRow) => ThreadRow) {
-    setMessages((prev) => prev.map((row) => (row.id === id ? patch(row) : row)));
+    setRows((prev) => prev.map((row) => (row.id === id ? patch(row) : row)));
   }
 
   /* Fold one streamed event into its assistant row. Returns true when the
@@ -76,13 +123,33 @@ export function useChatStream(botId: string | null | undefined) {
   }
 
   /* One POST /api/chat read as an SSE stream onto the assistant row `id`. No
-     timers: every visible change is an event that actually arrived. */
+     timers: every visible change is an event that actually arrived. The
+     conversation ensure is awaited FIRST (ordering contract above): the
+     coerced botId lands on the server before /api/chat and before the page's
+     verdict effect reads the rows — so a refresh never re-judges a stale
+     verdict with a lost botId. Persistence is best-effort: a down history
+     read only sets the honest notice, the send lane continues. */
   async function runStream(assistantId: string, userText: string, history: ChatHistoryTurn[]) {
     if (streamingRef.current) return;
+    const conversationReady = ensureConversation();
     const controller = new AbortController();
     streamAbortRef.current = controller;
     streamingRef.current = true;
     setStreaming(true);
+    const persistedId = await conversationReady;
+    /* Aborted (reset/stop/unmount) while the ensure was in flight: leave the
+       rows as they are and never touch the network. The early return skips the
+       try/finally below, so unlock here — guarded so a newer run started after
+       a reset keeps its own lock (a reset-then-resubmit moves the abort ref to
+       the new controller, or clears it with streaming already false). */
+    if (controller.signal.aborted) {
+      if (streamAbortRef.current === null || streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+        streamingRef.current = false;
+        setStreaming(false);
+      }
+      return;
+    }
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -121,6 +188,16 @@ export function useChatStream(botId: string | null | undefined) {
         }));
       }
     } finally {
+      /* Best-effort append of the finished rows. Skipped when the stream died
+         before its first event landed (nothing completed), when persistence is
+         down (no id — the notice is already set), or when the run was aborted
+         locally (stop/reset/unmount — a local halt must not write). A failed
+         persist only sets the honest notice; the local rows stay. */
+      if (persistedId !== null && !controller.signal.aborted) {
+        void persistThreadTurns(persistedId, messagesRef.current).then((stored) => {
+          if (!stored.ok) setHistoryNotice((current) => current ?? stored.notice);
+        });
+      }
       streamingRef.current = false;
       setStreaming(false);
       if (streamAbortRef.current === controller) streamAbortRef.current = null;
@@ -139,7 +216,7 @@ export function useChatStream(botId: string | null | undefined) {
     if (attachments.length > 0) {
       const userId = `msg-${messageSeq.current++}`;
       const assistantId = `msg-${messageSeq.current++}`;
-      setMessages((prev) => [
+      setRows((prev) => [
         ...prev,
         { id: userId, role: 'user', text, attachmentCount: attachments.length },
         {
@@ -157,8 +234,8 @@ export function useChatStream(botId: string | null | undefined) {
     }
     const userId = `msg-${messageSeq.current++}`;
     const assistantId = `msg-${messageSeq.current++}`;
-    const history = threadHistory(messages);
-    setMessages((prev) => [
+    const history = threadHistory(messagesRef.current);
+    setRows((prev) => [
       ...prev,
       {
         id: userId,
@@ -184,10 +261,10 @@ export function useChatStream(botId: string | null | undefined) {
      keeps one user row and one assistant row. */
   function retry(id: string) {
     if (streamingRef.current) return;
-    const row = messages.find((entry) => entry.id === id);
+    const row = messagesRef.current.find((entry) => entry.id === id);
     if (!row || row.role !== 'assistant' || row.sourceText === undefined) return;
     const text = row.sourceText;
-    const history = historyBefore(messages, id);
+    const history = historyBefore(messagesRef.current, id);
     patchMessage(id, (current) => ({
       ...current,
       status: 'thinking',
@@ -206,7 +283,16 @@ export function useChatStream(botId: string | null | undefined) {
     streamAbortRef.current = null;
     streamingRef.current = false;
     setStreaming(false);
-    setMessages([]);
+    setRows([]);
+  }
+
+  /* Local-only halt (wave-4 stop contract): aborts the in-flight /api/chat
+     fetch and unlocks the composer. The server build — if the page started one
+     through the verdict path — keeps running; no verdict/build request is
+     touched here, and no copy here claims otherwise. */
+  function stop() {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
   }
 
   /* Leaving (unmount or bot switch) cancels any stream in flight: the
@@ -219,5 +305,5 @@ export function useChatStream(botId: string | null | undefined) {
     };
   }, [botId]);
 
-  return { messages, streaming, submit, retry, reset };
+  return { messages, streaming, submit, retry, reset, stop, conversationId, historyNotice };
 }

@@ -136,12 +136,24 @@ describe('template detail page', () => {
 
   it('never fetches a malformed slug — honest unavailable, no leak', async () => {
     mockSlug = 'BAD SLUG!!';
-    const fetchStub = vi.fn().mockRejectedValue(new Error('must not fetch'));
+    const fetchStub = vi.fn(async (url: unknown) => {
+      if (String(url).startsWith('/api/conversations')) {
+        return { ok: true, status: 200, json: async () => ({ conversations: [] }) };
+      }
+      throw new Error('must not fetch template');
+    });
     vi.stubGlobal('fetch', fetchStub);
     render(<TemplateDetailPage />);
 
     expect(await screen.findByText('Template unavailable — try again.')).toBeTruthy();
-    expect(fetchStub).not.toHaveBeenCalled();
+    /* The page renders the real DashboardRail, which correctly lists
+       conversations on mount (GET /api/conversations). Scope the never-fetch
+       assertion to template URLs: a malformed slug never touches the
+       template API and never leaks into any request URL. */
+    expect(
+      fetchStub.mock.calls.filter((call) => String(call[0]).startsWith('/api/templates/')),
+    ).toHaveLength(0);
+    expect(fetchStub.mock.calls.some((call) => String(call[0]).includes('BAD'))).toBe(false);
   });
 
   it('renders honest fallbacks when source_spec is opaque — never a crash', async () => {

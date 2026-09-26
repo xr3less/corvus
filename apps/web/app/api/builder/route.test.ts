@@ -252,6 +252,62 @@ describe('GET /api/builder', () => {
     expect(body.detail).toEqual({ error: 'builder crashed' });
   });
 
+  it('forwards the checkpoint slice for an active phase, dropping internals', async () => {
+    __setPool(
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'generating',
+          detail: {
+            provider: 'wiro sonnet-5',
+            attempt: 2,
+            stepStartedAt: '2026-09-25T18:00:00.000Z',
+            checkpointBrief: 'abbrev',
+            rawPreview: 'raw model output',
+            _builder: { internal: true },
+          },
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.phase).toBe('generating');
+    expect(body.detail).toEqual({
+      provider: 'wiro sonnet-5',
+      attempt: 2,
+      stepStartedAt: '2026-09-25T18:00:00.000Z',
+      checkpointBrief: 'abbrev',
+    });
+    const detail = body.detail as Record<string, unknown>;
+    expect('rawPreview' in detail).toBe(false);
+    expect('_builder' in detail).toBe(false);
+  });
+
+  it('drops blank or non-primitive checkpoint values instead of forwarding them', async () => {
+    __setPool(
+      fakeDb([
+        {
+          id: RUN_ID,
+          phase: 'queued',
+          detail: { briefChars: 0, provider: '', attempt: { count: 1 }, rawPreview: 'x' },
+          accountId: 'acct-1',
+        },
+      ]),
+    );
+    __setSessionReader(SIGNED_IN);
+
+    const res = await GET(getRun(RUN_ID));
+
+    expect(res.status).toBe(200);
+    const body = await readBody(res);
+    expect(body.detail).toEqual({ briefChars: 0 });
+  });
+
   it('forwards no detail at all for an unknown phase', async () => {
     __setPool(
       fakeDb([

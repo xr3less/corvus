@@ -6,7 +6,11 @@
 
 ---
 
-## Current state — 2026-09-25 (niyetle-başla DONE + canlı-denendi D-153; çeviri-dalgası DONUK)
+## Current state — 2026-09-26 (Wave-4 hub DONE + canlı-kanıtlı D-154; çeviri-dalgası DONUK)
+
+**Bot yapma ekranı artık iş yapan asistan gibi (D-154):** plan kartı çıkıyor, tek tıkla kurulum başlıyor, şerit canlı durumu gösteriyor (Durdur/Devam-et gerçekten çalışıyor — durdurunca istekler duruyor), kurulum işçiden geçip **canlı** bitiyor. Hepsi canlı denendi ve gözle doğrulandı: kart→tık→onay→kurulum→~15 saniyede canlı bitiş (kanıt ekranları `.playwright-mcp/wave4-t-*.png`, raporlar `Agent Reports/2026-09-26-*`, 2 bağımsız denetim GEÇTİ, tam web 1060 test yeşil). **Tek istisna:** geri alma düğmesi yalnız kurulum _başarısız_ olursa belirir; denememiz başarılı bittiği için çıkmaması doğru — test kanıtı duruyor, canlı-tık kasıtlı bir hata ister (onayın gerek). **Bilinen pürüz:** ekrandaki ipucu hâlâ "evet yaz" diyor ama her cümle çalışıyor — yazıyı değiştirmek senin kararın. **Çeviri-dalgası DURDU** (senin emrin — ürün metinlerine dokunulmuyor). **Kayıt bekliyor:** tüm dalga kodu commitlenmeden duruyor (HEAD `70ea222`), itme onayınla olacak. Sırada: A8 canlı kanıt + şablon galerisi. Koşan ajan YOK.
+
+**Önceki durum (D-153, 2026-09-25 — niyetle-başla DONE + canlı-denendi; çeviri-dalgası DONUK):**
 
 **"Başla" demenin artık tek bir doğru yazımı yok (D-153, kurucu-onaylı Option 1):** yeni bot sohbetinde planı görüp kendi cümlenle onaylaman yeterli — "başlat", "yap", "sen karar ver", "evet" hepsi inşayı başlatıyor; kararsız cümleler ("emin değilim, şunu da eklesek mi?") hiçbir şey başlatmıyor. Eskiden plan aynı cümleyle dönüp duruyordu, o döngü kapandı. 3 yapım + 3 bağımsız denetim geçti, birleşik kod denetimi temiz (933 test), canlı deneme de doğruladı: Türkçe onay gerçekten inşa satırını + iş kuyruğunu üretiyor (~1 kredi harcama). Kayıt D-153'te, raporlar `Agent Reports/2026-09-25-1553_*` + `...-1625_liveprobe_*`. **Yeni sohbette dene** (eski sohbetler eski planı tekrar gösterir). **Bilinen pürüz:** ekrandaki ipucu hâlâ "evet yaz" diyor ama her cümle çalışıyor — yazıyı değiştirmek senin kararın, söylemen yeterli. **Çeviri-dalgası DURDU** (senin emrin — ürün metinlerine dokunulmuyor). Sırada: A8 canlı kanıt + şablon galerisi.
 
